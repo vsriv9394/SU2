@@ -3091,7 +3091,13 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 }
 
 void CEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                  unsigned short iMesh) { }
+                                  unsigned short iMesh) {
+  if(config->GetKind_Solver() == NAVIER_STOKES || config->GetKind_Solver() == RANS){
+
+    SetAvg_Vorticity(config, geometry);
+
+    }
+}
 
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
@@ -12473,4 +12479,63 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 
     }
   }
+}
+
+void CNSSolver::SetAvg_Vorticity(CConfig *config, CGeometry *geometry){
+  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned long iPoint;
+  double *Coord,*Coord_Avg, MinCoordValues[3], MaxCoordValues[3], Vol, Vorticity;
+  double Vort_temp = 0.0;
+  double Local_AvgVorticity;
+  bool is_inside = false;
+  Coord_Avg = config->GetCoord_Average();
+  MinCoordValues[0] = Coord_Avg[0];
+  MinCoordValues[1] = Coord_Avg[1];
+  MinCoordValues[2] = Coord_Avg[2];
+  MaxCoordValues[0] = Coord_Avg[3];
+  MaxCoordValues[1] = Coord_Avg[4];
+  MaxCoordValues[2] = Coord_Avg[5];
+
+//  /*--- Compute mean flow and turbulence gradients ---*/
+//  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+//    SetPrimitive_Gradient_GG(geometry, config);
+//  }
+//  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+//    SetPrimitive_Gradient_LS(geometry, config);
+//  }
+
+  /*--- Set to zero displacements of all the points that are not going to be moved
+   except the surfaces ---*/
+  AvgVorticity = 0.0;
+  Local_AvgVorticity = 0.0;
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      Coord = geometry->node[iPoint]->GetCoord();
+      Vol = geometry->node[iPoint]->GetVolume();
+      if (nDim == 3){
+        if (((Coord[0] > MinCoordValues[0]) && (Coord[0] < MaxCoordValues[0])) &&
+            ((Coord[1] > MinCoordValues[1]) && (Coord[1] < MaxCoordValues[1])) &&
+            ((Coord[2] > MinCoordValues[2]) && (Coord[2] < MaxCoordValues[2]))) {
+            node[iPoint]->SetVorticity(false);
+            Vort_temp = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+                Vorticity = node[iPoint]->GetVorticity()[iDim];
+                Vort_temp += Vorticity*Vorticity;
+            }
+
+            Local_AvgVorticity += Vort_temp/Vol;
+          }
+        }else if (nDim == 2){
+          if (((Coord[0] > MinCoordValues[0]) && (Coord[0] < MaxCoordValues[0])) &&
+              ((Coord[1] > MinCoordValues[1]) && (Coord[1] < MaxCoordValues[1]))) {
+              node[iPoint]->SetVorticity(false);
+              Vorticity = node[iPoint]->GetVorticity()[2];
+              Local_AvgVorticity += node[iPoint]->GetSolution(0)*Vorticity*Vorticity*Vol;
+            }
+        }
+    }
+#ifdef HAVE_MPI
+  MPI_Reduce(&Local_AvgVorticity,&AvgVorticity,1,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+#endif
+  AvgVorticity = sqrt(AvgVorticity);
+
 }

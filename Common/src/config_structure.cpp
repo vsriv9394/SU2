@@ -916,7 +916,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
 
-
+  /* DESCRIPTION: Definition of the area for averaged quantities */
+  default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
+  default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
+   addDoubleArrayOption("AREA_AVERAGE",6, CoordAverage,default_vec_6d);
   /*!\par CONFIG_CATEGORY: Dynamic mesh definition \ingroup Config*/
   /*--- Options related to dynamic meshes ---*/
 

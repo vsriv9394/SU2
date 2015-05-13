@@ -2120,6 +2120,9 @@ public:
 	*/
   void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short val_Marker, double (&displacements)[4]);
 
+  virtual void SetAvg_Vorticity(CConfig* config, CGeometry *geometry);
+
+  virtual double GetAvg_Vorticity();
 };
 
 /*!
@@ -3556,8 +3559,8 @@ private:
 	AllBound_CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
   AllBound_HeatFlux_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
   AllBound_MaxHeatFlux_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
-  double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
-  
+  double StrainMag_Max, Omega_Max, /*!< \brief Maximum Strain Rate magnitude and Omega. */
+  AvgVorticity;
 public:
   
 	/*!
@@ -3761,7 +3764,10 @@ public:
    * \return Value of the Omega_Max
    */
   void SetOmega_Max(double val_omega_max);
-  
+
+  void SetAvg_Vorticity(CConfig *config, CGeometry *geometry);
+
+  double GetAvg_Vorticity();
 };
 
 /*!

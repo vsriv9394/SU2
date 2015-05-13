@@ -694,7 +694,9 @@ private:
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
-  
+  double *CoordAverage;
+  bool Wrt_Vorticity;
+
   /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
 //	map<string, CAnyOptionRef*> param;
 
@@ -5232,6 +5234,9 @@ public:
    */
   unsigned short GetConsole_Output_Verb(void);
 
+  double* GetCoord_Average();
+
+  bool GetWrite_Vorticity();
 };
 
 #include "config_structure.inl"

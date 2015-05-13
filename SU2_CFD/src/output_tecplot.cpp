@@ -189,6 +189,13 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
       if (config->GetWrt_SharpEdges()) {
         if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
           Tecplot_File << ", \"Sharp_Edge_Dist\"";
+          if (config->GetWrite_Vorticity()){
+                Tecplot_File <<", \"Vort_z\"";
+                if (nDim ==3){
+                    Tecplot_File <<", \"Vort_x\"";
+                    Tecplot_File <<", \"Vort_y\"";
+                  }
+              }
         }
       }
       

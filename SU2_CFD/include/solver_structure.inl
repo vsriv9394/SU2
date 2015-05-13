@@ -963,3 +963,7 @@ inline double CAdjTNE2EulerSolver::GetTotal_Sens_Press() { return Total_Sens_Pre
 
 inline double CAdjTNE2EulerSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; }
 
+inline double CSolver::GetAvg_Vorticity(){return 0.0;}
+
+inline double  CNSSolver::GetAvg_Vorticity(){return AvgVorticity;}
+inline void CSolver::SetAvg_Vorticity(CConfig *config, CGeometry *geometry){}

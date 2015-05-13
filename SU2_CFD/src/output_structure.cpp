@@ -1805,7 +1805,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0;
   unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Density = 0, iVar_Lam = 0, iVar_MachMean = 0,
   iVar_Tempv = 0, iVar_EF =0, iVar_Temp = 0, iVar_Mach = 0, iVar_Press = 0, iVar_TempLam = 0,
-  iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0;
+  iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0, iVar_Vort = 0;
   
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
@@ -1974,6 +1974,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         iVar_Extra  = nVar_Total; nVar_Extra  = solver[TNE2_SOL]->GetnVar(); nVar_Total += nVar_Extra;
       }
     }
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)){
+        if (config->GetWrite_Vorticity()){
+               iVar_Vort = nVar_Total;
+               nVar_Total += 1;
+               if (nDim == 3) nVar_Total += 2;
+             }
+         }
     
   }
   
@@ -3188,6 +3195,60 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
       }
     }
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+
+        if (config->GetWrite_Vorticity()){
+            jPoint = 0;
+            for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+                /*--- Check for halos & write only if requested ---*/
+
+                if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+                    /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
+                    if (nDim == 3){
+                      Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[0];
+                      Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[1];
+                     }
+                    Buffer_Send_Vol[jPoint] =solver[FLOW_SOL]->node[iPoint]->GetVorticity()[2];
+                    jPoint++;
+                  }
+              }
+              /*--- Gather the data on the master node. ---*/
+#ifdef HAVE_MPI
+              MPI_Barrier(MPI_COMM_WORLD);
+              if (nDim == 3){
+                MPI_AD::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+                MPI_AD::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+              }
+              MPI_AD::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+              if (nDim == 3){
+                for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+                for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+              }
+              for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+#endif
+          }
+        /*--- The master node unpacks and sorts this variable by global index ---*/
+        if (rank == MASTER_NODE) {
+          jPoint = 0; iVar = iVar_Vort;
+          for (iProcessor = 0; iProcessor < size; iProcessor++) {
+            for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+
+              /*--- Get global index, then loop over each variable and store ---*/
+              iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+              Data[iVar][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+              if(nDim == 3){
+                Data[iVar+1][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+                Data[iVar+2][iGlobal_Index] = Buffer_Send_Res[jPoint];
+               }
+              jPoint++;
+            }
+            /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+            jPoint = (iProcessor+1)*nBuffer_Scalar;
+
+          }
+        }
+      }
     
     if (config->GetExtraOutput()) {
       
@@ -3597,6 +3658,12 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     
     if (config->GetWrt_SharpEdges()) {
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+        if (config->GetWrite_Vorticity()){
+            restart_file<<"\t\"Vort_z\"";
+            if(nDim == 3){
+                restart_file<<"\t\"Vort_x\"\t\"Vort_y\"";
+              }
+          }
         restart_file << "\t\"Sharp_Edge_Dist\"";
       }
     }
