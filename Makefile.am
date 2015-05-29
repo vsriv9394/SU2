@@ -1,7 +1,7 @@
 # SU2 global Makefile.am
 # SU2 v3.2.7 "eagle"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -44,7 +44,9 @@ SUBDIRS = externals
 
 SUBDIRS += Common/lib
 
+if BUILD_NORMAL
 SUBDIRS += SU2_PY
+endif
 
 if BUILD_CFD
 SUBDIRS +=SU2_CFD/obj
