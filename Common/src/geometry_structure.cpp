@@ -5871,6 +5871,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
       config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
+      config->SetMarker_All_PorousInterface(iMarker, config->GetMarker_CfgFile_PorousInterface(Marker_Tag));
 
     }
     
@@ -5888,6 +5889,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_Moving(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
       config->SetMarker_All_Out_1D(iMarker, NO);
+      config->SetMarker_All_PorousInterface(iMarker, NO);
       
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (config->GetMarker_All_SendRecv(iMarker) < 0)

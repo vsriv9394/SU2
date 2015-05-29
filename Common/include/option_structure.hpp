@@ -727,6 +727,7 @@ enum BC_TYPE {
   CLAMPED_BOUNDARY = 34,		/*!< \brief Clamped Boundary definition. */
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
+  POROUS_INTERFACE = 37,	/*!< \brief Porous CAA interface definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 

@@ -473,14 +473,16 @@ private:
 	nMarker_Plotting,					/*!< \brief Number of markers to plot. */
 	nMarker_FSIinterface,					/*!< \brief Number of markers in the FSI interface. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
-	nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
+  nMarker_DV,               /*!< \brief Number of markers affected by the design variables. */
+  nMarker_PorousInterface;          /*!< \brief Number of markers for the porous CAA interface. */
   string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
   *Marker_Designing,         /*!< \brief Markers to plot. */
   *Marker_GeoEval,         /*!< \brief Markers to plot. */
   *Marker_Plotting,          /*!< \brief Markers to plot. */
   *Marker_FSIinterface,          /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
-  *Marker_DV;            /*!< \brief Markers affected by the design variables. */
+  *Marker_DV,           /*!< \brief Markers affected by the design variables. */
+  *Marker_PorousInterface;/*!< \brief Markers in the porous CAA interface.*/
   unsigned short  *Marker_All_Monitoring,        /*!< \brief Global index for monitoring using the grid information. */
   *Marker_All_GeoEval,       /*!< \brief Global index for geometrical evaluation. */
   *Marker_All_Plotting,        /*!< \brief Global index for plotting using the grid information. */
@@ -489,6 +491,7 @@ private:
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_All_Out_1D,      /*!< \brief Global index for moving using 1D integrated output. */
+  *Marker_All_PorousInterface,      /*!< \brief Global index for moving using 1D integrated output. */
   *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Designing,      /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
@@ -497,7 +500,8 @@ private:
   *Marker_CfgFile_Out_1D,      /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
-  *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_PerBound,     /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_PorousInterface;     /*!< \brief Global index for porous CAA interface using the config information. */
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
 	su2double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
 	unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
@@ -739,6 +743,8 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   su2double *CoordAverage;
   bool Wrt_Vorticity;
+  bool CAA_Analysis;
+  su2double* Observer_Position;
 
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
@@ -2478,6 +2484,14 @@ public:
 	 */
 	void SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface);
 
+  /*!
+   * \brief Set if a marker <i>val_marker</i> is part of the FSI interface <i>val_plotting</i>
+   *        (read from the config file).
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_plotting - 0 or 1 depending if the the marker is part of the FSI interface.
+   */
+  void SetMarker_All_PorousInterface(unsigned short val_marker, unsigned short val_porousinterface);
+
 	/*!
 	 * \brief Set if a marker <i>val_marker</i> is going to be affected by design variables <i>val_moving</i>
 	 *        (read from the config file).
@@ -2560,13 +2574,26 @@ public:
 	 */
 	unsigned short GetMarker_All_FSIinterface(unsigned short val_marker);
 
-
 	/*!
-	 * \brief Get the number of FSI interface markers <i>val_marker</i>.
+   * \brief Get the number of porous CAA interface markers <i>val_marker</i>.
 	 * \param[in] void.
-	 * \return Number of markers belonging to the FSI interface.
+   * \return Number of markers belonging to the porous CAA interface interface.
 	 */
-	unsigned short GetMarker_n_FSIinterface(void);
+  unsigned short GetMarker_n_PorousInterface(void);
+
+  /*!
+   * \brief Get the porous CAA interface information for a marker <i>val_marker</i>.
+   * \param[in] val_marker - 0 or 1 depending if the the marker is going to be moved.
+   * \return 0 or 1 depending if the marker is part of the porous CAA interface.
+   */
+  unsigned short GetMarker_All_PorousInterface(unsigned short val_marker);
+
+  /*!
+   * \brief Get the number of FSI interface markers <i>val_marker</i>.
+   * \param[in] void.
+   * \return Number of markers belonging to the FSI interface.
+   */
+  unsigned short GetMarker_n_FSIinterface(void);
 
 	/*!
 	 * \brief Get the DV information for a marker <i>val_marker</i>.
@@ -4514,6 +4541,12 @@ public:
 	unsigned short GetMarker_CfgFile_FSIinterface(string val_marker);
 
   /*!
+   * \brief Get the porous CAA interface information from the config definition for the marker <i>val_marker</i>.
+   * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_PorousInterface(string val_marker);
+
+  /*!
    * \brief Get the 1-D output (ie, averaged pressure) information from the config definition for the marker <i>val_marker</i>.
    * \return 1D output information of the boundary in the config information for the marker <i>val_marker</i>.
    */
@@ -5530,7 +5563,17 @@ public:
 	 */
 	unsigned short GetRelaxation_Method_FSI(void);
 
+  /*!
+   * \brief Get the aeroacoustic analysis mode.
+   * \return The aeroacoustic analysis mode.
+   */
+  bool GetAeroacoustic_Analysis();
 
+  /*!
+   * \brief Get the aeroacoustic observer position.
+   * \return Coordinates of the acoustic observer.
+   */
+  su2double* GetAcousticObs_Position();
 
 };
 

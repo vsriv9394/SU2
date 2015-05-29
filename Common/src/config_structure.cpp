@@ -421,6 +421,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
   addPeriodicOption("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
+  /*!\brief MARKER_POROUS \n DESCRIPTION: Porous CAA interface marker(s) \ingroup Config*/
+  addStringListOption("MARKER_POROUS_INTERFACE", nMarker_PorousInterface, Marker_PorousInterface);
 
   /*!\brief MARKER_ACTDISK\n DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
@@ -1220,6 +1222,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Type of gust */
   addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, NO_RELAXATION);
 
+  /*!\par CONFIG_CATEGORY: CAA solver \ingroup Config*/
+  /* DESCRIPTION: Write the vorticity to the result file. */
+  addBoolOption("WRT_VORTICITY", Wrt_Vorticity, false);
+  /* DESCRIPTION: Aeroacoustic analysis mode. */
+  addBoolOption("AEROACOUSTIC_ANALYSIS", CAA_Analysis, false);
+  /* DESCRIPTION: Position of the aeroacoustic observer. */
+  default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
+  addDoubleArrayOption("OBSERVER_POSITION", 3, Observer_Position, default_vec_3d);
 
   /*!\par CONFIG_CATEGORY: Wave solver \ingroup Config*/
   /*--- options related to the wave solver ---*/
@@ -3207,7 +3217,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine,
-  iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
+  iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D, iMarker_Porous;
 
   int size = SINGLE_NODE;
   
@@ -3227,7 +3237,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
-  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
+  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D + nMarker_PorousInterface;
   
   /*--- Add the possible send/receive domains ---*/
 
@@ -3251,6 +3261,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_Moving     = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
   Marker_All_PerBound   = new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
   Marker_All_Out_1D     = new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
+  Marker_All_PorousInterface = new unsigned short[nMarker_All];
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All]   = "SEND_RECEIVE";
@@ -3265,6 +3276,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_Moving[iMarker_All]     = 0;
     Marker_All_PerBound[iMarker_All]   = 0;
     Marker_All_Out_1D[iMarker_All]     = 0;
+    Marker_All_PorousInterface[iMarker_All] = 0;
   }
 
   /*--- Allocate the memory (markers in the config file) ---*/
@@ -3280,6 +3292,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_Moving     = new unsigned short[nMarker_Config];
   Marker_CfgFile_PerBound   = new unsigned short[nMarker_Config];
   Marker_CfgFile_Out_1D     = new unsigned short[nMarker_Config];
+  Marker_CfgFile_PorousInterface = new unsigned short[nMarker_Config];
 
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
     Marker_CfgFile_TagBound[iMarker_Config]   = "SEND_RECEIVE";
@@ -3293,6 +3306,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_Moving[iMarker_Config]     = 0;
     Marker_CfgFile_PerBound[iMarker_Config]   = 0;
     Marker_CfgFile_Out_1D[iMarker_Config]     = 0;
+    Marker_CfgFile_PorousInterface[iMarker_Config] = 0;
   }
 
   /*--- Populate the marker information in the config file (all domains) ---*/
@@ -3567,6 +3581,13 @@ void CConfig::SetMarkers(unsigned short val_software) {
     for (iMarker_Out_1D = 0; iMarker_Out_1D < nMarker_Out_1D; iMarker_Out_1D++)
       if (Marker_CfgFile_TagBound[iMarker_Config] == Marker_Out_1D[iMarker_Out_1D])
         Marker_CfgFile_Out_1D[iMarker_Config] = YES;
+  }
+
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
+    Marker_CfgFile_PorousInterface[iMarker_Config] = NO;
+    for (iMarker_Porous = 0; iMarker_Porous< nMarker_PorousInterface; iMarker_Porous++)
+      if (Marker_CfgFile_TagBound[iMarker_Config] == Marker_PorousInterface[iMarker_Porous])
+        Marker_CfgFile_PorousInterface[iMarker_Config] = YES;
   }
 
 }
@@ -5348,6 +5369,13 @@ unsigned short CConfig::GetMarker_CfgFile_FSIinterface(string val_marker) {
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
     if (Marker_CfgFile_TagBound[iMarker_Config] == val_marker) break;
   return Marker_CfgFile_FSIinterface[iMarker_Config];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_PorousInterface(string val_marker) {
+  unsigned short iMarker_Config;
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
+    if (Marker_CfgFile_TagBound[iMarker_Config] == val_marker) break;
+  return Marker_CfgFile_PorousInterface[iMarker_Config];
 }
 
 unsigned short CConfig::GetMarker_CfgFile_Out_1D(string val_marker) {

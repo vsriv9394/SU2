@@ -859,6 +859,8 @@ inline void CConfig::SetMarker_All_Plotting(unsigned short val_marker, unsigned 
 
 inline void CConfig::SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface) { Marker_All_FSIinterface[val_marker] = val_fsiinterface; }
 
+inline void CConfig::SetMarker_All_PorousInterface(unsigned short val_marker, unsigned short val_porousinterface) { Marker_All_PorousInterface[val_marker] = val_porousinterface; }
+
 inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short val_DV) { Marker_All_DV[val_marker] = val_DV; }
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
@@ -886,6 +888,10 @@ inline unsigned short CConfig::GetMarker_All_Plotting(unsigned short val_marker)
 inline unsigned short CConfig::GetMarker_All_FSIinterface(unsigned short val_marker) { return Marker_All_FSIinterface[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_n_FSIinterface(void) { return nMarker_FSIinterface; }
+
+inline unsigned short CConfig::GetMarker_All_PorousInterface(unsigned short val_marker) { return Marker_All_PorousInterface[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_n_PorousInterface(void) { return nMarker_PorousInterface; }
 
 inline unsigned short CConfig::GetMarker_All_DV(unsigned short val_marker) { return Marker_All_DV[val_marker]; }
 
@@ -1237,3 +1243,6 @@ inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() {return DiscreteAdjoint;}
 
+inline bool CConfig::GetAeroacoustic_Analysis() {return CAA_Analysis;}
+
+inline su2double* CConfig::GetAcousticObs_Position() {return Observer_Position;}

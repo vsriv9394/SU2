@@ -288,3 +288,12 @@ void ComputeTimeSpectral_Operator(su2double **D, su2double period, unsigned shor
  */
 void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
 		CConfig **config_container, unsigned short nZone);
+
+/*!
+ * \brief Computation of the CAA Analysis.
+ * \author
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ */
+void SetAeroacoustic_Analysis(CGeometry *geometry, CSolver *solver,
+                              CConfig *config);

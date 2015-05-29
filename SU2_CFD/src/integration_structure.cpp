@@ -30,6 +30,7 @@
 #include "../include/integration_structure.hpp"
 
 CIntegration::CIntegration(CConfig *config) {
+  InitResidual = 0;
 	Cauchy_Value = 0;
 	Cauchy_Func = 0;
 	Old_Func = 0;
