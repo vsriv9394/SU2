@@ -5399,11 +5399,10 @@ public:
    */
   unsigned short GetConsole_Output_Verb(void);
 
-<<<<<<< HEAD
-  double* GetCoord_Average();
+  su2double* GetCoord_Average();
 
   bool GetWrite_Vorticity();
-=======
+
   /*!
    *
    * \brief Get the direct differentation method.
@@ -5533,7 +5532,6 @@ public:
 
 
 
->>>>>>> feature_AD
 };
 
 #include "config_structure.inl"

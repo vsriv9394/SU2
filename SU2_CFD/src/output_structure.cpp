@@ -1887,7 +1887,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Density = 0, iVar_Lam = 0, iVar_MachMean = 0,
   iVar_Tempv = 0, iVar_EF =0, iVar_Temp = 0, iVar_Mach = 0, iVar_Press = 0, iVar_TempLam = 0,
   iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
-  iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0, iVar_FEA_Extra = 0;
+  iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0, iVar_FEA_Extra = 0, iVar_Vort = 0;
   
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
@@ -2058,6 +2058,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       iVar_Sens = nVar_Total; nVar_Total += nDim + 1;
     }
     
+    if (config->GetWrite_Vorticity()){
+      if (Kind_Solver == RANS || Kind_Solver == NAVIER_STOKES){
+        iVar_Vort = nVar_Total; 
+        if (nDim == 3) nVar_Total += nDim;
+        else nVar_Total += 1;
+      }
+    }
     if (config->GetExtraOutput()) {
       if (Kind_Solver == RANS) {
         iVar_Extra  = nVar_Total; nVar_Extra  = solver[TURB_SOL]->GetnOutputVariables(); nVar_Total += nVar_Extra;
@@ -8307,4 +8314,3 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   
 }
 
->>>>>>> feature_AD
