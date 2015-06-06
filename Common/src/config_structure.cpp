@@ -3523,6 +3523,11 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_Config++;
   }
 
+  for (iMarker_Porous = 0; iMarker_Porous < nMarker_PorousInterface; iMarker_Porous++){
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_PorousInterface[iMarker_Porous];
+    iMarker_Config++;
+  }
+
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
     Marker_CfgFile_Monitoring[iMarker_Config] = NO;
     for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++)
