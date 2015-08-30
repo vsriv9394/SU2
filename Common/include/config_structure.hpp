@@ -115,7 +115,7 @@ private:
 	su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
-  unsigned short Kind_ObjFunc;  /*!< \brief Kind of objective function. */
+  unsigned short *Kind_ObjFunc;  /*!< \brief Kind of objective function. */
   unsigned short Kind_SensSmooth; /*!< \brief Kind of sensitivity smoothing technique. */
   unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
   unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). */
@@ -288,7 +288,8 @@ private:
   Max_DeltaTime,  		/*!< \brief Max delta time. */
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
-	unsigned short nDV;		/*!< \brief Number of design variables. */
+	unsigned short nDV,		/*!< \brief Number of design variables. */
+	nObj;               /*! \brief Number of objective functions. */
   unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
@@ -3575,6 +3576,14 @@ public:
 	 * \return Kind of objective function.
 	 */
 	unsigned short GetKind_ObjFunc(void);
+
+	/*!
+   * \brief Get the kind of objective function. There are several options: Drag coefficient,
+   *        Lift coefficient, efficiency, etc.
+   * \note The objective function will determine the boundary condition of the adjoint problem.
+   * \return Kind of objective function.
+   */
+  unsigned short GetKind_ObjFunc(unsigned short val_obj);
 
 	/*!
 	 * \brief Get the kind of sensitivity smoothing technique.

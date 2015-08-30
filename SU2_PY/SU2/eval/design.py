@@ -225,7 +225,7 @@ def obj_f(dvs,config,state=None):
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
     n_obj = len( objectives )
-    assert n_obj == 1 , 'SU2 currently only supports one objective'
+    # assert n_obj == 1 , 'SU2 currently only supports one objective'
     
 #    if objectives: print('Evaluate Objectives')
     
@@ -272,11 +272,11 @@ def obj_df(dvs,config,state=None):
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
     n_obj = len( objectives )
-    assert n_obj == 1 , 'SU2 currently only supports one objective'
+    # assert n_obj == 1 , 'SU2 currently only supports one objective'
     
     dv_scales = config['DEFINITION_DV']['SCALE']
     
-#    if objectives: print('Evaluate Objective Gradients')
+    #  if objectives: print('Evaluate Objective Gradients')
     
     # evaluate each objective
     vals_out = []
