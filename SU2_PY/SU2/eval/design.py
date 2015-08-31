@@ -244,7 +244,6 @@ def obj_f(dvs,config,state=None):
         func = func * sign * scale
         
         vals_out.append(func)
-    
     #: for each objective
     
     return vals_out
@@ -277,7 +276,6 @@ def obj_df(dvs,config,state=None):
     dv_scales = config['DEFINITION_DV']['SCALE']
     
     #  if objectives: print('Evaluate Objective Gradients')
-    
     # evaluate each objective
     vals_out = []
     for i_obj,this_obj in enumerate(objectives):
