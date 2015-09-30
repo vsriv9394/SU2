@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1256,8 +1256,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
 CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
 
-  Global_to_Local_Point = NULL;
-  Local_to_Global_Point = NULL;
+  Global_to_Local_Point  = NULL;
+  Local_to_Global_Point  = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
 
@@ -1312,6 +1312,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       break;
   }
 
+  /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
+  
+  assert((nDim == 2) || (nDim == 3));
+  
   /*--- Loop over the points element to re-scale the mesh, and plot it (only SU2_CFD) ---*/
   
   if (config->GetKind_SU2() == SU2_CFD) {
@@ -1386,19 +1390,20 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   Global_to_Local_Marker = NULL;
 
   unsigned long iter,  iPoint, jPoint, iElem, jElem, iVertex;
-  unsigned long nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nPointGhost = 0, nPointPeriodic = 0, nElemTriangle = 0, nElemRectangle = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemPrism = 0, nElemPyramid = 0;
-  unsigned long iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemRectangle, iElemTetrahedron, iElemHexahedron, iElemPrism, iElemPyramid;
+  unsigned long nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nElemTriangle = 0, nElemQuadrilateral = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemPrism = 0, nElemPyramid = 0;
+//  unsigned long nPointGhost = 0, nPointPeriodic = 0;
+  unsigned long iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemQuadrilateral, iElemTetrahedron, iElemHexahedron, iElemPrism, iElemPyramid;
   unsigned long nBoundLineTotal = 0, iBoundLineTotal;
   unsigned long nBoundTriangleTotal = 0, iBoundTriangleTotal;
-  unsigned long nBoundRectangleTotal = 0, iBoundRectangleTotal;
+  unsigned long nBoundQuadrilateralTotal = 0, iBoundQuadrilateralTotal;
   unsigned long ReceptorColor = 0, DonorColor = 0, Transformation;
   unsigned long *nElem_Color = NULL, **Elem_Color = NULL, Max_nElem_Color = 0;
   unsigned long nTotalSendDomain_Periodic = 0, iTotalSendDomain_Periodic = 0, nTotalReceivedDomain_Periodic = 0, iTotalReceivedDomain_Periodic = 0, *nSendDomain_Periodic = NULL, *nReceivedDomain_Periodic = NULL;
   unsigned long Buffer_Send_nPointTotal = 0, Buffer_Send_nPointDomainTotal = 0, Buffer_Send_nPointGhost = 0, Buffer_Send_nPointPeriodic = 0;
-  unsigned long Buffer_Send_nElemTotal, Buffer_Send_nElemTriangle = 0, Buffer_Send_nElemRectangle = 0, Buffer_Send_nElemTetrahedron = 0, Buffer_Send_nElemHexahedron = 0, Buffer_Send_nElemPrism = 0, Buffer_Send_nElemPyramid = 0;
+  unsigned long Buffer_Send_nElemTotal, Buffer_Send_nElemTriangle = 0, Buffer_Send_nElemQuadrilateral = 0, Buffer_Send_nElemTetrahedron = 0, Buffer_Send_nElemHexahedron = 0, Buffer_Send_nElemPrism = 0, Buffer_Send_nElemPyramid = 0;
   unsigned long Buffer_Send_nTotalSendDomain_Periodic = 0, Buffer_Send_nTotalReceivedDomain_Periodic = 0, *Buffer_Send_nSendDomain_Periodic = NULL, *Buffer_Send_nReceivedDomain_Periodic = NULL;
-  unsigned long Buffer_Send_nBoundLineTotal = 0, Buffer_Send_nBoundTriangleTotal = 0, Buffer_Send_nBoundRectangleTotal = 0;
-  unsigned long iVertexDomain, iBoundLine, iBoundTriangle, iBoundRectangle;
+  unsigned long Buffer_Send_nBoundLineTotal = 0, Buffer_Send_nBoundTriangleTotal = 0, Buffer_Send_nBoundQuadrilateralTotal = 0;
+  unsigned long iVertexDomain, iBoundLine, iBoundTriangle, iBoundQuadrilateral;
   
   /*--- Need to su2double-check these shorts in case we go to nprocs > ~32,000 ---*/
   
@@ -1420,11 +1425,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long *nVertexDomain = new unsigned long[nMarker_Max];
   unsigned long *nBoundLine = new unsigned long[nMarker_Max];
   unsigned long *nBoundTriangle = new unsigned long[nMarker_Max];
-  unsigned long *nBoundRectangle = new unsigned long[nMarker_Max];
+  unsigned long *nBoundQuadrilateral = new unsigned long[nMarker_Max];
   unsigned long *Buffer_Send_nVertexDomain = new unsigned long[nMarker_Max];
   unsigned long *Buffer_Send_nBoundLine = new unsigned long[nMarker_Max];
   unsigned long *Buffer_Send_nBoundTriangle = new unsigned long[nMarker_Max];
-  unsigned long *Buffer_Send_nBoundRectangle = new unsigned long[nMarker_Max];
+  unsigned long *Buffer_Send_nBoundQuadrilateral = new unsigned long[nMarker_Max];
   short *Buffer_Send_Marker_All_SendRecv = new short[nMarker_Max];
   char *Marker_All_TagBound = new char[nMarker_Max*MAX_STRING_SIZE];
   char *Buffer_Send_Marker_All_TagBound = new char[nMarker_Max*MAX_STRING_SIZE];
@@ -1450,7 +1455,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long *Buffer_Send_Color = NULL,            *Buffer_Receive_Color = NULL;
   unsigned long *Buffer_Send_GlobalPointIndex = NULL, *Buffer_Receive_GlobalPointIndex = NULL;
   unsigned long *Buffer_Send_Triangle = NULL,         *Buffer_Receive_Triangle = NULL;
-  unsigned long *Buffer_Send_Rectangle = NULL,        *Buffer_Receive_Rectangle = NULL;
+  unsigned long *Buffer_Send_Quadrilateral = NULL,        *Buffer_Receive_Quadrilateral = NULL;
   unsigned long *Buffer_Send_Tetrahedron = NULL,      *Buffer_Receive_Tetrahedron = NULL;
   unsigned long *Buffer_Send_Hexahedron = NULL,       *Buffer_Receive_Hexahedron = NULL;
   unsigned long *Buffer_Send_Prism = NULL,            *Buffer_Receive_Prism = NULL;
@@ -1460,7 +1465,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   unsigned long *Buffer_Send_BoundLine = NULL,            *Buffer_Receive_BoundLine = NULL;
   unsigned long *Buffer_Send_BoundTriangle = NULL,        *Buffer_Receive_BoundTriangle = NULL;
-  unsigned long *Buffer_Send_BoundRectangle = NULL,       *Buffer_Receive_BoundRectangle = NULL;
+  unsigned long *Buffer_Send_BoundQuadrilateral = NULL,       *Buffer_Receive_BoundQuadrilateral = NULL;
   unsigned long *Buffer_Send_Local2Global_Marker = NULL,  *Buffer_Receive_Local2Global_Marker = NULL;
   
   /*--- Define buffer vector periodic boundary conditions ---*/
@@ -1597,7 +1602,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
        dimensionalizaton of the domain variables ---*/
       
       Buffer_Send_nElemTotal = 0; Buffer_Send_nPointTotal = 0; Buffer_Send_nPointGhost = 0; Buffer_Send_nPointDomainTotal = 0; Buffer_Send_nPointPeriodic = 0;
-      Buffer_Send_nElemTriangle = 0; Buffer_Send_nElemRectangle = 0; Buffer_Send_nElemTetrahedron = 0; Buffer_Send_nElemHexahedron = 0; Buffer_Send_nElemPrism = 0; Buffer_Send_nElemPyramid = 0;
+      Buffer_Send_nElemTriangle = 0; Buffer_Send_nElemQuadrilateral = 0; Buffer_Send_nElemTetrahedron = 0; Buffer_Send_nElemHexahedron = 0; Buffer_Send_nElemPrism = 0; Buffer_Send_nElemPyramid = 0;
       
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global2Local_Point[iPoint] = -1;
       
@@ -1620,7 +1625,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         
         switch(geometry->elem[iElem]->GetVTK_Type()) {
           case TRIANGLE: Buffer_Send_nElemTriangle++; break;
-          case RECTANGLE: Buffer_Send_nElemRectangle++; break;
+          case QUADRILATERAL: Buffer_Send_nElemQuadrilateral++; break;
           case TETRAHEDRON: Buffer_Send_nElemTetrahedron++; break;
           case HEXAHEDRON: Buffer_Send_nElemHexahedron++; break;
           case PRISM: Buffer_Send_nElemPrism++; break;
@@ -1633,13 +1638,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       /*--- Boundary dimensionalization. Dimensionalization with physical boundaries, compute Buffer_Send_nMarkerDomain,
        Buffer_Send_nVertexDomain[nMarkerDomain] ---*/
       
-      Buffer_Send_nMarkerDomain = 0; Buffer_Send_nBoundLineTotal = 0; Buffer_Send_nBoundTriangleTotal = 0; Buffer_Send_nBoundRectangleTotal = 0;
+      Buffer_Send_nMarkerDomain = 0; Buffer_Send_nBoundLineTotal = 0; Buffer_Send_nBoundTriangleTotal = 0; Buffer_Send_nBoundQuadrilateralTotal = 0;
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         Buffer_Send_nVertexDomain[iMarker] = 0;
         Buffer_Send_nBoundLine[iMarker] = 0;
         Buffer_Send_nBoundTriangle[iMarker] = 0;
-        Buffer_Send_nBoundRectangle[iMarker] = 0;
+        Buffer_Send_nBoundQuadrilateral[iMarker] = 0;
         
         Buffer_Send_Marker_All_SendRecv[iMarker] = Marker_All_SendRecv_Copy[iMarker];
         SPRINTF(&Buffer_Send_Marker_All_TagBound[iMarker*MAX_STRING_SIZE], "%s", Marker_All_TagBound_Copy[iMarker].c_str());
@@ -1660,7 +1665,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
               switch(geometry->bound[iMarker][iVertex]->GetVTK_Type()) {
                 case LINE: Buffer_Send_nBoundLine[Buffer_Send_nMarkerDomain]++; Buffer_Send_nBoundLineTotal++; break;
                 case TRIANGLE: Buffer_Send_nBoundTriangle[Buffer_Send_nMarkerDomain]++; Buffer_Send_nBoundTriangleTotal++; break;
-                case RECTANGLE: Buffer_Send_nBoundRectangle[Buffer_Send_nMarkerDomain]++; Buffer_Send_nBoundRectangleTotal++; break;
+                case QUADRILATERAL: Buffer_Send_nBoundQuadrilateral[Buffer_Send_nMarkerDomain]++; Buffer_Send_nBoundQuadrilateralTotal++; break;
               }
               
               Buffer_Send_nVertexDomain[Buffer_Send_nMarkerDomain] ++;
@@ -1742,7 +1747,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       Buffer_Send_Color =             new unsigned long [Buffer_Send_nPointTotal];
       Buffer_Send_GlobalPointIndex =  new unsigned long [Buffer_Send_nPointTotal];
       Buffer_Send_Triangle =          new unsigned long [Buffer_Send_nElemTriangle*3];
-      Buffer_Send_Rectangle =         new unsigned long [Buffer_Send_nElemRectangle*4];
+      Buffer_Send_Quadrilateral =         new unsigned long [Buffer_Send_nElemQuadrilateral*4];
       Buffer_Send_Tetrahedron =       new unsigned long [Buffer_Send_nElemTetrahedron*4];
       Buffer_Send_Hexahedron =        new unsigned long [Buffer_Send_nElemHexahedron*8];
       Buffer_Send_Prism =             new unsigned long [Buffer_Send_nElemPrism*6];
@@ -1750,7 +1755,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       Buffer_Send_BoundLine =           new unsigned long [Buffer_Send_nBoundLineTotal*2];
       Buffer_Send_BoundTriangle =       new unsigned long [Buffer_Send_nBoundTriangleTotal*3];
-      Buffer_Send_BoundRectangle =      new unsigned long [Buffer_Send_nBoundRectangleTotal*4];
+      Buffer_Send_BoundQuadrilateral =      new unsigned long [Buffer_Send_nBoundQuadrilateralTotal*4];
       Buffer_Send_Local2Global_Marker = new unsigned long [Buffer_Send_nMarkerDomain];
       
       Buffer_Send_SendDomain_Periodic           = new unsigned long [Buffer_Send_nTotalSendDomain_Periodic];
@@ -1768,11 +1773,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         SU2_MPI::Isend(&Buffer_Send_nZone,              1,  MPI_UNSIGNED_SHORT,  iDomain, 1, MPI_COMM_WORLD, &send_req[1]);
         SU2_MPI::Isend(&Buffer_Send_nPointTotal,        1,  MPI_UNSIGNED_LONG,   iDomain, 2, MPI_COMM_WORLD, &send_req[2]);
         SU2_MPI::Isend(&Buffer_Send_nPointDomainTotal,  1,  MPI_UNSIGNED_LONG,   iDomain, 3, MPI_COMM_WORLD, &send_req[3]);
-        SU2_MPI::Isend(&Buffer_Send_nPointGhost,        1,  MPI_UNSIGNED_LONG,   iDomain, 4, MPI_COMM_WORLD, &send_req[4]);
-        SU2_MPI::Isend(&Buffer_Send_nPointPeriodic,     1,  MPI_UNSIGNED_LONG,   iDomain, 5, MPI_COMM_WORLD, &send_req[5]);
+//        SU2_MPI::Isend(&Buffer_Send_nPointGhost,        1,  MPI_UNSIGNED_LONG,   iDomain, 4, MPI_COMM_WORLD, &send_req[4]);
+//        SU2_MPI::Isend(&Buffer_Send_nPointPeriodic,     1,  MPI_UNSIGNED_LONG,   iDomain, 5, MPI_COMM_WORLD, &send_req[5]);
         SU2_MPI::Isend(&Buffer_Send_nElemTotal,         1,  MPI_UNSIGNED_LONG,   iDomain, 6, MPI_COMM_WORLD, &send_req[6]);
         SU2_MPI::Isend(&Buffer_Send_nElemTriangle,      1,  MPI_UNSIGNED_LONG,   iDomain, 7, MPI_COMM_WORLD, &send_req[7]);
-        SU2_MPI::Isend(&Buffer_Send_nElemRectangle,     1,  MPI_UNSIGNED_LONG,   iDomain, 8, MPI_COMM_WORLD, &send_req[8]);
+        SU2_MPI::Isend(&Buffer_Send_nElemQuadrilateral,     1,  MPI_UNSIGNED_LONG,   iDomain, 8, MPI_COMM_WORLD, &send_req[8]);
         SU2_MPI::Isend(&Buffer_Send_nElemTetrahedron,   1,  MPI_UNSIGNED_LONG,   iDomain, 9, MPI_COMM_WORLD, &send_req[9]);
         SU2_MPI::Isend(&Buffer_Send_nElemHexahedron,    1,  MPI_UNSIGNED_LONG,   iDomain, 10, MPI_COMM_WORLD, &send_req[10]);
         SU2_MPI::Isend(&Buffer_Send_nElemPrism,         1,  MPI_UNSIGNED_LONG,   iDomain, 11, MPI_COMM_WORLD, &send_req[11]);
@@ -1780,12 +1785,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         
         SU2_MPI::Isend(&Buffer_Send_nBoundLineTotal,                    1, MPI_UNSIGNED_LONG,  iDomain, 13, MPI_COMM_WORLD, &send_req[13]);
         SU2_MPI::Isend(&Buffer_Send_nBoundTriangleTotal,                1, MPI_UNSIGNED_LONG,  iDomain, 14, MPI_COMM_WORLD, &send_req[14]);
-        SU2_MPI::Isend(&Buffer_Send_nBoundRectangleTotal,               1, MPI_UNSIGNED_LONG,  iDomain, 15, MPI_COMM_WORLD, &send_req[15]);
+        SU2_MPI::Isend(&Buffer_Send_nBoundQuadrilateralTotal,               1, MPI_UNSIGNED_LONG,  iDomain, 15, MPI_COMM_WORLD, &send_req[15]);
         SU2_MPI::Isend(&Buffer_Send_nMarkerDomain,                      1, MPI_UNSIGNED_SHORT, iDomain, 16, MPI_COMM_WORLD, &send_req[16]);
         SU2_MPI::Isend(Buffer_Send_nVertexDomain,       nMarker_Max, MPI_UNSIGNED_LONG,  iDomain, 17, MPI_COMM_WORLD, &send_req[17]);
         SU2_MPI::Isend(Buffer_Send_nBoundLine,          nMarker_Max, MPI_UNSIGNED_LONG,  iDomain, 18, MPI_COMM_WORLD, &send_req[18]);
         SU2_MPI::Isend(Buffer_Send_nBoundTriangle,      nMarker_Max, MPI_UNSIGNED_LONG,  iDomain, 19, MPI_COMM_WORLD, &send_req[19]);
-        SU2_MPI::Isend(Buffer_Send_nBoundRectangle,     nMarker_Max, MPI_UNSIGNED_LONG,  iDomain, 20, MPI_COMM_WORLD, &send_req[20]);
+        SU2_MPI::Isend(Buffer_Send_nBoundQuadrilateral,     nMarker_Max, MPI_UNSIGNED_LONG,  iDomain, 20, MPI_COMM_WORLD, &send_req[20]);
         SU2_MPI::Isend(Buffer_Send_Marker_All_SendRecv, nMarker_Max, MPI_SHORT,          iDomain, 21, MPI_COMM_WORLD, &send_req[21]);
         SU2_MPI::Isend(Buffer_Send_Marker_All_TagBound,  nMarker_Max*MAX_STRING_SIZE, MPI_CHAR,           iDomain, 22, MPI_COMM_WORLD, &send_req[22]);
 
@@ -1801,7 +1806,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         
         /*--- Wait for this set of non-blocking comm. to complete ---*/
         
-        SU2_MPI::Waitall(31, send_req, send_stat);
+        SU2_MPI::Waitall(29, send_req, send_stat);
         
 #endif
         
@@ -1817,19 +1822,19 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         
         nPointTotal       = Buffer_Send_nPointTotal;
         nPointDomainTotal = Buffer_Send_nPointDomainTotal;
-        nPointGhost       = Buffer_Send_nPointGhost;
-        nPointPeriodic    = Buffer_Send_nPointPeriodic;
+//        nPointGhost       = Buffer_Send_nPointGhost;
+//        nPointPeriodic    = Buffer_Send_nPointPeriodic;
 
         nElemTotal        = Buffer_Send_nElemTotal;
         nElemTriangle     = Buffer_Send_nElemTriangle;
-        nElemRectangle    = Buffer_Send_nElemRectangle;
+        nElemQuadrilateral    = Buffer_Send_nElemQuadrilateral;
         nElemTetrahedron  = Buffer_Send_nElemTetrahedron;
         nElemHexahedron   = Buffer_Send_nElemHexahedron;
         nElemPrism        = Buffer_Send_nElemPrism;
         nElemPyramid      = Buffer_Send_nElemPyramid;
         
         nelem_triangle = nElemTriangle;
-        nelem_quad = nElemRectangle;
+        nelem_quad = nElemQuadrilateral;
         nelem_tetra = nElemTetrahedron;
         nelem_hexa = nElemHexahedron;
         nelem_prism = nElemPrism;
@@ -1837,14 +1842,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 
         nBoundLineTotal      = Buffer_Send_nBoundLineTotal;
         nBoundTriangleTotal  = Buffer_Send_nBoundTriangleTotal;
-        nBoundRectangleTotal = Buffer_Send_nBoundRectangleTotal;
+        nBoundQuadrilateralTotal = Buffer_Send_nBoundQuadrilateralTotal;
         nMarkerDomain        = Buffer_Send_nMarkerDomain;
         
         for (iMarker = 0; iMarker < nMarker_Max; iMarker++) {
           nVertexDomain[iMarker] = Buffer_Send_nVertexDomain[iMarker];
           nBoundLine[iMarker] = Buffer_Send_nBoundLine[iMarker];
           nBoundTriangle[iMarker] = Buffer_Send_nBoundTriangle[iMarker];
-          nBoundRectangle[iMarker] = Buffer_Send_nBoundRectangle[iMarker];
+          nBoundQuadrilateral[iMarker] = Buffer_Send_nBoundQuadrilateral[iMarker];
           Marker_All_SendRecv[iMarker] = Buffer_Send_Marker_All_SendRecv[iMarker];
           for (iter = 0; iter < MAX_STRING_SIZE; iter++)
             Marker_All_TagBound[iMarker*MAX_STRING_SIZE+iter] = Buffer_Send_Marker_All_TagBound[iMarker*MAX_STRING_SIZE+iter];
@@ -1885,11 +1890,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         SU2_MPI::Irecv(&nZone,             1, MPI_UNSIGNED_SHORT, MASTER_NODE, 1,  MPI_COMM_WORLD, &recv_req[1]);
         SU2_MPI::Irecv(&nPointTotal,       1, MPI_UNSIGNED_LONG,  MASTER_NODE, 2,  MPI_COMM_WORLD, &recv_req[2]);
         SU2_MPI::Irecv(&nPointDomainTotal, 1, MPI_UNSIGNED_LONG,  MASTER_NODE, 3,  MPI_COMM_WORLD, &recv_req[3]);
-        SU2_MPI::Irecv(&nPointGhost,       1, MPI_UNSIGNED_LONG,  MASTER_NODE, 4,  MPI_COMM_WORLD, &recv_req[4]);
-        SU2_MPI::Irecv(&nPointPeriodic,    1, MPI_UNSIGNED_LONG,  MASTER_NODE, 5,  MPI_COMM_WORLD, &recv_req[5]);
+//        SU2_MPI::Irecv(&nPointGhost,       1, MPI_UNSIGNED_LONG,  MASTER_NODE, 4,  MPI_COMM_WORLD, &recv_req[4]);
+//        SU2_MPI::Irecv(&nPointPeriodic,    1, MPI_UNSIGNED_LONG,  MASTER_NODE, 5,  MPI_COMM_WORLD, &recv_req[5]);
         SU2_MPI::Irecv(&nElemTotal,        1, MPI_UNSIGNED_LONG,  MASTER_NODE, 6,  MPI_COMM_WORLD, &recv_req[6]);
         SU2_MPI::Irecv(&nElemTriangle,     1, MPI_UNSIGNED_LONG,  MASTER_NODE, 7,  MPI_COMM_WORLD, &recv_req[7]);
-        SU2_MPI::Irecv(&nElemRectangle,    1, MPI_UNSIGNED_LONG,  MASTER_NODE, 8,  MPI_COMM_WORLD, &recv_req[8]);
+        SU2_MPI::Irecv(&nElemQuadrilateral,    1, MPI_UNSIGNED_LONG,  MASTER_NODE, 8,  MPI_COMM_WORLD, &recv_req[8]);
         SU2_MPI::Irecv(&nElemTetrahedron,  1, MPI_UNSIGNED_LONG,  MASTER_NODE, 9,  MPI_COMM_WORLD, &recv_req[9]);
         SU2_MPI::Irecv(&nElemHexahedron,   1, MPI_UNSIGNED_LONG,  MASTER_NODE, 10,  MPI_COMM_WORLD, &recv_req[10]);
         SU2_MPI::Irecv(&nElemPrism,        1, MPI_UNSIGNED_LONG,  MASTER_NODE, 11, MPI_COMM_WORLD, &recv_req[11]);
@@ -1897,30 +1902,30 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         
         SU2_MPI::Irecv(&nBoundLineTotal,                    1,  MPI_UNSIGNED_LONG, MASTER_NODE, 13, MPI_COMM_WORLD, &recv_req[13]);
         SU2_MPI::Irecv(&nBoundTriangleTotal,                1,  MPI_UNSIGNED_LONG, MASTER_NODE, 14, MPI_COMM_WORLD, &recv_req[14]);
-        SU2_MPI::Irecv(&nBoundRectangleTotal,               1,  MPI_UNSIGNED_LONG, MASTER_NODE, 15, MPI_COMM_WORLD, &recv_req[15]);
+        SU2_MPI::Irecv(&nBoundQuadrilateralTotal,               1,  MPI_UNSIGNED_LONG, MASTER_NODE, 15, MPI_COMM_WORLD, &recv_req[15]);
         SU2_MPI::Irecv(&nMarkerDomain,                      1, MPI_UNSIGNED_SHORT, MASTER_NODE, 16, MPI_COMM_WORLD, &recv_req[16]);
         SU2_MPI::Irecv(nVertexDomain,       nMarker_Max,  MPI_UNSIGNED_LONG, MASTER_NODE, 17, MPI_COMM_WORLD, &recv_req[17]);
         SU2_MPI::Irecv(nBoundLine,          nMarker_Max,  MPI_UNSIGNED_LONG, MASTER_NODE, 18, MPI_COMM_WORLD, &recv_req[18]);
         SU2_MPI::Irecv(nBoundTriangle,      nMarker_Max,  MPI_UNSIGNED_LONG, MASTER_NODE, 19, MPI_COMM_WORLD, &recv_req[19]);
-        SU2_MPI::Irecv(nBoundRectangle,     nMarker_Max,  MPI_UNSIGNED_LONG, MASTER_NODE, 20, MPI_COMM_WORLD, &recv_req[20]);
+        SU2_MPI::Irecv(nBoundQuadrilateral,     nMarker_Max,  MPI_UNSIGNED_LONG, MASTER_NODE, 20, MPI_COMM_WORLD, &recv_req[20]);
         SU2_MPI::Irecv(Marker_All_SendRecv, nMarker_Max,          MPI_SHORT, MASTER_NODE, 21, MPI_COMM_WORLD, &recv_req[21]);
         SU2_MPI::Irecv(Marker_All_TagBound,      nMarker_Max*MAX_STRING_SIZE,       MPI_CHAR, MASTER_NODE, 22, MPI_COMM_WORLD, &recv_req[22]);
         SU2_MPI::Irecv(&nPeriodic, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, 23, MPI_COMM_WORLD, &recv_req[23]);
         
         /*--- Wait for the this set of non-blocking recv's to complete ---*/
         
-        SU2_MPI::Waitall(24, recv_req, recv_stat);
+        SU2_MPI::Waitall(22, recv_req, recv_stat);
         
 #endif
         
         /*--- Update the number of elements (local) ---*/
 
         nelem_triangle = nElemTriangle;
-        nelem_quad = nElemRectangle;
-        nelem_tetra = nElemTetrahedron;
-        nelem_hexa = nElemHexahedron;
-        nelem_prism = nElemPrism;
-        nelem_pyramid = nElemPyramid;
+        nelem_quad     = nElemQuadrilateral;
+        nelem_tetra    = nElemTetrahedron;
+        nelem_hexa     = nElemHexahedron;
+        nelem_prism    = nElemPrism;
+        nelem_pyramid  = nElemPyramid;
         
         /*--- Marker_All_TagBound and Marker_All_SendRecv, set the same values in the config files of all the files ---*/
         
@@ -1982,14 +1987,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       Buffer_Receive_Color =              new unsigned long [nPointTotal];
       Buffer_Receive_GlobalPointIndex =   new unsigned long [nPointTotal];
       Buffer_Receive_Triangle =           new unsigned long [nElemTriangle*3];
-      Buffer_Receive_Rectangle =          new unsigned long [nElemRectangle*4];
+      Buffer_Receive_Quadrilateral =          new unsigned long [nElemQuadrilateral*4];
       Buffer_Receive_Tetrahedron =        new unsigned long [nElemTetrahedron*4];
       Buffer_Receive_Hexahedron =         new unsigned long [nElemHexahedron*8];
       Buffer_Receive_Prism =              new unsigned long [nElemPrism*6];
       Buffer_Receive_Pyramid =            new unsigned long [nElemPyramid*5];
       Buffer_Receive_BoundLine =            new unsigned long [nBoundLineTotal*2];
       Buffer_Receive_BoundTriangle =        new unsigned long [nBoundTriangleTotal*3];
-      Buffer_Receive_BoundRectangle =       new unsigned long [nBoundRectangleTotal*4];
+      Buffer_Receive_BoundQuadrilateral =       new unsigned long [nBoundQuadrilateralTotal*4];
       Buffer_Receive_Local2Global_Marker =  new unsigned long [nMarkerDomain];
       
       Buffer_Receive_SendDomain_Periodic           = new unsigned long [nTotalSendDomain_Periodic];
@@ -2007,8 +2012,16 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Set the value of the interior geometry ---*/
       
-      iElemTotal = 0; iPointDomain = 0; iPointPeriodic = Buffer_Send_nPointDomainTotal; iPointGhost = Buffer_Send_nPointDomainTotal + Buffer_Send_nPointPeriodic;
-      iElemTriangle = 0; iElemRectangle = 0; iElemTetrahedron = 0; iElemHexahedron = 0; iElemPrism = 0; iElemPyramid = 0;
+      iElemTotal = 0;
+      iPointDomain = 0;
+      iPointPeriodic = Buffer_Send_nPointDomainTotal;
+      iPointGhost = Buffer_Send_nPointDomainTotal + Buffer_Send_nPointPeriodic;
+      iElemTriangle = 0;
+      iElemQuadrilateral = 0;
+      iElemTetrahedron = 0;
+      iElemHexahedron = 0;
+      iElemPrism = 0;
+      iElemPyramid = 0;
       
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global2Local_Point[iPoint] = -1;
       
@@ -2049,10 +2062,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
             for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
               Buffer_Send_Triangle[3*iElemTriangle+iNode] = vnodes_local[iNode];
             iElemTriangle++; break;
-          case RECTANGLE:
+          case QUADRILATERAL:
             for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
-              Buffer_Send_Rectangle[4*iElemRectangle+iNode] = vnodes_local[iNode];
-            iElemRectangle++; break;
+              Buffer_Send_Quadrilateral[4*iElemQuadrilateral+iNode] = vnodes_local[iNode];
+            iElemQuadrilateral++; break;
           case TETRAHEDRON:
             for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
               Buffer_Send_Tetrahedron[4*iElemTetrahedron+iNode] = vnodes_local[iNode];
@@ -2078,7 +2091,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       /*--- Set the value of the boundary geometry ---*/
       
       iMarkerDomain = 0;
-      iBoundLineTotal = 0; iBoundTriangleTotal = 0; iBoundRectangleTotal = 0;
+      iBoundLineTotal = 0; iBoundTriangleTotal = 0; iBoundQuadrilateralTotal = 0;
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) && (MarkerIn[iMarker])) {
@@ -2102,12 +2115,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                   Buffer_Send_BoundTriangle[3*iBoundTriangleTotal+2] = vnodes_local[2];
                   iBoundTriangleTotal++;
                   break;
-                case RECTANGLE:
-                  Buffer_Send_BoundRectangle[4*iBoundRectangleTotal+0] = vnodes_local[0];
-                  Buffer_Send_BoundRectangle[4*iBoundRectangleTotal+1] = vnodes_local[1];
-                  Buffer_Send_BoundRectangle[4*iBoundRectangleTotal+2] = vnodes_local[2];
-                  Buffer_Send_BoundRectangle[4*iBoundRectangleTotal+3] = vnodes_local[3];
-                  iBoundRectangleTotal++;
+                case QUADRILATERAL:
+                  Buffer_Send_BoundQuadrilateral[4*iBoundQuadrilateralTotal+0] = vnodes_local[0];
+                  Buffer_Send_BoundQuadrilateral[4*iBoundQuadrilateralTotal+1] = vnodes_local[1];
+                  Buffer_Send_BoundQuadrilateral[4*iBoundQuadrilateralTotal+2] = vnodes_local[2];
+                  Buffer_Send_BoundQuadrilateral[4*iBoundQuadrilateralTotal+3] = vnodes_local[3];
+                  iBoundQuadrilateralTotal++;
                   break;
               }
             }
@@ -2195,14 +2208,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         SU2_MPI::Isend(Buffer_Send_GlobalPointIndex,    Buffer_Send_nPointTotal,            MPI_UNSIGNED_LONG, iDomain, 1,  MPI_COMM_WORLD, &send_req[1]);
         SU2_MPI::Isend(Buffer_Send_Color,               Buffer_Send_nPointTotal,            MPI_UNSIGNED_LONG, iDomain, 2,  MPI_COMM_WORLD, &send_req[2]);
         SU2_MPI::Isend(Buffer_Send_Triangle,            Buffer_Send_nElemTriangle*3,        MPI_UNSIGNED_LONG, iDomain, 3,  MPI_COMM_WORLD, &send_req[3]);
-        SU2_MPI::Isend(Buffer_Send_Rectangle,           Buffer_Send_nElemRectangle*4,       MPI_UNSIGNED_LONG, iDomain, 4,  MPI_COMM_WORLD, &send_req[4]);
+        SU2_MPI::Isend(Buffer_Send_Quadrilateral,           Buffer_Send_nElemQuadrilateral*4,       MPI_UNSIGNED_LONG, iDomain, 4,  MPI_COMM_WORLD, &send_req[4]);
         SU2_MPI::Isend(Buffer_Send_Tetrahedron,         Buffer_Send_nElemTetrahedron*4,     MPI_UNSIGNED_LONG, iDomain, 5,  MPI_COMM_WORLD, &send_req[5]);
         SU2_MPI::Isend(Buffer_Send_Hexahedron,          Buffer_Send_nElemHexahedron*8,      MPI_UNSIGNED_LONG, iDomain, 6,  MPI_COMM_WORLD, &send_req[6]);
         SU2_MPI::Isend(Buffer_Send_Prism,               Buffer_Send_nElemPrism*6,           MPI_UNSIGNED_LONG, iDomain, 7,  MPI_COMM_WORLD, &send_req[7]);
         SU2_MPI::Isend(Buffer_Send_Pyramid,             Buffer_Send_nElemPyramid*5,         MPI_UNSIGNED_LONG, iDomain, 8,  MPI_COMM_WORLD, &send_req[8]);
         SU2_MPI::Isend(Buffer_Send_BoundLine,           Buffer_Send_nBoundLineTotal*2,      MPI_UNSIGNED_LONG, iDomain, 9,  MPI_COMM_WORLD, &send_req[9]);
         SU2_MPI::Isend(Buffer_Send_BoundTriangle,       Buffer_Send_nBoundTriangleTotal*3,  MPI_UNSIGNED_LONG, iDomain, 10, MPI_COMM_WORLD, &send_req[10]);
-        SU2_MPI::Isend(Buffer_Send_BoundRectangle,      Buffer_Send_nBoundRectangleTotal*4, MPI_UNSIGNED_LONG, iDomain, 11, MPI_COMM_WORLD, &send_req[11]);
+        SU2_MPI::Isend(Buffer_Send_BoundQuadrilateral,      Buffer_Send_nBoundQuadrilateralTotal*4, MPI_UNSIGNED_LONG, iDomain, 11, MPI_COMM_WORLD, &send_req[11]);
         SU2_MPI::Isend(Buffer_Send_Local2Global_Marker, Buffer_Send_nMarkerDomain,          MPI_UNSIGNED_LONG, iDomain, 12, MPI_COMM_WORLD, &send_req[12]);
         
         SU2_MPI::Isend(Buffer_Send_SendDomain_Periodic,          Buffer_Send_nTotalSendDomain_Periodic,     MPI_UNSIGNED_LONG, iDomain, 13, MPI_COMM_WORLD, &send_req[13]);
@@ -2231,8 +2244,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         for (iter = 0; iter < Buffer_Send_nElemTriangle*3; iter++)
           Buffer_Receive_Triangle[iter] =  Buffer_Send_Triangle[iter];
         
-        for (iter = 0; iter < Buffer_Send_nElemRectangle*4; iter++)
-          Buffer_Receive_Rectangle[iter] =  Buffer_Send_Rectangle[iter];
+        for (iter = 0; iter < Buffer_Send_nElemQuadrilateral*4; iter++)
+          Buffer_Receive_Quadrilateral[iter] =  Buffer_Send_Quadrilateral[iter];
         
         for (iter = 0; iter < Buffer_Send_nElemTetrahedron*4; iter++)
           Buffer_Receive_Tetrahedron[iter] =  Buffer_Send_Tetrahedron[iter];
@@ -2252,8 +2265,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         for (iter = 0; iter < Buffer_Send_nBoundTriangleTotal*3; iter++)
           Buffer_Receive_BoundTriangle[iter] =  Buffer_Send_BoundTriangle[iter];
         
-        for (iter = 0; iter < Buffer_Send_nBoundRectangleTotal*4; iter++)
-          Buffer_Receive_BoundRectangle[iter] =  Buffer_Send_BoundRectangle[iter];
+        for (iter = 0; iter < Buffer_Send_nBoundQuadrilateralTotal*4; iter++)
+          Buffer_Receive_BoundQuadrilateral[iter] =  Buffer_Send_BoundQuadrilateral[iter];
         
         for (iter = 0; iter < Buffer_Send_nMarkerDomain; iter++)
           Buffer_Receive_Local2Global_Marker[iter] =  Buffer_Send_Local2Global_Marker[iter];
@@ -2276,14 +2289,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       delete[] Buffer_Send_GlobalPointIndex;
       delete[] Buffer_Send_Color;
       delete[] Buffer_Send_Triangle;
-      delete[] Buffer_Send_Rectangle;
+      delete[] Buffer_Send_Quadrilateral;
       delete[] Buffer_Send_Tetrahedron;
       delete[] Buffer_Send_Hexahedron;
       delete[] Buffer_Send_Prism;
       delete[] Buffer_Send_Pyramid;
       delete[] Buffer_Send_BoundLine;
       delete[] Buffer_Send_BoundTriangle;
-      delete[] Buffer_Send_BoundRectangle;
+      delete[] Buffer_Send_BoundQuadrilateral;
       delete[] Buffer_Send_Local2Global_Marker;
       
       delete[] Buffer_Send_SendDomain_Periodic;
@@ -2307,14 +2320,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         SU2_MPI::Irecv(Buffer_Receive_GlobalPointIndex,    nPointTotal,            MPI_UNSIGNED_LONG, MASTER_NODE, 1,  MPI_COMM_WORLD, &recv_req[1]);
         SU2_MPI::Irecv(Buffer_Receive_Color,               nPointTotal,            MPI_UNSIGNED_LONG, MASTER_NODE, 2,  MPI_COMM_WORLD, &recv_req[2]);
         SU2_MPI::Irecv(Buffer_Receive_Triangle,            nElemTriangle*3,        MPI_UNSIGNED_LONG, MASTER_NODE, 3,  MPI_COMM_WORLD, &recv_req[3]);
-        SU2_MPI::Irecv(Buffer_Receive_Rectangle,           nElemRectangle*4,       MPI_UNSIGNED_LONG, MASTER_NODE, 4,  MPI_COMM_WORLD, &recv_req[4]);
+        SU2_MPI::Irecv(Buffer_Receive_Quadrilateral,           nElemQuadrilateral*4,       MPI_UNSIGNED_LONG, MASTER_NODE, 4,  MPI_COMM_WORLD, &recv_req[4]);
         SU2_MPI::Irecv(Buffer_Receive_Tetrahedron,         nElemTetrahedron*4,     MPI_UNSIGNED_LONG, MASTER_NODE, 5,  MPI_COMM_WORLD, &recv_req[5]);
         SU2_MPI::Irecv(Buffer_Receive_Hexahedron,          nElemHexahedron*8,      MPI_UNSIGNED_LONG, MASTER_NODE, 6,  MPI_COMM_WORLD, &recv_req[6]);
         SU2_MPI::Irecv(Buffer_Receive_Prism,               nElemPrism*6,           MPI_UNSIGNED_LONG, MASTER_NODE, 7,  MPI_COMM_WORLD, &recv_req[7]);
         SU2_MPI::Irecv(Buffer_Receive_Pyramid,             nElemPyramid*5,         MPI_UNSIGNED_LONG, MASTER_NODE, 8,  MPI_COMM_WORLD, &recv_req[8]);
         SU2_MPI::Irecv(Buffer_Receive_BoundLine,           nBoundLineTotal*2,      MPI_UNSIGNED_LONG, MASTER_NODE, 9,  MPI_COMM_WORLD, &recv_req[9]);
         SU2_MPI::Irecv(Buffer_Receive_BoundTriangle,       nBoundTriangleTotal*3,  MPI_UNSIGNED_LONG, MASTER_NODE, 10, MPI_COMM_WORLD, &recv_req[10]);
-        SU2_MPI::Irecv(Buffer_Receive_BoundRectangle,      nBoundRectangleTotal*4, MPI_UNSIGNED_LONG, MASTER_NODE, 11, MPI_COMM_WORLD, &recv_req[11]);
+        SU2_MPI::Irecv(Buffer_Receive_BoundQuadrilateral,      nBoundQuadrilateralTotal*4, MPI_UNSIGNED_LONG, MASTER_NODE, 11, MPI_COMM_WORLD, &recv_req[11]);
         SU2_MPI::Irecv(Buffer_Receive_Local2Global_Marker, nMarkerDomain,          MPI_UNSIGNED_LONG, MASTER_NODE, 12, MPI_COMM_WORLD, &recv_req[12]);
         
         SU2_MPI::Irecv(Buffer_Receive_SendDomain_Periodic,          nTotalSendDomain_Periodic,     MPI_UNSIGNED_LONG, MASTER_NODE, 13, MPI_COMM_WORLD, &recv_req[13]);
@@ -2359,8 +2372,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         elem[iElem] = new CTriangle(Buffer_Receive_Triangle[iElemTriangle*3+0], Buffer_Receive_Triangle[iElemTriangle*3+1], Buffer_Receive_Triangle[iElemTriangle*3+2], 2);
         iElem++;
       }
-      for (iElemRectangle = 0; iElemRectangle < nElemRectangle; iElemRectangle++) {
-        elem[iElem] = new CRectangle(Buffer_Receive_Rectangle[iElemRectangle*4+0], Buffer_Receive_Rectangle[iElemRectangle*4+1], Buffer_Receive_Rectangle[iElemRectangle*4+2], Buffer_Receive_Rectangle[iElemRectangle*4+3], 2);
+      for (iElemQuadrilateral = 0; iElemQuadrilateral < nElemQuadrilateral; iElemQuadrilateral++) {
+        elem[iElem] = new CQuadrilateral(Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+0], Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+1], Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+2], Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+3], 2);
         iElem++;
       }
       for (iElemTetrahedron = 0; iElemTetrahedron < nElemTetrahedron; iElemTetrahedron++) {
@@ -2381,7 +2394,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       }
       
       delete[] Buffer_Receive_Triangle;
-      delete[] Buffer_Receive_Rectangle;
+      delete[] Buffer_Receive_Quadrilateral;
       delete[] Buffer_Receive_Tetrahedron;
       delete[] Buffer_Receive_Hexahedron;
       delete[] Buffer_Receive_Prism;
@@ -2402,7 +2415,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       bound = new CPrimalGrid**[nMarker+(overhead*nDomain)];
       for (iMarker = 0; iMarker < nMarker; iMarker++) bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
       
-      iBoundLineTotal = 0; iBoundTriangleTotal = 0; iBoundRectangleTotal = 0;
+      iBoundLineTotal = 0; iBoundTriangleTotal = 0; iBoundQuadrilateralTotal = 0;
       
       
       for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -2420,12 +2433,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                                         Buffer_Receive_BoundTriangle[iBoundTriangleTotal*3+2], 3);
           iVertexDomain++; iBoundTriangleTotal++;
         }
-        for (iBoundRectangle = 0; iBoundRectangle < nBoundRectangle[iMarker]; iBoundRectangle++) {
-          bound[iMarker][iVertexDomain] = new CRectangle(Buffer_Receive_BoundRectangle[iBoundRectangleTotal*4+0],
-                                                         Buffer_Receive_BoundRectangle[iBoundRectangleTotal*4+1],
-                                                         Buffer_Receive_BoundRectangle[iBoundRectangleTotal*4+2],
-                                                         Buffer_Receive_BoundRectangle[iBoundRectangleTotal*4+3], 3);
-          iVertexDomain++; iBoundRectangleTotal++;
+        for (iBoundQuadrilateral = 0; iBoundQuadrilateral < nBoundQuadrilateral[iMarker]; iBoundQuadrilateral++) {
+          bound[iMarker][iVertexDomain] = new CQuadrilateral(Buffer_Receive_BoundQuadrilateral[iBoundQuadrilateralTotal*4+0],
+                                                         Buffer_Receive_BoundQuadrilateral[iBoundQuadrilateralTotal*4+1],
+                                                         Buffer_Receive_BoundQuadrilateral[iBoundQuadrilateralTotal*4+2],
+                                                         Buffer_Receive_BoundQuadrilateral[iBoundQuadrilateralTotal*4+3], 3);
+          iVertexDomain++; iBoundQuadrilateralTotal++;
         }
         
         Local_to_Global_Marker[iMarker] = Buffer_Receive_Local2Global_Marker[iMarker];
@@ -2494,7 +2507,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       delete[] Buffer_Receive_BoundLine;
       delete[] Buffer_Receive_BoundTriangle;
-      delete[] Buffer_Receive_BoundRectangle;
+      delete[] Buffer_Receive_BoundQuadrilateral;
       delete[] Buffer_Receive_Local2Global_Marker;
       
       delete[] Buffer_Receive_SendDomain_Periodic;
@@ -2565,11 +2578,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   delete [] nVertexDomain;
   delete [] nBoundLine;
   delete [] nBoundTriangle;
-  delete [] nBoundRectangle;
+  delete [] nBoundQuadrilateral;
   delete [] Buffer_Send_nVertexDomain;
   delete [] Buffer_Send_nBoundLine;
   delete [] Buffer_Send_nBoundTriangle;
-  delete [] Buffer_Send_nBoundRectangle;
+  delete [] Buffer_Send_nBoundQuadrilateral;
   delete [] Buffer_Send_Marker_All_SendRecv;
   delete [] Marker_All_TagBound;
   delete [] Buffer_Send_Marker_All_TagBound;
@@ -2584,19 +2597,18 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   Global_to_Local_Marker = NULL;
   
   unsigned long iter,  iPoint, jPoint, iElem, iVertex;
-  
-  unsigned long nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nPointGhost = 0, nPointPeriodic = 0, nElemTriangle = 0, nElemRectangle = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemPrism = 0, nElemPyramid = 0;
-  unsigned long iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemRectangle, iElemTetrahedron, iElemHexahedron, iElemPrism, iElemPyramid, iPointCurrent;
+    //unsigned long nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nPointGhost = 0, nPointPeriodic = 0, nElemTriangle = 0, nElemQuadrilateral = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemPrism = 0, nElemPyramid = 0;
+  unsigned long iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemQuadrilateral, iElemTetrahedron, iElemHexahedron, iElemPrism, iElemPyramid, iPointCurrent;
   unsigned long nBoundLineTotal = 0, iBoundLineTotal;
   unsigned long nBoundTriangleTotal = 0, iBoundTriangleTotal;
-  unsigned long nBoundRectangleTotal = 0, iBoundRectangleTotal;
+  unsigned long nBoundQuadrilateralTotal = 0, iBoundQuadrilateralTotal;
   unsigned long ReceptorColor = 0, DonorColor = 0, Transformation;
   unsigned long nTotalSendDomain_Periodic = 0, iTotalSendDomain_Periodic, nTotalReceivedDomain_Periodic = 0, iTotalReceivedDomain_Periodic, *nSendDomain_Periodic = NULL, *nReceivedDomain_Periodic = NULL;
   unsigned long Buffer_Send_nPointTotal = 0, Buffer_Send_nPointDomainTotal = 0, Buffer_Send_nPointGhost = 0, Buffer_Send_nPointPeriodic = 0;
-  unsigned long Buffer_Send_nElemTotal, Buffer_Send_nElemTriangle = 0, Buffer_Send_nElemRectangle = 0, Buffer_Send_nElemTetrahedron = 0, Buffer_Send_nElemHexahedron = 0, Buffer_Send_nElemPrism = 0, Buffer_Send_nElemPyramid = 0;
+  unsigned long Buffer_Send_nElemTotal, Buffer_Send_nElemTriangle = 0, Buffer_Send_nElemQuadrilateral = 0, Buffer_Send_nElemTetrahedron = 0, Buffer_Send_nElemHexahedron = 0, Buffer_Send_nElemPrism = 0, Buffer_Send_nElemPyramid = 0;
   unsigned long Buffer_Send_nTotalSendDomain_Periodic = 0, Buffer_Send_nTotalReceivedDomain_Periodic = 0, *Buffer_Send_nSendDomain_Periodic = NULL, *Buffer_Send_nReceivedDomain_Periodic = NULL;
-  unsigned long Buffer_Send_nBoundLineTotal = 0, Buffer_Send_nBoundTriangleTotal = 0, Buffer_Send_nBoundRectangleTotal = 0;
-  unsigned long iVertexDomain, iBoundLine, iBoundTriangle, iBoundRectangle;
+  unsigned long Buffer_Send_nBoundLineTotal = 0, Buffer_Send_nBoundTriangleTotal = 0, Buffer_Send_nBoundQuadrilateralTotal = 0;
+  unsigned long iVertexDomain, iBoundLine, iBoundTriangle, iBoundQuadrilateral;
   
   /*--- Need to su2double-check these shorts in case we go to nprocs > ~32,000 ---*/
   unsigned long iNode, iDim, iMarker, jMarker, nMarkerDomain = 0, iMarkerDomain;
@@ -2618,12 +2630,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long *nVertexDomain   = new unsigned long[nMarker_Max];
   unsigned long *nBoundLine      = new unsigned long[nMarker_Max];
   unsigned long *nBoundTriangle  = new unsigned long[nMarker_Max];
-  unsigned long *nBoundRectangle = new unsigned long[nMarker_Max];
+  unsigned long *nBoundQuadrilateral = new unsigned long[nMarker_Max];
   
   unsigned long *Buffer_Send_nVertexDomain   = new unsigned long[nMarker_Max];
   unsigned long *Buffer_Send_nBoundLine      = new unsigned long[nMarker_Max];
   unsigned long *Buffer_Send_nBoundTriangle  = new unsigned long[nMarker_Max];
-  unsigned long *Buffer_Send_nBoundRectangle = new unsigned long[nMarker_Max];
+  unsigned long *Buffer_Send_nBoundQuadrilateral = new unsigned long[nMarker_Max];
   
   short *Buffer_Send_Marker_All_SendRecv = new short[nMarker_Max];
   
@@ -2662,7 +2674,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long *Buffer_Send_Color            = NULL;
   unsigned long *Buffer_Send_GlobalPointIndex = NULL;
   unsigned long *Buffer_Send_Triangle         = NULL;
-  unsigned long *Buffer_Send_Rectangle        = NULL;
+  unsigned long *Buffer_Send_Quadrilateral        = NULL;
   unsigned long *Buffer_Send_Tetrahedron      = NULL;
   unsigned long *Buffer_Send_Hexahedron       = NULL;
   unsigned long *Buffer_Send_Prism            = NULL;
@@ -2673,7 +2685,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   unsigned long *Buffer_Send_BoundLine = NULL,            *Buffer_Receive_BoundLine = NULL;
   unsigned long *Buffer_Send_BoundTriangle = NULL,        *Buffer_Receive_BoundTriangle = NULL;
-  unsigned long *Buffer_Send_BoundRectangle = NULL,       *Buffer_Receive_BoundRectangle = NULL;
+  unsigned long *Buffer_Send_BoundQuadrilateral = NULL,       *Buffer_Receive_BoundQuadrilateral = NULL;
   unsigned long *Buffer_Send_Local2Global_Marker = NULL,  *Buffer_Receive_Local2Global_Marker = NULL;
   
   /*--- Define buffer vector periodic boundary conditions ---*/
@@ -2709,7 +2721,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long *nPointPeriodic_s    = new unsigned long[size];
   unsigned long *nElemTotal_s        = new unsigned long[size];
   unsigned long *nElemTriangle_s     = new unsigned long[size];
-  unsigned long *nElemRectangle_s    = new unsigned long[size];
+  unsigned long *nElemQuadrilateral_s    = new unsigned long[size];
   unsigned long *nElemTetrahedron_s  = new unsigned long[size];
   unsigned long *nElemHexahedron_s   = new unsigned long[size];
   unsigned long *nElemPrism_s        = new unsigned long[size];
@@ -2721,7 +2733,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long *nPointPeriodic_r    = new unsigned long[size];
   unsigned long *nElemTotal_r        = new unsigned long[size];
   unsigned long *nElemTriangle_r     = new unsigned long[size];
-  unsigned long *nElemRectangle_r    = new unsigned long[size];
+  unsigned long *nElemQuadrilateral_r    = new unsigned long[size];
   unsigned long *nElemTetrahedron_r  = new unsigned long[size];
   unsigned long *nElemHexahedron_r   = new unsigned long[size];
   unsigned long *nElemPrism_r        = new unsigned long[size];
@@ -2733,7 +2745,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long nPointPeriodic_r_tot=0;
   unsigned long nElemTotal_r_tot=0;
   unsigned long nElemTriangle_r_tot=0;
-  unsigned long nElemRectangle_r_tot=0;
+  unsigned long nElemQuadrilateral_r_tot=0;
   unsigned long nElemTetrahedron_r_tot=0;
   unsigned long nElemHexahedron_r_tot=0;
   unsigned long nElemPrism_r_tot=0;
@@ -2743,7 +2755,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long Buffer_Size_Color = 0;
   unsigned long Buffer_Size_GlobalPointIndex = 0;
   unsigned long Buffer_Size_Triangle = 0;
-  unsigned long Buffer_Size_Rectangle = 0;
+  unsigned long Buffer_Size_Quadrilateral = 0;
   unsigned long Buffer_Size_Tetrahedron = 0;
   unsigned long Buffer_Size_Hexahedron = 0;
   unsigned long Buffer_Size_Prism = 0;
@@ -2758,21 +2770,21 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long PointPeriodic_Counter = 0;
   unsigned long PointGhost_Counter = 0;
   unsigned long ElemTriangle_Counter = 0;
-  unsigned long ElemRectangle_Counter = 0;
+  unsigned long ElemQuadrilateral_Counter = 0;
   unsigned long ElemTetrahedron_Counter = 0;
   unsigned long ElemHexahedron_Counter = 0;
   unsigned long ElemPrism_Counter = 0;
   unsigned long ElemPyramid_Counter = 0;
   
   unsigned long *Local_to_global_Triangle;
-  unsigned long *Local_to_global_Rectangle;
+  unsigned long *Local_to_global_Quadrilateral;
   unsigned long *Local_to_global_Tetrahedron;
   unsigned long *Local_to_global_Hexahedron;
   unsigned long *Local_to_global_Prism;
   unsigned long *Local_to_global_Pyramid;
   
   bool *Triangle_presence;
-  bool *Rectangle_presence;
+  bool *Quadrilateral_presence;
   bool *Tetrahedron_presence;
   bool *Hexahedron_presence;
   bool *Prism_presence;
@@ -2781,7 +2793,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   Element_presence     = new bool[geometry->GetnElem()];
   Triangle_presence    = new bool[geometry->GetnElem()];
-  Rectangle_presence   = new bool[geometry->GetnElem()];
+  Quadrilateral_presence   = new bool[geometry->GetnElem()];
   Tetrahedron_presence = new bool[geometry->GetnElem()];
   Hexahedron_presence  = new bool[geometry->GetnElem()];
   Prism_presence       = new bool[geometry->GetnElem()];
@@ -2790,7 +2802,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   for (unsigned long i=0; i < geometry->GetnElem(); i++) {
     Element_presence[i]     = false;
     Triangle_presence[i]    = false;
-    Rectangle_presence[i]   = false;
+    Quadrilateral_presence[i]   = false;
     Tetrahedron_presence[i] = false;
     Hexahedron_presence[i]  = false;
     Prism_presence[i]       = false;
@@ -2802,7 +2814,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long *Buffer_Receive_Color_loc            = NULL;
   unsigned long *Buffer_Receive_GlobalPointIndex_loc = NULL;
   unsigned long *Buffer_Receive_Triangle_loc         = NULL;
-  unsigned long *Buffer_Receive_Rectangle_loc        = NULL;
+  unsigned long *Buffer_Receive_Quadrilateral_loc        = NULL;
   unsigned long *Buffer_Receive_Tetrahedron_loc      = NULL;
   unsigned long *Buffer_Receive_Hexahedron_loc       = NULL;
   unsigned long *Buffer_Receive_Prism_loc            = NULL;
@@ -2810,7 +2822,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   
   unsigned long *Buffer_Receive_GlobElem_loc             = NULL;
   unsigned long *Buffer_Receive_Triangle_presence_loc    = NULL;
-  unsigned long *Buffer_Receive_Rectangle_presence_loc   = NULL;
+  unsigned long *Buffer_Receive_Quadrilateral_presence_loc   = NULL;
   unsigned long *Buffer_Receive_Tetrahedron_presence_loc = NULL;
   unsigned long *Buffer_Receive_Hexahedron_presence_loc  = NULL;
   unsigned long *Buffer_Receive_Prism_presence_loc       = NULL;
@@ -2824,7 +2836,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long *Buffer_Receive_Color = NULL;
   unsigned long *Buffer_Receive_GlobalPointIndex = NULL;
   unsigned long *Buffer_Receive_Triangle = NULL;
-  unsigned long *Buffer_Receive_Rectangle = NULL;
+  unsigned long *Buffer_Receive_Quadrilateral = NULL;
   unsigned long *Buffer_Receive_Tetrahedron = NULL;
   unsigned long *Buffer_Receive_Hexahedron = NULL;
   unsigned long *Buffer_Receive_Prism = NULL;
@@ -2832,7 +2844,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   unsigned long *Buffer_Receive_GlobElem = NULL;
   
   unsigned long **Buffer_Receive_Triangle_presence    = new unsigned long*[size];
-  unsigned long **Buffer_Receive_Rectangle_presence   = new unsigned long*[size];
+  unsigned long **Buffer_Receive_Quadrilateral_presence   = new unsigned long*[size];
   unsigned long **Buffer_Receive_Tetrahedron_presence = new unsigned long*[size];
   unsigned long **Buffer_Receive_Hexahedron_presence  = new unsigned long*[size];
   unsigned long **Buffer_Receive_Prism_presence       = new unsigned long*[size];
@@ -2863,12 +2875,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 //  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
 //    VertexIn[iMarker] = new bool [geometry->GetnElem_Bound(iMarker)];
 //
-//  
+  //
 //  Buffer_Send_nPeriodic = config->GetnPeriodicIndex();
 //  Buffer_Send_Center    = new su2double[Buffer_Send_nPeriodic*3];
 //  Buffer_Send_Rotation  = new su2double[Buffer_Send_nPeriodic*3];
 //  Buffer_Send_Translate = new su2double[Buffer_Send_nPeriodic*3];
-//  
+  //
 //  Buffer_Send_nSendDomain_Periodic = new unsigned long [nDomain];
 //  Buffer_Send_nReceivedDomain_Periodic = new unsigned long [nDomain];
   
@@ -2907,7 +2919,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 #ifdef HAVE_MPI
 
   int comm_counter=0;
-    for (iDomain=0; iDomain < (unsigned long)size; iDomain++) {
+  for (iDomain=0; iDomain < (unsigned long)size; iDomain++) {
     if (iDomain != (unsigned long)rank) {
       SU2_MPI::Isend(local_colour_temp, geometry->ending_node[rank]-geometry->starting_node[rank],
                 MPI_UNSIGNED_LONG, iDomain, iDomain,  MPI_COMM_WORLD, &send_req[comm_counter]);
@@ -2923,7 +2935,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
              MPI_UNSIGNED_LONG, source, rank, MPI_COMM_WORLD, &status2);
   }
   
-  /*--- Wait for the sends to complete (will be true since we're using 
+  /*--- Wait for the sends to complete (will be true since we're using
    blocking recv's above. ---*/
 
   SU2_MPI::Waitall(size-1, send_req, send_stat);
@@ -2953,7 +2965,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     Buffer_Send_nPointDomainTotal = 0;
     Buffer_Send_nPointPeriodic    = 0;
     Buffer_Send_nElemTriangle     = 0;
-    Buffer_Send_nElemRectangle    = 0;
+    Buffer_Send_nElemQuadrilateral    = 0;
     Buffer_Send_nElemTetrahedron  = 0;
     Buffer_Send_nElemHexahedron   = 0;
     Buffer_Send_nElemPrism        = 0;
@@ -3019,7 +3031,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         
         switch(geometry->elem[iElem]->GetVTK_Type()) {
           case TRIANGLE:    Buffer_Send_nElemTriangle++;    break;
-          case RECTANGLE:   Buffer_Send_nElemRectangle++;   break;
+          case QUADRILATERAL:   Buffer_Send_nElemQuadrilateral++;   break;
           case TETRAHEDRON: Buffer_Send_nElemTetrahedron++; break;
           case HEXAHEDRON:  Buffer_Send_nElemHexahedron++;  break;
           case PRISM:       Buffer_Send_nElemPrism++;       break;
@@ -3043,7 +3055,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     nPointPeriodic_s[iDomain]    = Buffer_Send_nPointPeriodic;
     nElemTotal_s[iDomain]        = Buffer_Send_nElemTotal;
     nElemTriangle_s[iDomain]     = Buffer_Send_nElemTriangle;
-    nElemRectangle_s[iDomain]    = Buffer_Send_nElemRectangle;
+    nElemQuadrilateral_s[iDomain]    = Buffer_Send_nElemQuadrilateral;
     nElemTetrahedron_s[iDomain]  = Buffer_Send_nElemTetrahedron;
     nElemHexahedron_s[iDomain]   = Buffer_Send_nElemHexahedron;
     nElemPrism_s[iDomain]        = Buffer_Send_nElemPrism;
@@ -3055,7 +3067,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     Buffer_Size_Color            += nPointTotal_s[iDomain];
     Buffer_Size_GlobalPointIndex += nPointTotal_s[iDomain];
     Buffer_Size_Triangle         += nElemTriangle_s[iDomain];
-    Buffer_Size_Rectangle        += nElemRectangle_s[iDomain];
+    Buffer_Size_Quadrilateral        += nElemQuadrilateral_s[iDomain];
     Buffer_Size_Tetrahedron      += nElemTetrahedron_s[iDomain];
     Buffer_Size_Hexahedron       += nElemHexahedron_s[iDomain];
     Buffer_Size_Prism            += nElemPrism_s[iDomain];
@@ -3070,19 +3082,19 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   Buffer_Send_Color            = new unsigned long[Buffer_Size_Color];
   Buffer_Send_GlobalPointIndex = new unsigned long[Buffer_Size_GlobalPointIndex];
   Buffer_Send_Triangle         = new unsigned long[Buffer_Size_Triangle*N_POINTS_TRIANGLE];
-  Buffer_Send_Rectangle        = new unsigned long[Buffer_Size_Rectangle*N_POINTS_QUADRILATERAL];
+  Buffer_Send_Quadrilateral    = new unsigned long[Buffer_Size_Quadrilateral*N_POINTS_QUADRILATERAL];
   Buffer_Send_Tetrahedron      = new unsigned long[Buffer_Size_Tetrahedron*N_POINTS_TETRAHEDRON];
   Buffer_Send_Hexahedron       = new unsigned long[Buffer_Size_Hexahedron*N_POINTS_HEXAHEDRON];
   Buffer_Send_Prism            = new unsigned long[Buffer_Size_Prism*N_POINTS_PRISM];
   Buffer_Send_Pyramid          = new unsigned long[Buffer_Size_Pyramid*N_POINTS_PYRAMID];
   Buffer_Send_GlobElem         = new unsigned long[Buffer_Size_GlobElem];
   
-  Local_to_global_Triangle    = new unsigned long[Buffer_Size_Triangle];
-  Local_to_global_Rectangle   = new unsigned long[Buffer_Size_Rectangle];
-  Local_to_global_Tetrahedron = new unsigned long[Buffer_Size_Tetrahedron];
-  Local_to_global_Hexahedron  = new unsigned long[Buffer_Size_Hexahedron];
-  Local_to_global_Prism       = new unsigned long[Buffer_Size_Prism];
-  Local_to_global_Pyramid     = new unsigned long[Buffer_Size_Pyramid];
+  Local_to_global_Triangle      = new unsigned long[Buffer_Size_Triangle];
+  Local_to_global_Quadrilateral = new unsigned long[Buffer_Size_Quadrilateral];
+  Local_to_global_Tetrahedron   = new unsigned long[Buffer_Size_Tetrahedron];
+  Local_to_global_Hexahedron    = new unsigned long[Buffer_Size_Hexahedron];
+  Local_to_global_Prism         = new unsigned long[Buffer_Size_Prism];
+  Local_to_global_Pyramid       = new unsigned long[Buffer_Size_Pyramid];
   
   /*--- Initialize the counters for the larger send buffers (by domain) ---*/
   
@@ -3093,7 +3105,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   PointPeriodic_Counter = 0;
   PointGhost_Counter    = 0;
   ElemTriangle_Counter    = 0;
-  ElemRectangle_Counter   = 0;
+  ElemQuadrilateral_Counter   = 0;
   ElemTetrahedron_Counter = 0;
   ElemHexahedron_Counter  = 0;
   ElemPrism_Counter       = 0;
@@ -3136,7 +3148,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       SU2_MPI::Isend(&nElemTriangle_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain,
                 iDomain*13+7, MPI_COMM_WORLD, &send_req[7]);
       
-      SU2_MPI::Isend(&nElemRectangle_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain,
+      SU2_MPI::Isend(&nElemQuadrilateral_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain,
                 iDomain*13+8, MPI_COMM_WORLD, &send_req[8]);
       
       SU2_MPI::Isend(&nElemTetrahedron_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain,
@@ -3159,17 +3171,17 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       
       nDim              = nDim_s[iDomain];
       nZone             = nZone_s[iDomain];
-      nPointTotal       = nPointTotal_s[iDomain];
-      nPointDomainTotal = nPointDomainTotal_s[iDomain];
-      nPointGhost       = nPointGhost_s[iDomain];
-      nPointPeriodic    = nPointPeriodic_s[iDomain];
-      nElemTotal        = nElemTotal_s[iDomain];
-      nElemTriangle     = nElemTriangle_s[iDomain];
-      nElemRectangle    = nElemRectangle_s[iDomain];
-      nElemTetrahedron  = nElemTetrahedron_s[iDomain];
-      nElemHexahedron   = nElemHexahedron_s[iDomain];
-      nElemPrism        = nElemPrism_s[iDomain];
-      nElemPyramid      = nElemPyramid_s[iDomain];
+//      nPointTotal        = nPointTotal_s[iDomain];
+//      nPointDomainTotal  = nPointDomainTotal_s[iDomain];
+//      nPointGhost        = nPointGhost_s[iDomain];
+//      nPointPeriodic     = nPointPeriodic_s[iDomain];
+//      nElemTotal         = nElemTotal_s[iDomain];
+//      nElemTriangle      = nElemTriangle_s[iDomain];
+//      nElemQuadrilateral = nElemQuadrilateral_s[iDomain];
+//      nElemTetrahedron   = nElemTetrahedron_s[iDomain];
+//      nElemHexahedron    = nElemHexahedron_s[iDomain];
+//      nElemPrism         = nElemPrism_s[iDomain];
+//      nElemPyramid       = nElemPyramid_s[iDomain];
       
       nDim_r[iDomain]              = nDim_s[iDomain];
       nZone_r[iDomain]             = nZone_s[iDomain];
@@ -3178,7 +3190,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       nPointPeriodic_r[iDomain]    = nPointPeriodic_s[iDomain];
       nElemTotal_r[iDomain]        = nElemTotal_s[iDomain];
       nElemTriangle_r[iDomain]     = nElemTriangle_s[iDomain];
-      nElemRectangle_r[iDomain]    = nElemRectangle_s[iDomain];
+      nElemQuadrilateral_r[iDomain]    = nElemQuadrilateral_s[iDomain];
       nElemTetrahedron_r[iDomain]  = nElemTetrahedron_s[iDomain];
       nElemHexahedron_r[iDomain]   = nElemHexahedron_s[iDomain];
       nElemPrism_r[iDomain]        = nElemPrism_s[iDomain];
@@ -3190,7 +3202,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       nPointPeriodic_r_tot    += nPointPeriodic_r[iDomain];
       nElemTotal_r_tot        += nElemTotal_r[iDomain];
       nElemTriangle_r_tot     += nElemTriangle_r[iDomain];
-      nElemRectangle_r_tot    += nElemRectangle_r[iDomain];
+      nElemQuadrilateral_r_tot    += nElemQuadrilateral_r[iDomain];
       nElemTetrahedron_r_tot  += nElemTetrahedron_r[iDomain];
       nElemHexahedron_r_tot   += nElemHexahedron_r[iDomain];
       nElemPrism_r_tot        += nElemPrism_r[iDomain];
@@ -3248,7 +3260,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                    rank*13+7, MPI_COMM_WORLD, &status2);
           
           MPI_Probe(jDomain, 13*rank+8, MPI_COMM_WORLD, &status2);
-          SU2_MPI::Recv(&nElemRectangle_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
+          SU2_MPI::Recv(&nElemQuadrilateral_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
                    rank*13+8, MPI_COMM_WORLD, &status2);
           
           MPI_Probe(jDomain, 13*rank+9, MPI_COMM_WORLD, &status2);
@@ -3277,7 +3289,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
           nPointPeriodic_r_tot    += nPointPeriodic_r[jDomain];
           nElemTotal_r_tot        += nElemTotal_r[jDomain];
           nElemTriangle_r_tot     += nElemTriangle_r[jDomain];
-          nElemRectangle_r_tot    += nElemRectangle_r[jDomain];
+          nElemQuadrilateral_r_tot    += nElemQuadrilateral_r[jDomain];
           nElemTetrahedron_r_tot  += nElemTetrahedron_r[jDomain];
           nElemHexahedron_r_tot   += nElemHexahedron_r[jDomain];
           nElemPrism_r_tot        += nElemPrism_r[jDomain];
@@ -3317,7 +3329,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     iPointPeriodic   = nPointDomainTotal_s[iDomain];
     iPointGhost      = nPointDomainTotal_s[iDomain] + nPointPeriodic_s[iDomain];
     iElemTriangle    = 0;
-    iElemRectangle   = 0;
+    iElemQuadrilateral   = 0;
     iElemTetrahedron = 0;
     iElemHexahedron  = 0;
     iElemPrism       = 0;
@@ -3434,11 +3446,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
             Buffer_Send_Triangle[3*(ElemTriangle_Counter+iElemTriangle)+iNode] = vnodes_local[iNode];
             Local_to_global_Triangle[ElemTriangle_Counter+iElemTriangle] = Buffer_Send_GlobElem[ElemTotal_Counter+iElemTotal];
             iElemTriangle++; break;
-          case RECTANGLE:
+          case QUADRILATERAL:
             for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
-            Buffer_Send_Rectangle[4*(ElemRectangle_Counter+iElemRectangle)+iNode] = vnodes_local[iNode];
-            Local_to_global_Rectangle[ElemRectangle_Counter+iElemRectangle] =Buffer_Send_GlobElem[ElemTotal_Counter+iElemTotal];
-            iElemRectangle++; break;
+            Buffer_Send_Quadrilateral[4*(ElemQuadrilateral_Counter+iElemQuadrilateral)+iNode] = vnodes_local[iNode];
+            Local_to_global_Quadrilateral[ElemQuadrilateral_Counter+iElemQuadrilateral] =Buffer_Send_GlobElem[ElemTotal_Counter+iElemTotal];
+            iElemQuadrilateral++; break;
           case TETRAHEDRON:
             for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
             Buffer_Send_Tetrahedron[4*(ElemTetrahedron_Counter+iElemTetrahedron)+iNode] = vnodes_local[iNode];
@@ -3492,8 +3504,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                 nElemTriangle_s[iDomain]*3, MPI_UNSIGNED_LONG, iDomain,
                 iDomain*16+3,  MPI_COMM_WORLD, &send_req[3]);
       
-      SU2_MPI::Isend(&Buffer_Send_Rectangle[ElemRectangle_Counter*4],
-                nElemRectangle_s[iDomain]*4, MPI_UNSIGNED_LONG, iDomain,
+      SU2_MPI::Isend(&Buffer_Send_Quadrilateral[ElemQuadrilateral_Counter*4],
+                nElemQuadrilateral_s[iDomain]*4, MPI_UNSIGNED_LONG, iDomain,
                 iDomain*16+4,  MPI_COMM_WORLD, &send_req[4]);
       
       SU2_MPI::Isend(&Buffer_Send_Tetrahedron[ElemTetrahedron_Counter*4],
@@ -3520,8 +3532,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                 nElemTriangle_s[iDomain], MPI_UNSIGNED_LONG, iDomain,
                 iDomain*16+10,  MPI_COMM_WORLD, &send_req[10]);
       
-      SU2_MPI::Isend(&Local_to_global_Rectangle[ElemRectangle_Counter],
-                nElemRectangle_s[iDomain], MPI_UNSIGNED_LONG, iDomain,
+      SU2_MPI::Isend(&Local_to_global_Quadrilateral[ElemQuadrilateral_Counter],
+                nElemQuadrilateral_s[iDomain], MPI_UNSIGNED_LONG, iDomain,
                 iDomain*16+11,  MPI_COMM_WORLD, &send_req[11]);
       
       SU2_MPI::Isend(&Local_to_global_Tetrahedron[ElemTetrahedron_Counter],
@@ -3551,7 +3563,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       Buffer_Receive_GlobalPointIndex_loc = new unsigned long[nPointTotal_s[iDomain]];
       Buffer_Receive_Color_loc            = new unsigned long[nPointTotal_s[iDomain]];
       Buffer_Receive_Triangle_loc         = new unsigned long[nElemTriangle_s[iDomain]*N_POINTS_TRIANGLE];
-      Buffer_Receive_Rectangle_loc        = new unsigned long[nElemRectangle_s[iDomain]*N_POINTS_QUADRILATERAL];
+      Buffer_Receive_Quadrilateral_loc        = new unsigned long[nElemQuadrilateral_s[iDomain]*N_POINTS_QUADRILATERAL];
       Buffer_Receive_Tetrahedron_loc      = new unsigned long[nElemTetrahedron_s[iDomain]*N_POINTS_TETRAHEDRON];
       Buffer_Receive_Hexahedron_loc       = new unsigned long[nElemHexahedron_s[iDomain]*N_POINTS_HEXAHEDRON];
       Buffer_Receive_Prism_loc            = new unsigned long[nElemPrism_s[iDomain]*N_POINTS_PRISM];
@@ -3559,7 +3571,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       Buffer_Receive_GlobElem_loc         = new unsigned long[nElemTotal_s[iDomain]];
       
       Buffer_Receive_Triangle_presence_loc    = new unsigned long[nElemTriangle_s[iDomain]];
-      Buffer_Receive_Rectangle_presence_loc   = new unsigned long[nElemRectangle_s[iDomain]];
+      Buffer_Receive_Quadrilateral_presence_loc   = new unsigned long[nElemQuadrilateral_s[iDomain]];
       Buffer_Receive_Tetrahedron_presence_loc = new unsigned long[nElemTetrahedron_s[iDomain]];
       Buffer_Receive_Hexahedron_presence_loc  = new unsigned long[nElemHexahedron_s[iDomain]];
       Buffer_Receive_Prism_presence_loc       = new unsigned long[nElemPrism_s[iDomain]];
@@ -3576,8 +3588,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       for (iter = 0; iter < nElemTriangle_s[iDomain]*N_POINTS_TRIANGLE; iter++)
       Buffer_Receive_Triangle_loc[iter] =  Buffer_Send_Triangle[ElemTriangle_Counter*N_POINTS_TRIANGLE+iter];
       
-      for (iter = 0; iter < nElemRectangle_s[iDomain]*N_POINTS_QUADRILATERAL; iter++)
-      Buffer_Receive_Rectangle_loc[iter] =  Buffer_Send_Rectangle[ElemRectangle_Counter*N_POINTS_QUADRILATERAL+iter];
+      for (iter = 0; iter < nElemQuadrilateral_s[iDomain]*N_POINTS_QUADRILATERAL; iter++)
+      Buffer_Receive_Quadrilateral_loc[iter] =  Buffer_Send_Quadrilateral[ElemQuadrilateral_Counter*N_POINTS_QUADRILATERAL+iter];
       
       for (iter = 0; iter < nElemTetrahedron_s[iDomain]*N_POINTS_TETRAHEDRON; iter++)
       Buffer_Receive_Tetrahedron_loc[iter] =  Buffer_Send_Tetrahedron[ElemTetrahedron_Counter*N_POINTS_TETRAHEDRON+iter];
@@ -3599,8 +3611,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         Buffer_Receive_Triangle_presence_loc[i]=Local_to_global_Triangle[ElemTriangle_Counter+i];
       }
       
-      for (unsigned long i=0; i<nElemRectangle_s[iDomain]; i++) {
-        Buffer_Receive_Rectangle_presence_loc[i]=Local_to_global_Rectangle[ElemRectangle_Counter+i];
+      for (unsigned long i=0; i<nElemQuadrilateral_s[iDomain]; i++) {
+        Buffer_Receive_Quadrilateral_presence_loc[i]=Local_to_global_Quadrilateral[ElemQuadrilateral_Counter+i];
       }
       
       for (unsigned long i=0; i<nElemTetrahedron_s[iDomain]; i++) {
@@ -3629,7 +3641,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     PointPeriodic_Counter   += iPointPeriodic;
     PointGhost_Counter      += iPointGhost;
     ElemTriangle_Counter    += iElemTriangle;
-    ElemRectangle_Counter   += iElemRectangle;
+    ElemQuadrilateral_Counter   += iElemQuadrilateral;
     ElemTetrahedron_Counter += iElemTetrahedron;
     ElemHexahedron_Counter  += iElemHexahedron;
     ElemPrism_Counter       += iElemPrism;
@@ -3642,11 +3654,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 #endif
   //cout << " ==== Rank " << rank << " sent all point elem data " << endl;
   
-  /*--- The next section begins the recv of all data for the interior 
-   points/elements in the mesh. First, create the domain structures for 
+  /*--- The next section begins the recv of all data for the interior
+   points/elements in the mesh. First, create the domain structures for
    the points on this rank ---*/
   
-  nPoint = nPointTotal_r_tot; iPoint = 0;
+  nPoint = nPointTotal_r_tot;
   nPointDomain = nPointDomainTotal_r_tot;
   node = new CPoint*[nPoint];
   Local_to_Global_Point = new long[nPoint];
@@ -3672,7 +3684,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       
 #ifdef HAVE_MPI
       
-      /*--- Allocate the receive buffer vector. Send the colors so that we 
+      /*--- Allocate the receive buffer vector. Send the colors so that we
        know whether what we recv is an owned or halo node. ---*/
       
       Buffer_Receive_Coord =  new su2double [nPointTotal_r[iDomain]*nDim_r[iDomain]];
@@ -3909,7 +3921,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       /*--- Allocate memory for the element recv ---*/
       
       Buffer_Receive_Triangle_presence[iDomain]    = new unsigned long[nElemTriangle_r[iDomain]];
-      Buffer_Receive_Rectangle_presence[iDomain]   = new unsigned long[nElemRectangle_r[iDomain]];
+      Buffer_Receive_Quadrilateral_presence[iDomain]   = new unsigned long[nElemQuadrilateral_r[iDomain]];
       Buffer_Receive_Tetrahedron_presence[iDomain] = new unsigned long[nElemTetrahedron_r[iDomain]];
       Buffer_Receive_Hexahedron_presence[iDomain]  = new unsigned long[nElemHexahedron_r[iDomain]];
       Buffer_Receive_Prism_presence[iDomain]       = new unsigned long[nElemPrism_r[iDomain]];
@@ -3927,7 +3939,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       MPI_Probe(iDomain, rank*16+11, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
-      SU2_MPI::Recv(&Buffer_Receive_Rectangle_presence[iDomain][0],
+      SU2_MPI::Recv(&Buffer_Receive_Quadrilateral_presence[iDomain][0],
                recv_count, MPI_UNSIGNED_LONG, source,
                rank*16+11, MPI_COMM_WORLD, &status2);
       
@@ -3972,9 +3984,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         }
       }
       
-      for (iElemRectangle = 0; iElemRectangle < nElemRectangle_r[iDomain]; iElemRectangle++) {
-        if (Rectangle_presence[Buffer_Receive_Rectangle_presence[iDomain][iElemRectangle]] == false) {
-          Rectangle_presence[Buffer_Receive_Rectangle_presence[iDomain][iElemRectangle]] = true;
+      for (iElemQuadrilateral = 0; iElemQuadrilateral < nElemQuadrilateral_r[iDomain]; iElemQuadrilateral++) {
+        if (Quadrilateral_presence[Buffer_Receive_Quadrilateral_presence[iDomain][iElemQuadrilateral]] == false) {
+          Quadrilateral_presence[Buffer_Receive_Quadrilateral_presence[iDomain][iElemQuadrilateral]] = true;
           iElem++;
         }
       }
@@ -4020,9 +4032,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         }
       }
       
-      for (iElemRectangle = 0; iElemRectangle < nElemRectangle_r[iDomain]; iElemRectangle++) {
-        if (Rectangle_presence[Buffer_Receive_Rectangle_presence_loc[iElemRectangle]] == false) {
-          Rectangle_presence[Buffer_Receive_Rectangle_presence_loc[iElemRectangle]] = true;
+      for (iElemQuadrilateral = 0; iElemQuadrilateral < nElemQuadrilateral_r[iDomain]; iElemQuadrilateral++) {
+        if (Quadrilateral_presence[Buffer_Receive_Quadrilateral_presence_loc[iElemQuadrilateral]] == false) {
+          Quadrilateral_presence[Buffer_Receive_Quadrilateral_presence_loc[iElemQuadrilateral]] = true;
           iElem++;
         }
       }
@@ -4063,8 +4075,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 #endif
   
   /*--- iElem now contains the number of elements that this processor needs in
-   total. Now we can complete the recv of the element connectivity and only 
-   store the elements that we need on this particular rank. Initialize space 
+   total. Now we can complete the recv of the element connectivity and only
+   store the elements that we need on this particular rank. Initialize space
    for the elements on this rank. ---*/
   
   nElem = iElem; iElem = 0;
@@ -4081,7 +4093,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   for (unsigned long i = 0; i < geometry->GetnElem(); i++) {
     Element_presence[i]     = false;
     Triangle_presence[i]    = false;
-    Rectangle_presence[i]   = false;
+    Quadrilateral_presence[i]   = false;
     Tetrahedron_presence[i] = false;
     Hexahedron_presence[i]  = false;
     Prism_presence[i]       = false;
@@ -4098,13 +4110,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 
       /*--- Allocate memory for the element recv ---*/
       
-      Buffer_Receive_Triangle    = new unsigned long[nElemTriangle_r[iDomain]*N_POINTS_TRIANGLE];
-      Buffer_Receive_Rectangle   = new unsigned long[nElemRectangle_r[iDomain]*N_POINTS_QUADRILATERAL];
-      Buffer_Receive_Tetrahedron = new unsigned long[nElemTetrahedron_r[iDomain]*N_POINTS_TETRAHEDRON];
-      Buffer_Receive_Hexahedron  = new unsigned long[nElemHexahedron_r[iDomain]*N_POINTS_HEXAHEDRON];
-      Buffer_Receive_Prism       = new unsigned long[nElemPrism_r[iDomain]*N_POINTS_PRISM];
-      Buffer_Receive_Pyramid     = new unsigned long[nElemPyramid_r[iDomain]*N_POINTS_PYRAMID];
-      Buffer_Receive_GlobElem    = new unsigned long[nElemTotal_r[iDomain]];
+      Buffer_Receive_Triangle      = new unsigned long[nElemTriangle_r[iDomain]*N_POINTS_TRIANGLE];
+      Buffer_Receive_Quadrilateral = new unsigned long[nElemQuadrilateral_r[iDomain]*N_POINTS_QUADRILATERAL];
+      Buffer_Receive_Tetrahedron   = new unsigned long[nElemTetrahedron_r[iDomain]*N_POINTS_TETRAHEDRON];
+      Buffer_Receive_Hexahedron    = new unsigned long[nElemHexahedron_r[iDomain]*N_POINTS_HEXAHEDRON];
+      Buffer_Receive_Prism         = new unsigned long[nElemPrism_r[iDomain]*N_POINTS_PRISM];
+      Buffer_Receive_Pyramid       = new unsigned long[nElemPyramid_r[iDomain]*N_POINTS_PYRAMID];
+      Buffer_Receive_GlobElem      = new unsigned long[nElemTotal_r[iDomain]];
       
       /*--- Recv the element data ---*/
       
@@ -4117,7 +4129,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       MPI_Probe(iDomain, rank*16+4, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
-      SU2_MPI::Recv(Buffer_Receive_Rectangle, recv_count, MPI_UNSIGNED_LONG,
+      SU2_MPI::Recv(Buffer_Receive_Quadrilateral, recv_count, MPI_UNSIGNED_LONG,
                source, rank*16+4, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+5, MPI_COMM_WORLD, &status2);
@@ -4155,7 +4167,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       //if (rank!=iDomain)  SU2_MPI::Waitall(7, &send_req[3], &send_stat[3]);
       //cout << " ==== Rank " << rank << " recv from " << iDomain << " would be waiting here... " << endl;
 
-      /*--- Allocating the elements after the recv. Note that here we are 
+      /*--- Allocating the elements after the recv. Note that here we are
        reusing the presence arrays to make sure that we find the exact same
        set of elements that were counted above to get nElem. ---*/
       
@@ -4169,13 +4181,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         }
       }
       
-      for (iElemRectangle = 0; iElemRectangle < nElemRectangle_r[iDomain]; iElemRectangle++) {
-        if (Rectangle_presence[Buffer_Receive_Rectangle_presence[iDomain][iElemRectangle]] == false) {
-          Rectangle_presence[Buffer_Receive_Rectangle_presence[iDomain][iElemRectangle]] = true;
-          elem[iElem] = new CRectangle(Global_to_local_Point_recv[Buffer_Receive_Rectangle[iElemRectangle*4+0]],
-                                       Global_to_local_Point_recv[Buffer_Receive_Rectangle[iElemRectangle*4+1]],
-                                       Global_to_local_Point_recv[Buffer_Receive_Rectangle[iElemRectangle*4+2]],
-                                       Global_to_local_Point_recv[Buffer_Receive_Rectangle[iElemRectangle*4+3]], 2);
+      for (iElemQuadrilateral = 0; iElemQuadrilateral < nElemQuadrilateral_r[iDomain]; iElemQuadrilateral++) {
+        if (Quadrilateral_presence[Buffer_Receive_Quadrilateral_presence[iDomain][iElemQuadrilateral]] == false) {
+          Quadrilateral_presence[Buffer_Receive_Quadrilateral_presence[iDomain][iElemQuadrilateral]] = true;
+          elem[iElem] = new CQuadrilateral(Global_to_local_Point_recv[Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+0]],
+                                       Global_to_local_Point_recv[Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+1]],
+                                       Global_to_local_Point_recv[Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+2]],
+                                       Global_to_local_Point_recv[Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+3]], 2);
           iElem++; iElemRect++;
         }
       }
@@ -4234,14 +4246,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       /*--- Free memory for the element data --*/
       
       delete[] Buffer_Receive_Triangle;
-      delete[] Buffer_Receive_Rectangle;
+      delete[] Buffer_Receive_Quadrilateral;
       delete[] Buffer_Receive_Tetrahedron;
       delete[] Buffer_Receive_Hexahedron;
       delete[] Buffer_Receive_Prism;
       delete[] Buffer_Receive_Pyramid;
       
       delete[] Buffer_Receive_Triangle_presence[iDomain];
-      delete[] Buffer_Receive_Rectangle_presence[iDomain];
+      delete[] Buffer_Receive_Quadrilateral_presence[iDomain];
       delete[] Buffer_Receive_Tetrahedron_presence[iDomain];
       delete[] Buffer_Receive_Hexahedron_presence[iDomain];
       delete[] Buffer_Receive_Prism_presence[iDomain];
@@ -4263,13 +4275,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         }
       }
       
-      for (iElemRectangle = 0; iElemRectangle < nElemRectangle_r[iDomain]; iElemRectangle++) {
-        if (Rectangle_presence[Buffer_Receive_Rectangle_presence_loc[iElemRectangle]] == false) {
-          Rectangle_presence[Buffer_Receive_Rectangle_presence_loc[iElemRectangle]] = true;
-          elem[iElem] = new CRectangle(Global_to_local_Point_recv[Buffer_Receive_Rectangle_loc[iElemRectangle*4+0]],
-                                       Global_to_local_Point_recv[Buffer_Receive_Rectangle_loc[iElemRectangle*4+1]],
-                                       Global_to_local_Point_recv[Buffer_Receive_Rectangle_loc[iElemRectangle*4+2]],
-                                       Global_to_local_Point_recv[Buffer_Receive_Rectangle_loc[iElemRectangle*4+3]], 2);
+      for (iElemQuadrilateral = 0; iElemQuadrilateral < nElemQuadrilateral_r[iDomain]; iElemQuadrilateral++) {
+        if (Quadrilateral_presence[Buffer_Receive_Quadrilateral_presence_loc[iElemQuadrilateral]] == false) {
+          Quadrilateral_presence[Buffer_Receive_Quadrilateral_presence_loc[iElemQuadrilateral]] = true;
+          elem[iElem] = new CQuadrilateral(Global_to_local_Point_recv[Buffer_Receive_Quadrilateral_loc[iElemQuadrilateral*4+0]],
+                                       Global_to_local_Point_recv[Buffer_Receive_Quadrilateral_loc[iElemQuadrilateral*4+1]],
+                                       Global_to_local_Point_recv[Buffer_Receive_Quadrilateral_loc[iElemQuadrilateral*4+2]],
+                                       Global_to_local_Point_recv[Buffer_Receive_Quadrilateral_loc[iElemQuadrilateral*4+3]], 2);
           iElem++; iElemRect++;
         }
       }
@@ -4328,14 +4340,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       /*--- Free memory for element data ---*/
       
       delete[] Buffer_Receive_Triangle_loc;
-      delete[] Buffer_Receive_Rectangle_loc;
+      delete[] Buffer_Receive_Quadrilateral_loc;
       delete[] Buffer_Receive_Tetrahedron_loc;
       delete[] Buffer_Receive_Hexahedron_loc;
       delete[] Buffer_Receive_Prism_loc;
       delete[] Buffer_Receive_Pyramid_loc;
       
       delete[] Buffer_Receive_Triangle_presence_loc;
-      delete[] Buffer_Receive_Rectangle_presence_loc;
+      delete[] Buffer_Receive_Quadrilateral_presence_loc;
       delete[] Buffer_Receive_Tetrahedron_presence_loc;
       delete[] Buffer_Receive_Hexahedron_presence_loc;
       delete[] Buffer_Receive_Prism_presence_loc;
@@ -4357,14 +4369,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete[] Buffer_Send_GlobalPointIndex;
   delete[] Buffer_Send_Color;
   delete[] Buffer_Send_Triangle;
-  delete[] Buffer_Send_Rectangle;
+  delete[] Buffer_Send_Quadrilateral;
   delete[] Buffer_Send_Tetrahedron;
   delete[] Buffer_Send_Hexahedron;
   delete[] Buffer_Send_Prism;
   delete[] Buffer_Send_Pyramid;
   delete[] Buffer_Send_BoundLine;
   delete[] Buffer_Send_BoundTriangle;
-  delete[] Buffer_Send_BoundRectangle;
+  delete[] Buffer_Send_BoundQuadrilateral;
   delete[] Buffer_Send_Local2Global_Marker;
   
   delete[] Buffer_Send_SendDomain_Periodic;
@@ -4375,7 +4387,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete[] Buffer_Send_ReceivedDomain_PeriodicDonor;
   
   delete[] Local_to_global_Triangle;
-  delete[] Local_to_global_Rectangle;
+  delete[] Local_to_global_Quadrilateral;
   delete[] Local_to_global_Tetrahedron;
   delete[] Local_to_global_Hexahedron;
   delete[] Local_to_global_Prism;
@@ -4445,7 +4457,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   }
   
   delete [] Triangle_presence;
-  delete [] Rectangle_presence;
+  delete [] Quadrilateral_presence;
   delete [] Tetrahedron_presence;
   delete [] Hexahedron_presence;
   delete [] Prism_presence;
@@ -4497,17 +4509,17 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       /*--- Interior dimensionalization. Loop over the original grid
        to perform the dimensionalizaton of the domain variables ---*/
       
-      Buffer_Send_nElemTotal        = 0;
-      Buffer_Send_nPointTotal       = 0;
-      Buffer_Send_nPointGhost       = 0;
-      Buffer_Send_nPointDomainTotal = 0;
-      Buffer_Send_nPointPeriodic    = 0;
-      Buffer_Send_nElemTriangle     = 0;
-      Buffer_Send_nElemRectangle    = 0;
-      Buffer_Send_nElemTetrahedron  = 0;
-      Buffer_Send_nElemHexahedron   = 0;
-      Buffer_Send_nElemPrism        = 0;
-      Buffer_Send_nElemPyramid      = 0;
+//      Buffer_Send_nElemTotal         = 0;
+//      Buffer_Send_nPointTotal        = 0;
+//      Buffer_Send_nPointGhost        = 0;
+//      Buffer_Send_nPointDomainTotal  = 0;
+//      Buffer_Send_nPointPeriodic     = 0;
+//      Buffer_Send_nElemTriangle      = 0;
+//      Buffer_Send_nElemQuadrilateral = 0;
+//      Buffer_Send_nElemTetrahedron   = 0;
+//      Buffer_Send_nElemHexahedron    = 0;
+//      Buffer_Send_nElemPrism         = 0;
+//      Buffer_Send_nElemPyramid       = 0;
       
       /*--- Boundary dimensionalization. Dimensionalization with physical
        boundaries, compute Buffer_Send_nMarkerDomain,
@@ -4516,13 +4528,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       Buffer_Send_nMarkerDomain        = 0;
       Buffer_Send_nBoundLineTotal      = 0;
       Buffer_Send_nBoundTriangleTotal  = 0;
-      Buffer_Send_nBoundRectangleTotal = 0;
+      Buffer_Send_nBoundQuadrilateralTotal = 0;
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         Buffer_Send_nVertexDomain[iMarker]   = 0;
         Buffer_Send_nBoundLine[iMarker]      = 0;
         Buffer_Send_nBoundTriangle[iMarker]  = 0;
-        Buffer_Send_nBoundRectangle[iMarker] = 0;
+        Buffer_Send_nBoundQuadrilateral[iMarker] = 0;
         Buffer_Send_Marker_All_SendRecv[iMarker] = Marker_All_SendRecv_Copy[iMarker];
         SPRINTF(&Buffer_Send_Marker_All_TagBound[iMarker*MAX_STRING_SIZE], "%s",
                 Marker_All_TagBound_Copy[iMarker].c_str());
@@ -4552,9 +4564,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                   Buffer_Send_nBoundTriangle[Buffer_Send_nMarkerDomain]++;
                   Buffer_Send_nBoundTriangleTotal++;
                   break;
-                case RECTANGLE:
-                  Buffer_Send_nBoundRectangle[Buffer_Send_nMarkerDomain]++;
-                  Buffer_Send_nBoundRectangleTotal++;
+                case QUADRILATERAL:
+                  Buffer_Send_nBoundQuadrilateral[Buffer_Send_nMarkerDomain]++;
+                  Buffer_Send_nBoundQuadrilateralTotal++;
                   break;
               }
               
@@ -4637,7 +4649,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       
       Buffer_Send_BoundLine           = new unsigned long[Buffer_Send_nBoundLineTotal*N_POINTS_LINE];
       Buffer_Send_BoundTriangle       = new unsigned long[Buffer_Send_nBoundTriangleTotal*N_POINTS_TRIANGLE];
-      Buffer_Send_BoundRectangle      = new unsigned long[Buffer_Send_nBoundRectangleTotal*N_POINTS_QUADRILATERAL];
+      Buffer_Send_BoundQuadrilateral  = new unsigned long[Buffer_Send_nBoundQuadrilateralTotal*N_POINTS_QUADRILATERAL];
       Buffer_Send_Local2Global_Marker = new unsigned long[Buffer_Send_nMarkerDomain];
       
       Buffer_Send_SendDomain_Periodic           = new unsigned long[Buffer_Send_nTotalSendDomain_Periodic];
@@ -4661,7 +4673,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                   MPI_UNSIGNED_LONG, iDomain,
                   1, MPI_COMM_WORLD, &send_req[1]);
         
-        SU2_MPI::Isend(&Buffer_Send_nBoundRectangleTotal, 1,
+        SU2_MPI::Isend(&Buffer_Send_nBoundQuadrilateralTotal, 1,
                   MPI_UNSIGNED_LONG,  iDomain,
                   2, MPI_COMM_WORLD, &send_req[2]);
         
@@ -4681,7 +4693,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                   nMarker_Max, MPI_UNSIGNED_LONG, iDomain,
                   6, MPI_COMM_WORLD, &send_req[6]);
         
-        SU2_MPI::Isend(Buffer_Send_nBoundRectangle,
+        SU2_MPI::Isend(Buffer_Send_nBoundQuadrilateral,
                   nMarker_Max, MPI_UNSIGNED_LONG, iDomain,
                   7, MPI_COMM_WORLD, &send_req[7]);
         
@@ -4727,7 +4739,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         
         /*--- Wait for this set of non-blocking comm. to complete ---*/
         
-        
         SU2_MPI::Waitall(18, send_req, send_stat);
         //cout << " Rank " << rank << " iDomain " << iDomain << " just waited for first sends" << endl;
         
@@ -4741,19 +4752,19 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         nZone = Buffer_Send_nZone;
         
         nPeriodic      = Buffer_Send_nPeriodic;
-        nPointGhost    = Buffer_Send_nPointGhost;
-        nPointPeriodic = Buffer_Send_nPointPeriodic;
+//        nPointGhost    = Buffer_Send_nPointGhost;
+//        nPointPeriodic = Buffer_Send_nPointPeriodic;
         
         nBoundLineTotal      = Buffer_Send_nBoundLineTotal;
         nBoundTriangleTotal  = Buffer_Send_nBoundTriangleTotal;
-        nBoundRectangleTotal = Buffer_Send_nBoundRectangleTotal;
+        nBoundQuadrilateralTotal = Buffer_Send_nBoundQuadrilateralTotal;
         nMarkerDomain        = Buffer_Send_nMarkerDomain;
         
         for (iMarker = 0; iMarker < nMarker_Max; iMarker++) {
           nVertexDomain[iMarker] = Buffer_Send_nVertexDomain[iMarker];
           nBoundLine[iMarker] = Buffer_Send_nBoundLine[iMarker];
           nBoundTriangle[iMarker] = Buffer_Send_nBoundTriangle[iMarker];
-          nBoundRectangle[iMarker] = Buffer_Send_nBoundRectangle[iMarker];
+          nBoundQuadrilateral[iMarker] = Buffer_Send_nBoundQuadrilateral[iMarker];
           Marker_All_SendRecv[iMarker] = Buffer_Send_Marker_All_SendRecv[iMarker];
           for (iter = 0; iter < MAX_STRING_SIZE; iter++)
             Marker_All_TagBound[iMarker*MAX_STRING_SIZE+iter] = Buffer_Send_Marker_All_TagBound[iMarker*MAX_STRING_SIZE+iter];
@@ -4802,7 +4813,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         
         MPI_Probe(MASTER_NODE, 2, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
-        SU2_MPI::Recv(&nBoundRectangleTotal, recv_count, MPI_UNSIGNED_LONG,
+        SU2_MPI::Recv(&nBoundQuadrilateralTotal, recv_count, MPI_UNSIGNED_LONG,
                  MASTER_NODE, 2, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 3, MPI_COMM_WORLD, &status);
@@ -4827,7 +4838,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         
         MPI_Probe(MASTER_NODE, 7, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
-        SU2_MPI::Recv(nBoundRectangle, recv_count, MPI_UNSIGNED_LONG,
+        SU2_MPI::Recv(nBoundQuadrilateral, recv_count, MPI_UNSIGNED_LONG,
                  MASTER_NODE, 7, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 8, MPI_COMM_WORLD, &status);
@@ -4931,7 +4942,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       
       Buffer_Receive_BoundLine           = new unsigned long[nBoundLineTotal*2];
       Buffer_Receive_BoundTriangle       = new unsigned long[nBoundTriangleTotal*3];
-      Buffer_Receive_BoundRectangle      = new unsigned long[nBoundRectangleTotal*4];
+      Buffer_Receive_BoundQuadrilateral      = new unsigned long[nBoundQuadrilateralTotal*4];
       Buffer_Receive_Local2Global_Marker = new unsigned long[nMarkerDomain];
       
       Buffer_Receive_SendDomain_Periodic          = new unsigned long[nTotalSendDomain_Periodic];
@@ -4953,7 +4964,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       /*--- Set the value of the boundary geometry ---*/
       
       iMarkerDomain = 0;
-      iBoundLineTotal = 0; iBoundTriangleTotal = 0; iBoundRectangleTotal = 0;
+      iBoundLineTotal = 0; iBoundTriangleTotal = 0; iBoundQuadrilateralTotal = 0;
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) && (MarkerIn[iMarker])) {
@@ -4979,12 +4990,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                   Buffer_Send_BoundTriangle[N_POINTS_TRIANGLE*iBoundTriangleTotal+2] = vnodes_local[2];
                   iBoundTriangleTotal++;
                   break;
-                case RECTANGLE:
-                  Buffer_Send_BoundRectangle[N_POINTS_QUADRILATERAL*iBoundRectangleTotal+0] = vnodes_local[0];
-                  Buffer_Send_BoundRectangle[N_POINTS_QUADRILATERAL*iBoundRectangleTotal+1] = vnodes_local[1];
-                  Buffer_Send_BoundRectangle[N_POINTS_QUADRILATERAL*iBoundRectangleTotal+2] = vnodes_local[2];
-                  Buffer_Send_BoundRectangle[N_POINTS_QUADRILATERAL*iBoundRectangleTotal+3] = vnodes_local[3];
-                  iBoundRectangleTotal++;
+                case QUADRILATERAL:
+                  Buffer_Send_BoundQuadrilateral[N_POINTS_QUADRILATERAL*iBoundQuadrilateralTotal+0] = vnodes_local[0];
+                  Buffer_Send_BoundQuadrilateral[N_POINTS_QUADRILATERAL*iBoundQuadrilateralTotal+1] = vnodes_local[1];
+                  Buffer_Send_BoundQuadrilateral[N_POINTS_QUADRILATERAL*iBoundQuadrilateralTotal+2] = vnodes_local[2];
+                  Buffer_Send_BoundQuadrilateral[N_POINTS_QUADRILATERAL*iBoundQuadrilateralTotal+3] = vnodes_local[3];
+                  iBoundQuadrilateralTotal++;
                   break;
               }
             }
@@ -5079,8 +5090,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                   Buffer_Send_nBoundTriangleTotal*N_POINTS_TRIANGLE, MPI_UNSIGNED_LONG, iDomain,
                   1, MPI_COMM_WORLD, &send_req[1]);
         
-        SU2_MPI::Isend(Buffer_Send_BoundRectangle,
-                  Buffer_Send_nBoundRectangleTotal*N_POINTS_QUADRILATERAL, MPI_UNSIGNED_LONG, iDomain,
+        SU2_MPI::Isend(Buffer_Send_BoundQuadrilateral,
+                  Buffer_Send_nBoundQuadrilateralTotal*N_POINTS_QUADRILATERAL, MPI_UNSIGNED_LONG, iDomain,
                   2, MPI_COMM_WORLD, &send_req[2]);
         
         SU2_MPI::Isend(Buffer_Send_Local2Global_Marker,
@@ -5127,8 +5138,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         for (iter = 0; iter < Buffer_Send_nBoundTriangleTotal*N_POINTS_TRIANGLE; iter++)
           Buffer_Receive_BoundTriangle[iter] =  Buffer_Send_BoundTriangle[iter];
         
-        for (iter = 0; iter < Buffer_Send_nBoundRectangleTotal*N_POINTS_QUADRILATERAL; iter++)
-          Buffer_Receive_BoundRectangle[iter] =  Buffer_Send_BoundRectangle[iter];
+        for (iter = 0; iter < Buffer_Send_nBoundQuadrilateralTotal*N_POINTS_QUADRILATERAL; iter++)
+          Buffer_Receive_BoundQuadrilateral[iter] =  Buffer_Send_BoundQuadrilateral[iter];
         
         for (iter = 0; iter < Buffer_Send_nMarkerDomain; iter++)
           Buffer_Receive_Local2Global_Marker[iter] =  Buffer_Send_Local2Global_Marker[iter];
@@ -5149,7 +5160,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       
       delete[] Buffer_Send_BoundLine;
       delete[] Buffer_Send_BoundTriangle;
-      delete[] Buffer_Send_BoundRectangle;
+      delete[] Buffer_Send_BoundQuadrilateral;
       delete[] Buffer_Send_Local2Global_Marker;
       
       delete[] Buffer_Send_SendDomain_Periodic;
@@ -5183,7 +5194,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
         
         MPI_Probe(MASTER_NODE, 2, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
-        SU2_MPI::Recv(Buffer_Receive_BoundRectangle, recv_count, MPI_UNSIGNED_LONG,
+        SU2_MPI::Recv(Buffer_Receive_BoundQuadrilateral, recv_count, MPI_UNSIGNED_LONG,
                  MASTER_NODE, 2, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 3, MPI_COMM_WORLD, &status);
@@ -5244,7 +5255,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       /*--- Initialize boundary element counters ---*/
       iBoundLineTotal      = 0;
       iBoundTriangleTotal  = 0;
-      iBoundRectangleTotal = 0;
+      iBoundQuadrilateralTotal = 0;
       
       /*--- Store the boundary element connectivity. Note here that we have
        communicated the global index values for the elements, so we need to
@@ -5265,12 +5276,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
                                                         Global_to_local_Point_recv[Buffer_Receive_BoundTriangle[iBoundTriangleTotal*3+2]], 3);
           iVertexDomain++; iBoundTriangleTotal++;
         }
-        for (iBoundRectangle = 0; iBoundRectangle < nBoundRectangle[iMarker]; iBoundRectangle++) {
-          bound[iMarker][iVertexDomain] = new CRectangle(Global_to_local_Point_recv[Buffer_Receive_BoundRectangle[iBoundRectangleTotal*4+0]],
-                                                         Global_to_local_Point_recv[Buffer_Receive_BoundRectangle[iBoundRectangleTotal*4+1]],
-                                                         Global_to_local_Point_recv[Buffer_Receive_BoundRectangle[iBoundRectangleTotal*4+2]],
-                                                         Global_to_local_Point_recv[Buffer_Receive_BoundRectangle[iBoundRectangleTotal*4+3]], 3);
-          iVertexDomain++; iBoundRectangleTotal++;
+        for (iBoundQuadrilateral = 0; iBoundQuadrilateral < nBoundQuadrilateral[iMarker]; iBoundQuadrilateral++) {
+          bound[iMarker][iVertexDomain] = new CQuadrilateral(Global_to_local_Point_recv[Buffer_Receive_BoundQuadrilateral[iBoundQuadrilateralTotal*4+0]],
+                                                         Global_to_local_Point_recv[Buffer_Receive_BoundQuadrilateral[iBoundQuadrilateralTotal*4+1]],
+                                                         Global_to_local_Point_recv[Buffer_Receive_BoundQuadrilateral[iBoundQuadrilateralTotal*4+2]],
+                                                         Global_to_local_Point_recv[Buffer_Receive_BoundQuadrilateral[iBoundQuadrilateralTotal*4+3]], 3);
+          iVertexDomain++; iBoundQuadrilateralTotal++;
         }
         
         Local_to_Global_Marker[iMarker] = Buffer_Receive_Local2Global_Marker[iMarker];
@@ -5288,7 +5299,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       
       nelem_edge_bound     = iBoundLineTotal;
       nelem_triangle_bound = iBoundTriangleTotal;
-      nelem_quad_bound     = iBoundRectangleTotal;
+      nelem_quad_bound     = iBoundQuadrilateralTotal;
       
       for (iMarker = 0; iMarker < nMarker; iMarker++) {
         config->SetMarker_All_TagBound(iMarker, TagBound_Copy[iMarker]);
@@ -5297,8 +5308,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       
       /*--- Add the new periodic markers to the domain ---*/
       
-      iTotalSendDomain_Periodic = 0;
-      iTotalReceivedDomain_Periodic = 0;
+//      iTotalSendDomain_Periodic = 0;
+//      iTotalReceivedDomain_Periodic = 0;
       
       for (jDomain = 0; jDomain < nDomain; jDomain++) {
         
@@ -5345,7 +5356,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       
       delete[] Buffer_Receive_BoundLine;
       delete[] Buffer_Receive_BoundTriangle;
-      delete[] Buffer_Receive_BoundRectangle;
+      delete[] Buffer_Receive_BoundQuadrilateral;
       delete[] Buffer_Receive_Local2Global_Marker;
       
       delete[] Buffer_Receive_SendDomain_Periodic;
@@ -5399,7 +5410,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete [] nPointPeriodic_s;
   delete [] nElemTotal_s;
   delete [] nElemTriangle_s;
-  delete [] nElemRectangle_s;
+  delete [] nElemQuadrilateral_s;
   delete [] nElemTetrahedron_s;
   delete [] nElemHexahedron_s;
   delete [] nElemPrism_s;
@@ -5412,7 +5423,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete [] nPointPeriodic_r;
   delete [] nElemTotal_r;
   delete [] nElemTriangle_r;
-  delete [] nElemRectangle_r;
+  delete [] nElemQuadrilateral_r;
   delete [] nElemTetrahedron_r;
   delete [] nElemHexahedron_r;
   delete [] nElemPrism_r;
@@ -5442,11 +5453,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete [] nVertexDomain;
   delete [] nBoundLine;
   delete [] nBoundTriangle;
-  delete [] nBoundRectangle;
+  delete [] nBoundQuadrilateral;
   delete [] Buffer_Send_nVertexDomain;
   delete [] Buffer_Send_nBoundLine;
   delete [] Buffer_Send_nBoundTriangle;
-  delete [] Buffer_Send_nBoundRectangle;
+  delete [] Buffer_Send_nBoundQuadrilateral;
   delete [] Buffer_Send_Marker_All_SendRecv;
   
 #ifdef HAVE_MPI
@@ -5750,8 +5761,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
           bound_Copy[iMarker][iElem_Bound] = new CTriangle(bound[iMarker][iElem_Bound]->GetNode(0),
                                                            bound[iMarker][iElem_Bound]->GetNode(1),
                                                            bound[iMarker][iElem_Bound]->GetNode(2), 3);
-        if (bound[iMarker][iElem_Bound]->GetVTK_Type() == RECTANGLE)
-          bound_Copy[iMarker][iElem_Bound] = new CRectangle(bound[iMarker][iElem_Bound]->GetNode(0),
+        if (bound[iMarker][iElem_Bound]->GetVTK_Type() == QUADRILATERAL)
+          bound_Copy[iMarker][iElem_Bound] = new CQuadrilateral(bound[iMarker][iElem_Bound]->GetNode(0),
                                                             bound[iMarker][iElem_Bound]->GetNode(1),
                                                             bound[iMarker][iElem_Bound]->GetNode(2),
                                                             bound[iMarker][iElem_Bound]->GetNode(3), 3);
@@ -5936,6 +5947,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
   unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_prism[6],
   vnodes_pyramid[5], dummyLong, GlobalIndex;
+  unsigned long i, j;
   char cstr[200];
   su2double Coord_2D[2], Coord_3D[3];
   string::size_type position;
@@ -6092,14 +6104,14 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
        balancing for any remainder points. ---*/
       
       total_pt_accounted = 0;
-      for (unsigned long i=0; i < (unsigned long)size; i++) {
+      for (i = 0; i < (unsigned long)size; i++) {
         npoint_procs[i] = nPoint/size;
         total_pt_accounted = total_pt_accounted + npoint_procs[i];
       }
       
       /*--- Get the number of remainder points after the even division ---*/
       rem_points = nPoint-total_pt_accounted;
-      for (unsigned long i=0; i<rem_points; i++) {
+      for (i = 0; i<rem_points; i++) {
         npoint_procs[i]++;
       }
       
@@ -6112,7 +6124,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         ending_node[i]   = starting_node[i] + npoint_procs[i] ;
       }
       
-      /*--- Here we check if a point in the mesh file lies in the domain 
+      /*--- Here we check if a point in the mesh file lies in the domain
        and if so then store it on the local processor. We only create enough
        space in the node container for the local nodes at this point. ---*/
       
@@ -6211,7 +6223,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       
       /*--- Set up the global to local element mapping. ---*/
       Global_to_local_elem  = new long[nElem];
-      for (unsigned long i=0; i<nElem; i++) {
+      for (i = 0; i<nElem; i++) {
         Global_to_local_elem[i]=-1;
       }
       
@@ -6225,7 +6237,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       
       // TO DO: remove redundant edges (quads have extra diagonals for instance)
       
-      element_count=0; elem_reqd=false; loc_element_count=0; ielem_div=0;
+      element_count=0; loc_element_count=0; ielem_div=0;
       while (ielem_div < nElem) {
         getline(mesh_file, text_line);
         istringstream elem_line(text_line);
@@ -6240,11 +6252,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         switch(VTK_Type) {
             
           case TRIANGLE:
+            
             elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
-            for (unsigned long i=0; i<N_POINTS_TRIANGLE; i++) {
+            for (i = 0; i < N_POINTS_TRIANGLE; i++) {
               if ((vnodes_triangle[i]>=starting_node[rank])&&(vnodes_triangle[i]<ending_node[rank])) {
                 elem_reqd = true;
-                  
                   
                 for (unsigned long j=0; j<N_POINTS_TRIANGLE; j++) {
                   if (i != j) {
@@ -6253,7 +6265,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                   }
                 }
                 
-                  
               }
             }
             if (elem_reqd) {
@@ -6261,39 +6272,41 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               elem[loc_element_count] = new CTriangle(vnodes_triangle[0], vnodes_triangle[1], vnodes_triangle[2], 2);
               nelem_triangle++;loc_element_count++;
             }
+            
             break;
             
-          case RECTANGLE:
+          case QUADRILATERAL:
+            
             elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
-            for (unsigned long i=0; i<N_POINTS_QUADRILATERAL; i++) {
+            for (i = 0; i < N_POINTS_QUADRILATERAL; i++) {
               if ((vnodes_quad[i]>=starting_node[rank])&&(vnodes_quad[i]<ending_node[rank])) {
                 elem_reqd = true;
                   
-                  
                 for (unsigned long j=0; j<N_POINTS_QUADRILATERAL; j++) {
+                  
                   if (i!=j) {
                     adjacent_elem[vnodes_quad[i]-starting_node[rank]][adj_counter[vnodes_quad[i]-starting_node[rank]]]=vnodes_quad[j];
                     adj_counter[vnodes_quad[i]-starting_node[rank]]++;
                   }
                 }
                 
-                  
-                  
               }
             }
             if (elem_reqd) {
               Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CRectangle(vnodes_quad[0], vnodes_quad[1], vnodes_quad[2], vnodes_quad[3], 2);
+              elem[loc_element_count] = new CQuadrilateral(vnodes_quad[0], vnodes_quad[1], vnodes_quad[2], vnodes_quad[3], 2);
               loc_element_count++; nelem_quad++;
             }
+            
             break;
             
           case TETRAHEDRON:
+            
             elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
-            for (unsigned long i=0; i<N_POINTS_TETRAHEDRON; i++) {
+            for (i = 0; i < N_POINTS_TETRAHEDRON; i++) {
               if ((vnodes_tetra[i]>=starting_node[rank])&&(vnodes_tetra[i]<ending_node[rank])) {
                 elem_reqd = true;
-                for (unsigned long j=0; j<N_POINTS_TETRAHEDRON; j++) {
+                for (j = 0; j<N_POINTS_TETRAHEDRON; j++) {
                   if (i!=j) {
                     adjacent_elem[vnodes_tetra[i]-starting_node[rank]][adj_counter[vnodes_tetra[i]-starting_node[rank]]]=vnodes_tetra[j];
                     adj_counter[vnodes_tetra[i]-starting_node[rank]]++;
@@ -6313,10 +6326,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2];
             elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
             elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
-            for (unsigned long i=0; i<N_POINTS_HEXAHEDRON; i++) {
+            for (i = 0; i < N_POINTS_HEXAHEDRON; i++) {
               if ((vnodes_hexa[i]>=starting_node[rank])&&(vnodes_hexa[i]<ending_node[rank])) {
                 elem_reqd = true;
-                for (unsigned long j=0; j<N_POINTS_HEXAHEDRON; j++) {
+                for (j = 0; j < N_POINTS_HEXAHEDRON; j++) {
                   if (i!=j) {
                     adjacent_elem[vnodes_hexa[i]-starting_node[rank]][adj_counter[vnodes_hexa[i]-starting_node[rank]]]=vnodes_hexa[j];
                     adj_counter[vnodes_hexa[i]-starting_node[rank]]++;
@@ -6336,10 +6349,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
             elem_line >> vnodes_prism[0]; elem_line >> vnodes_prism[1]; elem_line >> vnodes_prism[2];
             elem_line >> vnodes_prism[3]; elem_line >> vnodes_prism[4]; elem_line >> vnodes_prism[5];
-            for (unsigned long i=0; i<N_POINTS_PRISM; i++) {
+            for (i = 0; i < N_POINTS_PRISM; i++) {
               if ((vnodes_prism[i]>=starting_node[rank])&&(vnodes_prism[i]<ending_node[rank])) {
                 elem_reqd = true;
-                for (unsigned long j=0; j<N_POINTS_PRISM; j++) {
+                for (j = 0; j < N_POINTS_PRISM; j++) {
                   if (i!=j) {
                     adjacent_elem[vnodes_prism[i]-starting_node[rank]][adj_counter[vnodes_prism[i]-starting_node[rank]]]=vnodes_prism[j];
                     adj_counter[vnodes_prism[i]-starting_node[rank]]++;
@@ -6355,12 +6368,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             break;
             
           case PYRAMID:
+            
             elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
             elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
-            for (unsigned long i=0; i<N_POINTS_PYRAMID; i++) {
+            for (i = 0; i < N_POINTS_PYRAMID; i++) {
               if ((vnodes_pyramid[i]>=starting_node[rank])&&(vnodes_pyramid[i]<ending_node[rank])) {
                 elem_reqd = true;
-                for (unsigned long j=0; j<N_POINTS_PYRAMID; j++) {
+                for (j = 0; j < N_POINTS_PYRAMID; j++) {
                   if (i!=j) {
                     adjacent_elem[vnodes_pyramid[i]-starting_node[rank]][adj_counter[vnodes_pyramid[i]-starting_node[rank]]]=vnodes_pyramid[j];
                     adj_counter[vnodes_pyramid[i]-starting_node[rank]]++;
@@ -6374,6 +6388,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               loc_element_count++; nelem_pyramid++;
             }
             break;
+            
         }
         ielem_div++;
         element_count++;
@@ -6413,7 +6428,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   for (unsigned long i = 0; i < local_node; i++) {
     
-    for (unsigned long j=0; j<adj_counter[i]; j++) {
+    for (j = 0; j<adj_counter[i]; j++) {
       temp_adjacency.push_back(adjacent_elem[i][j]);
     }
     
@@ -6425,7 +6440,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     xadj[local_count+1]=xadj[local_count]+loc_adjc_size;
     local_count++;
     
-    for (unsigned long j=0; j<loc_adjc_size; j++) {
+    for (j = 0; j<loc_adjc_size; j++) {
       adjac_vec.push_back(temp_adjacency[j]);
     }
     temp_adjacency.clear();
@@ -6539,11 +6554,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                   bound[iMarker][ielem] = new CTriangle(vnodes_triangle[0], vnodes_triangle[1], vnodes_triangle[2],3);
                   ielem++; nelem_triangle_bound++; break;
                   
-                case RECTANGLE:
+                case QUADRILATERAL:
                   
                   bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
                   
-                  bound[iMarker][ielem] = new CRectangle(vnodes_quad[0], vnodes_quad[1], vnodes_quad[2], vnodes_quad[3],3);
+                  bound[iMarker][ielem] = new CQuadrilateral(vnodes_quad[0], vnodes_quad[1], vnodes_quad[2], vnodes_quad[3],3);
                   ielem++; nelem_quad_bound++;
                   
                   break;
@@ -6553,6 +6568,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             }
             
             /*--- Update config information storing the boundary information in the right place ---*/
+            
             Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
             config->SetMarker_All_TagBound(iMarker, Marker_Tag);
             config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
@@ -6570,6 +6586,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           }
           
           /*--- Send-Receive boundaries definition ---*/
+          
           else {
             unsigned long nelem_vertex = 0, vnodes_vertex;
             unsigned short transform;
@@ -6600,6 +6617,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     }
 
     while (getline (mesh_file, text_line)) {
+      
       /*--- Read periodic transformation info (center, rotation, translation) ---*/
       
       position = text_line.find ("NPERIODIC=",0);
@@ -6654,6 +6672,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     }
     
     /*--- If no periodic transormations were found, store default zeros ---*/
+    
     if (!found_transform) {
       unsigned short nPeriodic = 1, iPeriodic = 0;
       config->SetnPeriodicIndex(nPeriodic);
@@ -6670,6 +6689,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   }
   
   /*--- Close the input file ---*/
+  
   mesh_file.close();
   
   
@@ -6982,16 +7002,16 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       }
       nPoint_Linear[size] = vertices[j-1];
       
-      /*--- Set the value of range_max to the total number of nodes in 
-       the unstructured mesh. Also allocate memory for the temporary array 
-       that will hold the grid coordinates as they are extracted. Note the 
+      /*--- Set the value of range_max to the total number of nodes in
+       the unstructured mesh. Also allocate memory for the temporary array
+       that will hold the grid coordinates as they are extracted. Note the
        +1 for CGNS convention. ---*/
       
       range_min = (cgsize_t)starting_node[rank]+1;
       range_max = (cgsize_t)ending_node[rank];
       coordArray[j-1] = new su2double[local_node];
       
-      /*--- Allocate memory for the 2-D array that will store the x, y, 
+      /*--- Allocate memory for the 2-D array that will store the x, y,
        & z (if required) coordinates for writing into the SU2 mesh. ---*/
       
       gridCoords[j-1] = new su2double*[ncoords];
@@ -7179,8 +7199,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           
           elemGlobalID[ii] = elemB[rank] + ii - 1 - globalOffset;
           
-          /*--- Need to check the element type and correctly specify the 
-           VTK identifier for that element. SU2 recognizes elements by 
+          /*--- Need to check the element type and correctly specify the
+           VTK identifier for that element. SU2 recognizes elements by
            their VTK number. ---*/
           
           switch (elmt_type) {
@@ -7305,8 +7325,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         
         if (!isInternal[j-1][s-1]) {
           
-          /*--- Master node should read this entire marker section. Free 
-           the memory for the conn. from the CGNS file since we are going 
+          /*--- Master node should read this entire marker section. Free
+           the memory for the conn. from the CGNS file since we are going
            to read the section again with the master. ---*/
           
           delete [] connElemCGNS;
@@ -7495,11 +7515,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           delete [] connElemCGNS;
           delete [] isMixed;
           
-          /*--- We now have the connectivity stored in linearly partitioned 
-           chunks. We need to loop through and decide how many elements we 
-           must send to each rank in order to have all elements that 
-           surround a particular "owned" node on each rank (i.e., elements 
-           will appear on multiple ranks). First, initialize a counter 
+          /*--- We now have the connectivity stored in linearly partitioned
+           chunks. We need to loop through and decide how many elements we
+           must send to each rank in order to have all elements that
+           surround a particular "owned" node on each rank (i.e., elements
+           will appear on multiple ranks). First, initialize a counter
            and flag. ---*/
           
           int *nElem_Send = new int[size+1]; nElem_Send[0] = 0;
@@ -7541,7 +7561,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           }
           
           /*--- Communicate the number of cells to be sent/recv'd amongst
-           all processors. After this communication, each proc knows how 
+           all processors. After this communication, each proc knows how
            many cells it will receive from each other processor. ---*/
           
 #ifdef HAVE_MPI
@@ -7552,8 +7572,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #endif
           
           /*--- Prepare to send connectivities. First check how many
-           messages we will be sending and receiving. Here we also put 
-           the counters into cumulative storage format to make the 
+           messages we will be sending and receiving. Here we also put
+           the counters into cumulative storage format to make the
            communications simpler. ---*/
           
           int nSends = 0, nRecvs = 0;
@@ -7703,7 +7723,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #endif
           
           /*--- Store the connectivity for this rank in the proper data
-           structure before post-processing below. First, allocate the 
+           structure before post-processing below. First, allocate the
            appropriate amount of memory for this section. ---*/
           
           connElems[j-1][s-1] = new cgsize_t*[connSize];
@@ -7832,7 +7852,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               Global_to_local_elem[global_id]=ielem;
               elem[ielem] = new CTriangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], nDim);
               ielem++; nelem_triangle++; break;
-            case RECTANGLE:
+            case QUADRILATERAL:
               for ( int j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
@@ -7848,7 +7868,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 }
               }
               Global_to_local_elem[global_id]=ielem;
-              elem[ielem] = new CRectangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], nDim);
+              elem[ielem] = new CQuadrilateral(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], nDim);
               ielem++; nelem_quad++;
               break;
             case TETRAHEDRON:
@@ -8168,8 +8188,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 case TRIANGLE:
                   bound[iMarker][ielem] = new CTriangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2],3);
                   ielem++; nelem_triangle_bound++; break;
-                case RECTANGLE:
-                  bound[iMarker][ielem] = new CRectangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3],3);
+                case QUADRILATERAL:
+                  bound[iMarker][ielem] = new CQuadrilateral(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3],3);
                   ielem++; nelem_quad_bound++; break;
               }
             }
@@ -8297,9 +8317,9 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
       if (test < 0.0) elem[iElem]->Change_Orientation();
     }
     
-    /*--- 2D grid, rectangle case ---*/
+    /*--- 2D grid, quadrilateral case ---*/
     
-    if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
+    if (elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
       
       Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
       Point_2 = elem[iElem]->GetNode(1); Coord_2 = node[Point_2]->GetCoord();
@@ -8578,7 +8598,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
         
       }
       
-      if (bound[iMarker][iElem_Surface]->GetVTK_Type() == RECTANGLE) {
+      if (bound[iMarker][iElem_Surface]->GetVTK_Type() == QUADRILATERAL) {
         
         Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = node[Point_1_Surface]->GetCoord();
         Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = node[Point_2_Surface]->GetCoord();
@@ -8704,8 +8724,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
          *  unnecessary derivative information when using AD.---*/
 
         for (iDim = 0; iDim < nDim; iDim++){
-          diff = (SU2_TYPE::GetPrimary(coord[iDim])
-                  -SU2_TYPE::GetPrimary(Coord_bound[iVertex][iDim]));
+          diff = (SU2_TYPE::GetValue(coord[iDim])
+                  -SU2_TYPE::GetValue(Coord_bound[iVertex][iDim]));
           dist2 += diff*diff;
         }
         if (dist2 < dist1) {
@@ -8821,8 +8841,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
            *  unnecessary derivative information when using AD.---*/
 
           for (iDim = 0; iDim < nDim; iDim++){
-            diff = SU2_TYPE::GetPrimary(coord[iDim]) -
-                SU2_TYPE::GetPrimary(Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
+            diff = SU2_TYPE::GetValue(coord[iDim]) -
+                SU2_TYPE::GetValue(Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
             dist2 += diff*diff;
           }
           if (dist2 < dist) {
@@ -10636,7 +10656,7 @@ bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_
   pair<vector <unsigned long>::iterator, vector <unsigned long>::iterator> mypair;
   bool face_first_found = false, face_second_found =false;
   
-  if (first_elem == second_elem) return 0;
+  if (first_elem == second_elem) return false;
   
   for (iNode = 0; iNode < elem[first_elem]->GetnNodes(); iNode++) {
     iPoint = elem[first_elem]->GetNode(iNode);
@@ -10654,9 +10674,20 @@ bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_
   IterPoint = unique( CommonPoints.begin(), CommonPoints.end());
   CommonPoints.resize( distance(CommonPoints.begin(), IterPoint) );
   
-  /*--- Search the secuence in the first element ---*/
+  /*--- In 2D, the two elements must share two points that make up
+   an edge, as all "faces" are edges in 2D. In 3D, we need to find
+   exactly 3 (tri) or 4 (quad) common points. Return immediately to
+   avoid a memory issue due to vectors of different lengths below. ---*/
+  
+  if ((nDim == 2) && (CommonPoints.size() != 2)) return false;
+  if ((nDim == 3) && ((CommonPoints.size() != 3) &&
+                      (CommonPoints.size() != 4))) return false;
+  
+  /*--- Search the sequence in the first element ---*/
   for (iFace = 0; iFace < elem[first_elem]->GetnFaces(); iFace++) {
     nNodesFace = elem[first_elem]->GetnNodesFace(iFace);
+    
+    if (nNodesFace == CommonPoints.size()) {
     for (iNode = 0; iNode < nNodesFace; iNode++) {
       face_node = elem[first_elem]->GetFaces(iFace, iNode);
       PointFaceFirst.push_back(elem[first_elem]->GetNode(face_node));
@@ -10675,10 +10706,13 @@ bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_
     
     PointFaceFirst.erase (PointFaceFirst.begin(), PointFaceFirst.end());
   }
+  }
   
   /*--- Search the secuence in the second element ---*/
   for (iFace = 0; iFace < elem[second_elem]->GetnFaces(); iFace++) {
     nNodesFace = elem[second_elem]->GetnNodesFace(iFace);
+    
+    if (nNodesFace == CommonPoints.size()) {
     for (iNode = 0; iNode < nNodesFace; iNode++) {
       face_node = elem[second_elem]->GetFaces(iFace, iNode);
       PointFaceSecond.push_back(elem[second_elem]->GetNode(face_node));
@@ -10696,6 +10730,7 @@ bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_
     }
     
     PointFaceSecond.erase (PointFaceSecond.begin(), PointFaceSecond.end());
+  }
   }
   
   if (face_first_found && face_second_found) return true;
@@ -10742,7 +10777,7 @@ void CPhysicalGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new
       elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
       elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(2)+1 << endl;
     }
-    if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
+    if (elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
       Tecplot_File <<
       elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
       elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 << endl;
@@ -11007,7 +11042,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   nElem_Tetrahedron = 0;
   for (iElem = 0; iElem < GetnElem(); iElem++) {
     if (elem[iElem]->GetVTK_Type() == TRIANGLE)    nElem_Triangle = nElem_Triangle + 1;
-    if (elem[iElem]->GetVTK_Type() == RECTANGLE)   nElem_Triangle = nElem_Triangle + 2;
+    if (elem[iElem]->GetVTK_Type() == QUADRILATERAL)   nElem_Triangle = nElem_Triangle + 2;
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) nElem_Tetrahedron = nElem_Tetrahedron + 1;
     if (elem[iElem]->GetVTK_Type() == HEXAHEDRON)  nElem_Tetrahedron = nElem_Tetrahedron + 5;
     if (elem[iElem]->GetVTK_Type() == PYRAMID)     nElem_Tetrahedron = nElem_Tetrahedron + 2;
@@ -11045,7 +11080,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
         eptr[iElem_Triangle] = 3*iElem_Triangle;
         iElem_Triangle++;
       }
-      if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
+      if (elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
         elmnts[3*iElem_Triangle+0]= elem[iElem]->GetNode(0);
         elmnts[3*iElem_Triangle+1]= elem[iElem]->GetNode(1);
         elmnts[3*iElem_Triangle+2]= elem[iElem]->GetNode(2);
@@ -11182,7 +11217,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     
   /*--- Create some structures that ParMETIS needs for partitioning. ---*/
 
-  idx_t numflag, nparts, edgecut, wgtflag, ncon;
+    idx_t numflag, nparts, edgecut, wgtflag, ncon;
   idx_t *vtxdist     = new idx_t[size+1];
   idx_t *xadj_l      = new idx_t[xadj_size];
   idx_t *adjacency_l = new idx_t[adjacency_size];
@@ -11371,7 +11406,7 @@ void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config) {
   
   unsigned short iDim;
   unsigned long iPoint;
-  su2double xDot[3];
+  su2double xDot[3] = {0.0,0.0,0.0};
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -11380,9 +11415,9 @@ void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config) {
   
   /*--- Get the translational velocity vector from config ---*/
   
-  xDot[0]   = config->GetTranslation_Rate_X(ZONE_0)/config->GetVelocity_Ref();
-  xDot[1]   = config->GetTranslation_Rate_Y(ZONE_0)/config->GetVelocity_Ref();
-  xDot[2]   = config->GetTranslation_Rate_Z(ZONE_0)/config->GetVelocity_Ref();
+  xDot[0] = config->GetTranslation_Rate_X(ZONE_0)/config->GetVelocity_Ref();
+  xDot[1] = config->GetTranslation_Rate_Y(ZONE_0)/config->GetVelocity_Ref();
+  xDot[2] = config->GetTranslation_Rate_Z(ZONE_0)/config->GetVelocity_Ref();
   
   /*--- Print some information to the console ---*/
   
@@ -11397,8 +11432,9 @@ void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config) {
     
     /*--- Store the grid velocity at this node ---*/
     
-    for (iDim = 0; iDim < nDim; iDim++)
+    for (iDim = 0; iDim < nDim; iDim++) {
       node[iPoint]->SetGridVel(iDim,xDot[iDim]);
+    }
   
   }
   
@@ -12038,8 +12074,8 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
         case TRIANGLE:
           newBound[iMarker][iElem] = new CTriangle(newNodes[0], newNodes[1], newNodes[2],3);
           break;
-        case RECTANGLE:
-          newBound[iMarker][iElem] = new CRectangle(newNodes[0], newNodes[1], newNodes[2], newNodes[3],3);
+        case QUADRILATERAL:
+          newBound[iMarker][iElem] = new CQuadrilateral(newNodes[0], newNodes[1], newNodes[2], newNodes[3],3);
           break;
       }
       
@@ -12332,117 +12368,117 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
 }
 
 void CPhysicalGeometry::SetSensitivity(CConfig *config){
-  
-  ifstream restart_file;
-  string filename = config->GetSolution_AdjFileName();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  bool sst = config->GetKind_Turb_Model() == SST;
-  bool sa = config->GetKind_Turb_Model() == SA;
-  bool grid_movement = config->GetGrid_Movement();
-  su2double Sens, delta_T, dull_val;
-  //su2double total_T;
-  unsigned short nExtIter, iDim, iExtIter;
-  unsigned long iPoint, index;
-  
-  Sensitivity = new su2double[nPoint*nDim];
-  
-  if (config->GetUnsteady_Simulation()){
-    nExtIter = config->GetUnst_AdjointIter();
-    //    delta_T  = config->GetDelta_UnstTimeND();
-    delta_T  = 1.0;
-    //total_T  = (su2double)nExtIter*delta_T;
-  }else{
-    //total_T = 1.0;
-    nExtIter = 1;
-  }
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  unsigned short skipVar = nDim;
-  
-  if (incompressible) { skipVar += nDim+1; }
-  if (freesurface)    { skipVar += nDim+2; }
-  if (compressible)   { skipVar += nDim+2; }
-  if (sst) 			{ skipVar += 2;}
-  if (sa)				{ skipVar += 1;}
-  
-  if (grid_movement) {skipVar += nDim;}
-  
-  /* --- Sensitivity in normal direction --- */
-  
-  skipVar += 1;
-  
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-  long *Global2Local = new long[Global_nPointDomain];
-  
-  /*--- First, set all indices to a negative value by default ---*/
-  for(iPoint = 0; iPoint < Global_nPointDomain; iPoint++)
-    Global2Local[iPoint] = -1;
-  
-  /*--- Now fill array with the transform values only for local points ---*/
-  for(iPoint = 0; iPoint < nPointDomain; iPoint++)
-    Global2Local[node[iPoint]->GetGlobalIndex()] = iPoint;
-  
-  /*--- Read all lines in the restart file ---*/
-  long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
-  
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iDim = 0; iDim < nDim; iDim++){
-      Sensitivity[iPoint*nDim+iDim] = 0.0;
-    }
-  }
-  
-  for (iExtIter = 0; iExtIter < nExtIter; iExtIter++){
-    
-    iPoint_Global = 0;
-    
-    filename = config->GetSolution_AdjFileName();
-    
-    filename = config->GetObjFunc_Extension(filename);
-    
+
+    ifstream restart_file;
+    string filename = config->GetSolution_AdjFileName();
+    bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+    bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+    bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+    bool sst = config->GetKind_Turb_Model() == SST;
+    bool sa = config->GetKind_Turb_Model() == SA;
+    bool grid_movement = config->GetGrid_Movement();
+  su2double Sens, dull_val;
+  //su2double delta_T, total_T;
+    unsigned short nExtIter, iDim, iExtIter;
+    unsigned long iPoint, index;
+
+    Sensitivity = new su2double[nPoint*nDim];
+
     if (config->GetUnsteady_Simulation()){
-      filename = config->GetUnsteady_FileName(filename, iExtIter);
+        nExtIter = config->GetUnst_AdjointIter();
+    //    delta_T  = config->GetDelta_UnstTimeND();
+    //    delta_T  = 1.0;
+    //total_T  = (su2double)nExtIter*delta_T;
+    }else{
+    //total_T = 1.0;
+      nExtIter = 1;
     }
-    
-    restart_file.open(filename.data(), ios::in);
-    if (restart_file.fail()) {
-      cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    if (rank == MASTER_NODE)
-      cout << "Reading in sensitivity at iteration " << iExtIter << "."<< endl;
-    /*--- The first line is the header ---*/
-    getline (restart_file, text_line);
-    
-    while (getline (restart_file, text_line)) {
-      istringstream point_line(text_line);
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
-      iPoint_Local = Global2Local[iPoint_Global];
-      
-      if (iPoint_Local >= 0){
-        point_line >> index;
-        for (iDim = 0; iDim < skipVar; iDim++){ point_line >> dull_val;}
-        for (iDim = 0; iDim < nDim; iDim++){
-          point_line >> Sens;
-          //                	  Sensitivity[iPoint_Local*nDim+iDim] += Sens*delta_T/total_T;
-          Sensitivity[iPoint_Local*nDim+iDim] += Sens;
-          
-        }
+    int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+ #endif
+
+    unsigned short skipVar = nDim;
+
+    if (incompressible) { skipVar += nDim+1; }
+    if (freesurface)    { skipVar += nDim+2; }
+    if (compressible)   { skipVar += nDim+2; }
+    if (sst) 			{ skipVar += 2;}
+    if (sa)				{ skipVar += 1;}
+
+    if (grid_movement) {skipVar += nDim;}
+
+    /* --- Sensitivity in normal direction --- */
+
+    skipVar += 1;
+
+    /*--- In case this is a parallel simulation, we need to perform the
+     Global2Local index transformation first. ---*/
+    long *Global2Local = new long[Global_nPointDomain];
+
+    /*--- First, set all indices to a negative value by default ---*/
+    for(iPoint = 0; iPoint < Global_nPointDomain; iPoint++)
+      Global2Local[iPoint] = -1;
+
+    /*--- Now fill array with the transform values only for local points ---*/
+    for(iPoint = 0; iPoint < nPointDomain; iPoint++)
+      Global2Local[node[iPoint]->GetGlobalIndex()] = iPoint;
+
+    /*--- Read all lines in the restart file ---*/
+    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
+
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      for (iDim = 0; iDim < nDim; iDim++){
+        Sensitivity[iPoint*nDim+iDim] = 0.0;
       }
-      iPoint_Global++;
     }
-    restart_file.close();
+
+    for (iExtIter = 0; iExtIter < nExtIter; iExtIter++){
+
+      iPoint_Global = 0;
+
+      filename = config->GetSolution_AdjFileName();
+
+      filename = config->GetObjFunc_Extension(filename);
+
+      if (config->GetUnsteady_Simulation()){
+        filename = config->GetUnsteady_FileName(filename, iExtIter);
+      }
+
+      restart_file.open(filename.data(), ios::in);
+      if (restart_file.fail()) {
+        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+        exit(EXIT_FAILURE);
+      }
+
+      if (rank == MASTER_NODE)
+        cout << "Reading in sensitivity at iteration " << iExtIter << "."<< endl;
+      /*--- The first line is the header ---*/
+      getline (restart_file, text_line);
+
+      while (getline (restart_file, text_line)) {
+        istringstream point_line(text_line);
+
+        /*--- Retrieve local index. If this node from the restart file lives
+             on a different processor, the value of iPoint_Local will be -1.
+             Otherwise, the local index for this node on the current processor
+             will be returned and used to instantiate the vars. ---*/
+        iPoint_Local = Global2Local[iPoint_Global];
+
+        if (iPoint_Local >= 0){
+          point_line >> index;
+          for (iDim = 0; iDim < skipVar; iDim++){ point_line >> dull_val;}
+          for (iDim = 0; iDim < nDim; iDim++){
+            point_line >> Sens;
+            //                	  Sensitivity[iPoint_Local*nDim+iDim] += Sens*delta_T/total_T;
+            Sensitivity[iPoint_Local*nDim+iDim] += Sens;
+
+          }
+        }
+        iPoint_Global++;
+      }
+      restart_file.close();
   }
 }
 
@@ -12936,12 +12972,12 @@ su2double CPhysicalGeometry::Compute_Volume(CConfig *config, bool original_surfa
   delete [] Zcoord_Airfoil;
   delete [] Variable_Airfoil;
   
-  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
     delete [] Plane_P0[iPlane];
   delete [] Plane_P0;
   
-  for (iPlane = 0; iPlane < nPlane; iPlane++ )
-    delete Plane_Normal[iPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] Plane_Normal[iPlane];
   delete [] Plane_Normal;
   
   delete [] Area;
@@ -12998,7 +13034,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
     
     for (iElem = 0; iElem < fine_grid->GetnElem(); iElem++) {
       if ((fine_grid->elem[iElem]->GetVTK_Type() == HEXAHEDRON) ||
-          (fine_grid->elem[iElem]->GetVTK_Type() == RECTANGLE)) {
+          (fine_grid->elem[iElem]->GetVTK_Type() == QUADRILATERAL)) {
         for (iNode = 0; iNode < fine_grid->elem[iElem]->GetnNodes(); iNode++) {
           iPoint = fine_grid->elem[iElem]->GetNode(iNode);
           fine_grid->node[iPoint]->SetAgglomerate_Indirect(true);
@@ -13593,7 +13629,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
   
   unsigned short *copy_marker = new unsigned short [nMarker_Max];
 
-  /*--- Basic condition, the element has not being previously agglomerated, it belongs to the domain, 
+  /*--- Basic condition, the element has not being previously agglomerated, it belongs to the domain,
    and has passed some basic geometrical check ---*/
   
   if ((fine_grid->node[CVPoint]->GetAgglomerate() == false) &&
@@ -14507,8 +14543,8 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
         nelem_triangle++;
         break;
         
-      case RECTANGLE:
-        elem[iElem] = new CRectangle(geometry->elem[iElem]->GetNode(0),
+      case QUADRILATERAL:
+        elem[iElem] = new CQuadrilateral(geometry->elem[iElem]->GetNode(0),
                                      geometry->elem[iElem]->GetNode(1),
                                      geometry->elem[iElem]->GetNode(2),
                                      geometry->elem[iElem]->GetNode(3), 2);
@@ -14594,8 +14630,8 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
             iElem++; nelem_triangle++;
             break;
             
-          case RECTANGLE:
-            elem[iElem] = new CRectangle(Index[geometry->elem[jElem]->GetNode(0)],
+          case QUADRILATERAL:
+            elem[iElem] = new CQuadrilateral(Index[geometry->elem[jElem]->GetNode(0)],
                                          Index[geometry->elem[jElem]->GetNode(1)],
                                          Index[geometry->elem[jElem]->GetNode(2)],
                                          Index[geometry->elem[jElem]->GetNode(3)], 2);
@@ -14754,8 +14790,8 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
         bound[iMarker][iVertex] = new CTriangle(geometry->bound[iMarker][iVertex]->GetNode(0),
                                                 geometry->bound[iMarker][iVertex]->GetNode(1),
                                                 geometry->bound[iMarker][iVertex]->GetNode(2), 3);
-      if (geometry->bound[iMarker][iVertex]->GetVTK_Type() == RECTANGLE)
-        bound[iMarker][iVertex] = new CRectangle(geometry->bound[iMarker][iVertex]->GetNode(0),
+      if (geometry->bound[iMarker][iVertex]->GetVTK_Type() == QUADRILATERAL)
+        bound[iMarker][iVertex] = new CQuadrilateral(geometry->bound[iMarker][iVertex]->GetNode(0),
                                                  geometry->bound[iMarker][iVertex]->GetNode(1),
                                                  geometry->bound[iMarker][iVertex]->GetNode(2),
                                                  geometry->bound[iMarker][iVertex]->GetNode(3), 3);
@@ -15007,7 +15043,7 @@ void CPeriodicGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new
       elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
       elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(2)+1 << endl;
     }
-    if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
+    if (elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
       Tecplot_File <<
       elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
       elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 << endl;

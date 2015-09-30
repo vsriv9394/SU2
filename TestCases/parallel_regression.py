@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 4.0.0 "Cardinal"
+#  \version 4.0.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -261,7 +261,7 @@ def main():
     contadj_ns_naca0012_trans.timeout   = 1600
     contadj_ns_naca0012_trans.tol       = 0.00001
     test_list.append(contadj_ns_naca0012_trans)
-
+    
     #######################################################
     ### Cont. adj. compressible RANS (frozen viscosity) ###
     #######################################################
@@ -391,7 +391,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.077319, 0.036428, -1.685289e-03, -1.129111e-04] #last 4 columns
+    aeroelastic.test_vals = [0.077319, 0.036428, -1.685277e-03, -1.129186e-04] #last 4 columns
     aeroelastic.su2_exec  = "parallel_computation.py -f"
     aeroelastic.timeout   = 1600
     aeroelastic.tol       = 0.000001
