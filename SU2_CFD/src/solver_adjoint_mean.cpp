@@ -1050,92 +1050,92 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
         if (nDim == 3) z = geometry->node[iPoint]->GetCoord(2);
         
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        switch (config->GetKind_ObjFunc()) {
+        switch (config->GetKind_ObjFunc(iMarker)) {
           case DRAG_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha); ForceProj_Vector[1] = sin(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta); ForceProj_Vector[1] = sin(Beta); ForceProj_Vector[2] = sin(Alpha)*cos(Beta); }
+            if (nDim == 2) { ForceProj_Vector[0] += cos(Alpha); ForceProj_Vector[1] += sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] += cos(Alpha)*cos(Beta); ForceProj_Vector[1] += sin(Beta); ForceProj_Vector[2] += sin(Alpha)*cos(Beta); }
             break;
           case LIFT_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -sin(Alpha); ForceProj_Vector[1] = cos(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] = -sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = cos(Alpha); }
+            if (nDim == 2) { ForceProj_Vector[0] += -sin(Alpha); ForceProj_Vector[1] += cos(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] += -sin(Alpha); ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += cos(Alpha); }
             break;
           case SIDEFORCE_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = -sin(Beta) * cos(Alpha); ForceProj_Vector[1] = cos(Beta); ForceProj_Vector[2] = -sin(Beta) * sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] += -sin(Beta) * cos(Alpha); ForceProj_Vector[1] += cos(Beta); ForceProj_Vector[2] += -sin(Beta) * sin(Alpha); }
             break;
           case INVERSE_DESIGN_PRESSURE :
             Cp = solver_container[FLOW_SOL]->GetCPressure(iMarker, iVertex);
             CpTarget = solver_container[FLOW_SOL]->GetCPressureTarget(iMarker, iVertex);
             Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
             if (nDim == 3) Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
-            ForceProj_Vector[0] = -2.0*(Cp-CpTarget)*Normal[0]/Area; ForceProj_Vector[1] = -2.0*(Cp-CpTarget)*Normal[1]/Area;
-            if (nDim == 3) ForceProj_Vector[2] = -2.0*(Cp-CpTarget)*Normal[2]/Area;
+            ForceProj_Vector[0] += -2.0*(Cp-CpTarget)*Normal[0]/Area; ForceProj_Vector[1] += -2.0*(Cp-CpTarget)*Normal[1]/Area;
+            if (nDim == 3) ForceProj_Vector[2] += -2.0*(Cp-CpTarget)*Normal[2]/Area;
             break;
           case MOMENT_X_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = (y - y_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += -(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] += (y - y_origin)/RefLengthMoment; }
             break;
           case MOMENT_Y_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] = (z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] += (z - z_origin)/RefLengthMoment; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += -(x - x_origin)/RefLengthMoment; }
             break;
           case MOMENT_Z_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = (x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = (x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] += -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += (x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] += -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += (x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
             break;
           case EFFICIENCY :
-            if (nDim == 2) { ForceProj_Vector[0] = -(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] = (invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
-            if (nDim == 3) { ForceProj_Vector[0] = -(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] = -CLCD2*sin(Beta); ForceProj_Vector[2] = (invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
+            if (nDim == 2) { ForceProj_Vector[0] += -(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] += (invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
+            if (nDim == 3) { ForceProj_Vector[0] += -(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] += -CLCD2*sin(Beta); ForceProj_Vector[2] += (invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
             break;
           case EQUIVALENT_AREA :
             WDrag = config->GetWeightCd();
-            if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha)*WDrag; ForceProj_Vector[1] = sin(Alpha)*WDrag; }
-            if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = sin(Beta)*WDrag; ForceProj_Vector[2] = sin(Alpha)*cos(Beta)*WDrag; }
+            if (nDim == 2) { ForceProj_Vector[0] += cos(Alpha)*WDrag; ForceProj_Vector[1] += sin(Alpha)*WDrag; }
+            if (nDim == 3) { ForceProj_Vector[0] += cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] += sin(Beta)*WDrag; ForceProj_Vector[2] += sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case NEARFIELD_PRESSURE :
             WDrag = config->GetWeightCd();
-            if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha)*WDrag; ForceProj_Vector[1] = sin(Alpha)*WDrag; }
-            if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = sin(Beta)*WDrag; ForceProj_Vector[2] = sin(Alpha)*cos(Beta)*WDrag; }
+            if (nDim == 2) { ForceProj_Vector[0] += cos(Alpha)*WDrag; ForceProj_Vector[1] += sin(Alpha)*WDrag; }
+            if (nDim == 3) { ForceProj_Vector[0] += cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] += sin(Beta)*WDrag; ForceProj_Vector[2] += sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case FORCE_X_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = 1.0; ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 1.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] += 1.0; ForceProj_Vector[1] += 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 1.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += 0.0; }
             break;
           case FORCE_Y_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 1.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 1.0; ForceProj_Vector[2] = 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 1.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 1.0; ForceProj_Vector[2] += 0.0; }
             break;
           case FORCE_Z_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += 1.0; }
             break;
           case THRUST_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += 1.0; }
             break;
           case TORQUE_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] += (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] += (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
             break;
           case FIGURE_OF_MERIT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) {
-              ForceProj_Vector[0] = -invCQ;
-              ForceProj_Vector[1] = -CTRCQ2*(z - z_origin);
-              ForceProj_Vector[2] =  CTRCQ2*(y - y_origin);
+              ForceProj_Vector[0] += -invCQ;
+              ForceProj_Vector[1] += -CTRCQ2*(z - z_origin);
+              ForceProj_Vector[2] +=  CTRCQ2*(y - y_origin);
             }
             break;
           case INVERSE_DESIGN_HEATFLUX: case TOTAL_HEATFLUX : case MAXIMUM_HEATFLUX: case AVG_TOTAL_PRESSURE : case AVG_OUTLET_PRESSURE: case MASS_FLOW_RATE : case FREE_SURFACE :
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += 0.0; }
             break;
         }
         
@@ -4450,7 +4450,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           for (iVar = 0; iVar < nVar; iVar++) {
             Psi_outlet[iVar] = 0.0;
           }
-          if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE) {
+          if (config->GetKind_ObjFunc(val_marker) == AVG_OUTLET_PRESSURE) {
             /*--- Compute Riemann constant ---*/
             Entropy = Pressure*pow(1.0/Density, Gamma);
             Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
@@ -4490,7 +4490,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Total Pressure term. NOTE: this is AREA averaged
            * Additional terms are added later (as they are common between subsonic,
            * supersonic equations) ---*/
-          if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE) {
+          if (config->GetKind_ObjFunc(val_marker) == AVG_TOTAL_PRESSURE) {
             Psi_outlet[nDim+1]=-Gamma_Minus_One*(5*Velocity2-4*Vn*Vn*Gamma_Minus_One)/2/(SoundSpeed-Vn)/(SoundSpeed+Vn)/Vn;
             Psi_outlet[0] = 0.5*Psi_outlet[nDim+1]*Velocity2;
             for (iDim = 0; iDim < nDim; iDim++) {
@@ -4590,11 +4590,11 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       }
 
       /*--- For mass_flow objective function add B.C. contribution ---*/
-      if (config->GetKind_ObjFunc() == MASS_FLOW_RATE) {
+      if (config->GetKind_ObjFunc(val_marker) == MASS_FLOW_RATE) {
         Psi_outlet[0]+=1;
       }
       /*--- For total pressure objective function. NOTE: this is AREA averaged term---*/
-      if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE) {
+      if (config->GetKind_ObjFunc(val_marker) == AVG_TOTAL_PRESSURE) {
         Psi_outlet[0]+=Velocity2*(2*Vn/(SoundSpeed+Vn)-SoundSpeed/2/Vn)+2*SoundSpeed*Vn*Vn*Gamma_Minus_One/(SoundSpeed+Vn);
         for  (iDim = 0; iDim < nDim; iDim++)
           Psi_outlet[iDim+1]-=UnitNormal[iDim]*(Velocity2*0.5+2*(Gamma_Minus_One)*(Velocity2+SoundSpeed*Vn))/Vn/(SoundSpeed+Vn)+Velocity[iDim]*(1-2*Gamma)/Vn;
@@ -5169,12 +5169,15 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Initialize the adjoint variables to zero (infinity state) ---*/
   PsiRho_Inf = 0.0;
-  if ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
-      (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
-      (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX))
-    PsiE_Inf = -1.0;
-  else
-    PsiE_Inf = 0.0;
+  PsiE_Inf = 0.0;
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if ((config->GetKind_ObjFunc(iMarker) == TOTAL_HEATFLUX) ||
+        (config->GetKind_ObjFunc(iMarker) == MAXIMUM_HEATFLUX) ||
+        (config->GetKind_ObjFunc(iMarker) == INVERSE_DESIGN_HEATFLUX))
+      PsiE_Inf = -1.0;
+  }
+
+
   Phi_Inf = new su2double [nDim];
   Phi_Inf[0] = 0.0; Phi_Inf[1] = 0.0;
   if (nDim == 3) Phi_Inf[2] = 0.0;
@@ -5609,7 +5612,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   bool grid_movement     = config->GetGrid_Movement();
   su2double RefAreaCoeff    = config->GetRefAreaCoeff();
   su2double Mach_Motion     = config->GetMach_Motion();
-  unsigned short ObjFunc = config->GetKind_ObjFunc();
+  unsigned short ObjFunc;
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double Cp              = (Gamma / Gamma_Minus_One) * Gas_Constant;
   su2double Prandtl_Lam     = config->GetPrandtl_Lam();
@@ -5635,12 +5638,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   
   RefDensity  = config->GetDensity_FreeStreamND();
   
-  factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
-  
-  if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
-      (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-      (ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-      (ObjFunc == MASS_FLOW_RATE)) factor = 1.0;
+
 
   /*--- Compute gradient of the grid velocity, if applicable ---*/
   
@@ -5654,6 +5652,13 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   Total_Sens_Temp = 0.0;
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    ObjFunc = config->GetKind_ObjFunc(iMarker);
+    factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+
+    if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
+        (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
+        (ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
+        (ObjFunc == MASS_FLOW_RATE)) factor = 1.0;
     
     Sens_Geo[iMarker] = 0.0;
     
@@ -6098,11 +6103,11 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             
             /*--- AoA sensitivity ---*/
 
-            if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT ||
-                config->GetKind_ObjFunc() == LIFT_COEFFICIENT ||
-                config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT ||
-                config->GetKind_ObjFunc() == EQUIVALENT_AREA ||
-                config->GetKind_ObjFunc() == NEARFIELD_PRESSURE) {
+            if (config->GetKind_ObjFunc(iMarker) == DRAG_COEFFICIENT ||
+                config->GetKind_ObjFunc(iMarker) == LIFT_COEFFICIENT ||
+                config->GetKind_ObjFunc(iMarker) == SIDEFORCE_COEFFICIENT ||
+                config->GetKind_ObjFunc(iMarker) == EQUIVALENT_AREA ||
+                config->GetKind_ObjFunc(iMarker) == NEARFIELD_PRESSURE) {
               if (nDim == 2) {
                 D[0][0] = 0.0; D[0][1] = -1.0;
                 D[1][0] = 1.0; D[1][1] = 0.0;
@@ -6605,9 +6610,9 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = config->GetGrid_Movement();
-  bool heat_flux_obj  = ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
-                         (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
-                         (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX));
+  bool heat_flux_obj  = ((config->GetKind_ObjFunc(val_marker) == TOTAL_HEATFLUX) ||
+                         (config->GetKind_ObjFunc(val_marker) == MAXIMUM_HEATFLUX) ||
+                         (config->GetKind_ObjFunc(val_marker) == INVERSE_DESIGN_HEATFLUX));
   
   su2double Prandtl_Lam  = config->GetPrandtl_Lam();
   su2double Prandtl_Turb = config->GetPrandtl_Turb();

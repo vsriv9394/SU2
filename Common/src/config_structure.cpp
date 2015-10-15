@@ -1548,7 +1548,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
   
-  unsigned short iZone, iCFL, iDim;
+  unsigned short iZone, iCFL, iDim, iMarker;
   bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
   bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
   
@@ -1567,15 +1567,44 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Store the SU2 module that we are executing. ---*/
   
   Kind_SU2 = val_software;
-  
-  /*--- Make sure that 1D outputs are written when objective function requires ---*/
-  
-  if (Kind_ObjFunc[0]== AVG_OUTLET_PRESSURE || Kind_ObjFunc[0] == AVG_TOTAL_PRESSURE) {
-    Wrt_1D_Output = YES;
-    Marker_Out_1D = Marker_Monitoring;
-    nMarker_Out_1D = nMarker_Monitoring;
+
+  if (Adjoint){
+    /*--- Maker sure that nMarker = nObj ---*/
+    if (nMarker_Monitoring!=nObj){
+      if (nMarker_Monitoring==1){
+        /*-- If only one marker was listed with multiple objectives, set that marker as the marker for each objective ---*/
+        nMarker_Monitoring = nObj;
+        string marker = Marker_Monitoring[0];
+        delete[] Marker_Monitoring;
+        Marker_Monitoring = new string[nMarker_Monitoring];
+        for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
+          Marker_Monitoring[iMarker] = marker;
+
+      }
+      else{
+        cout <<"WARNING: when using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length \n "<<
+            "For multiple surfaces per objective, list objective multiple times. \n"<<
+            "For multiple objectives per marker either use one marker overall or list marker multiple times."<<endl;
+        exit(EXIT_FAILURE);
+      }
+    }
   }
-  
+  /*--- Make sure that 1D outputs are written when objective function requires [TODO: does this make config options irrelevant?]---*/
+  unsigned short jMarker=0;
+  nMarker_Out_1D = 0;
+  for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
+    if (Kind_ObjFunc[iMarker]== AVG_OUTLET_PRESSURE || Kind_ObjFunc[iMarker] == AVG_TOTAL_PRESSURE) {
+      Wrt_1D_Output = YES;
+      nMarker_Out_1D++;
+    }
+  }
+  Marker_Out_1D = new string[nMarker_Out_1D];
+  for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
+    if (Kind_ObjFunc[iMarker]== AVG_OUTLET_PRESSURE || Kind_ObjFunc[iMarker] == AVG_TOTAL_PRESSURE) {
+      Marker_Out_1D[jMarker] = Marker_Monitoring[iMarker];
+      jMarker++;
+    }
+  }
   /*--- Low memory only for ASCII Tecplot ---*/
 
   if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
@@ -2131,7 +2160,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    Unless only one value was specified, then set this value for all the markers
    being monitored. ---*/
   
-  unsigned short iMarker;
   
   if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
     cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
