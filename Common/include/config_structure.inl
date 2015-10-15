@@ -921,6 +921,8 @@ inline unsigned short CConfig::GetnMarker_ActDisk_Inlet(void) { return nMarker_A
 
 inline unsigned short CConfig::GetnMarker_ActDisk_Outlet(void) { return nMarker_ActDisk_Outlet; }
 
+inline unsigned short CConfig::GetnObj(void) { return nObj;}
+
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
 
 inline string CConfig::GetMesh_Out_FileName(void) { return Mesh_Out_FileName; }

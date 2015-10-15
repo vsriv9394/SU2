@@ -2118,6 +2118,12 @@ public:
 	unsigned short GetnMarker_Moving(void);
 
 	/*!
+   * \brief Get the total number of objectives in kind_objective list
+   * \return Total number of objectives in kind_objective list
+   */
+	unsigned short GetnObj(void);
+
+	/*!
 	 * \brief Stores the number of marker in the simulation.
 	 * \param[in] val_nmarker - Number of markers of the problem.
 	 */

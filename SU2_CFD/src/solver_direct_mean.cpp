@@ -386,7 +386,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_CEff    = 0.0;	Total_CEquivArea   = 0.0;  Total_CNearFieldOF = 0.0;
   Total_CFx     = 0.0;	Total_CFy          = 0.0;  Total_CFz          = 0.0;
   Total_CT      = 0.0;	Total_CQ           = 0.0;  Total_CMerit       = 0.0;
-  Total_MaxHeat = 0.0;  Total_Heat         = 0.0;
+  Total_MaxHeat = 0.0;  Total_Heat         = 0.0;  Total_ComboObj     = 0.0;
   Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;
 
   /*--- Read farfield conditions ---*/
@@ -6351,6 +6351,76 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   
 }
 
+
+void CEulerSolver::Compute_ComboObj(CConfig *config){
+  unsigned short iMarker_Monitoring;
+  /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    switch(config->GetKind_ObjFunc(iMarker_Monitoring))
+    {
+    case DRAG_COEFFICIENT:
+      Total_ComboObj+=Surface_CDrag[iMarker_Monitoring]+Surface_CDrag_Inv[iMarker_Monitoring];
+      break;
+    case LIFT_COEFFICIENT:
+      Total_ComboObj+=Surface_CLift[iMarker_Monitoring]+Surface_CLift_Inv[iMarker_Monitoring];
+      break;
+    case SIDEFORCE_COEFFICIENT:
+      Total_ComboObj+=Surface_CSideForce[iMarker_Monitoring]+Surface_CSideForce_Inv[iMarker_Monitoring];
+      break;
+    case EFFICIENCY:
+      Total_ComboObj+=Surface_CEff[iMarker_Monitoring]+Surface_CEff_Inv[iMarker_Monitoring];
+      break;
+    case MOMENT_X_COEFFICIENT:
+      Total_ComboObj+=Surface_CMx[iMarker_Monitoring]+Surface_CMx_Inv[iMarker_Monitoring];
+      break;
+    case MOMENT_Y_COEFFICIENT:
+      Total_ComboObj+=Surface_CMy[iMarker_Monitoring]+Surface_CMy_Inv[iMarker_Monitoring];
+      break;
+    case MOMENT_Z_COEFFICIENT:
+      Total_ComboObj+=Surface_CMz[iMarker_Monitoring]+Surface_CMz_Inv[iMarker_Monitoring];
+      break;
+    case FORCE_X_COEFFICIENT:
+      Total_ComboObj+=Surface_CFx[iMarker_Monitoring];
+      break;
+    case FORCE_Y_COEFFICIENT:
+      Total_ComboObj+=Surface_CFy[iMarker_Monitoring];
+      break;
+    case FORCE_Z_COEFFICIENT:
+      Total_ComboObj+=Surface_CFz[iMarker_Monitoring];
+      break;
+      /*--- The following are not per-surface ---*/
+    case EQUIVALENT_AREA:
+      break;
+    case NEARFIELD_PRESSURE:
+      break;
+    case INVERSE_DESIGN_PRESSURE:
+      break;
+    case INVERSE_DESIGN_HEATFLUX:
+      break;
+    case THRUST_COEFFICIENT:
+      break;
+    case TORQUE_COEFFICIENT:
+      break;
+    case TOTAL_HEATFLUX:
+      break;
+    case MAXIMUM_HEATFLUX:
+      break;
+    case FIGURE_OF_MERIT:
+      break;
+    case FREE_SURFACE:
+      break;
+    case AVG_TOTAL_PRESSURE:
+      break;
+    case AVG_OUTLET_PRESSURE:
+      break;
+    case MASS_FLOW_RATE:
+      break;
+    default:
+      break;
+    }
+  }
+}
+
 void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
@@ -10840,7 +10910,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Total_CFx     = 0.0;	Total_CFy          = 0.0;  Total_CFz          = 0.0;
   Total_CT      = 0.0;	Total_CQ           = 0.0;  Total_CMerit       = 0.0;
   Total_MaxHeat = 0.0;  Total_Heat         = 0.0;
-  Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;
+  Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;  Total_ComboObj     = 0.0;
   
   /*--- Read farfield conditions from config ---*/
   

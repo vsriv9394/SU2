@@ -1548,6 +1548,12 @@ public:
 	 */
 	virtual su2double GetTotal_CNearFieldOF(void);
     
+  /*!
+   * \brief Add to the value of the total 'combo' objective.
+   * \param[in] val_obj - Value of the contribution to the 'combo' objective.
+   */
+  virtual void AddTotal_ComboObj(su2double val_obj);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
@@ -2539,6 +2545,7 @@ protected:
   OneD_DensityRef, /*!< \brief flux average density evaluated at an exit */
   OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
   OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
+  Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   Total_CDrag, /*!< \brief Total drag coefficient for all the boundaries. */
 	Total_CLift,		/*!< \brief Total lift coefficient for all the boundaries. */
 	Total_CSideForce,		/*!< \brief Total sideforce coefficient for all the boundaries. */
@@ -2915,6 +2922,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Compute weighted-sum "combo" objective output
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Compute_ComboObj(CConfig *config);
     
 	/*!
 	 * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -3401,7 +3414,13 @@ public:
 	 * \return Value of the NearField pressure coefficient (inviscid + viscous contribution).
 	 */
 	su2double GetTotal_CNearFieldOF(void);
-    
+
+  /*!
+   * \brief Add to the value of the total 'combo' objective.
+   * \param[in] val_obj - Value of the contribution to the 'combo' objective.
+   */
+  void AddTotal_ComboObj(su2double val_obj);
+
 	/*!
 	 * \brief Set the value of the Equivalent Area coefficient.
 	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
@@ -3438,6 +3457,12 @@ public:
 	 */
 	su2double GetTotal_CLift(void);
     
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
+   * \return Value of the drag coefficient (inviscid + viscous contribution).
+   */
+  su2double GetTotal_ComboObj(void);
+
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
 	 * \return Value of the drag coefficient (inviscid + viscous contribution).

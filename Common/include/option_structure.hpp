@@ -1584,6 +1584,11 @@ public:
     // No default to set
     size = 0;
   }
+
+  string optionCheckMultipleValues(vector<string> & option_value, string type_id, string option_name) {
+    // overwrites base method
+    return "";
+  }
 };
 
 class COptionDoubleArray : public COptionBase{

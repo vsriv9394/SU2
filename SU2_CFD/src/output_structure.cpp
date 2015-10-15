@@ -4229,6 +4229,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                                      unsigned short val_iZone) {
   
   bool output_1d  = config[val_iZone]->GetWrt_1D_Output();
+  bool output_comboObj = ((config[val_iZone]->GetnObj())>1);
   bool output_massflow = (config[val_iZone]->GetKind_ObjFunc() == MASS_FLOW_RATE);
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   
@@ -5827,6 +5828,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Surface_CMx_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx_Inv(iMarker_Monitoring);
       Surface_CMy_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy_Inv(iMarker_Monitoring);
       Surface_CMz_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz_Inv(iMarker_Monitoring);
+
     }
     
     /*--- Write file name with extension ---*/
@@ -7069,7 +7071,18 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
       }
       
     }
-    
+    // TODO: make sure this works in parallel (potential solution: move combination across processors to be pe-marker. will be called more times, but may be needed )
+    switch(config->GetKind_ObjFunc(config->GetMarker_All_Monitoring(iMarker))){
+    case AVG_TOTAL_PRESSURE:
+      solver_container->AddTotal_ComboObj(AveragePressure);
+      break;
+    case AVG_OUTLET_PRESSURE:
+      solver_container->AddTotal_ComboObj(PressureRef);
+      break;
+    case MASS_FLOW_RATE:
+      solver_container->AddTotal_ComboObj(MassFlowRate);
+      break;
+    }
   }
   
 #ifdef HAVE_MPI
