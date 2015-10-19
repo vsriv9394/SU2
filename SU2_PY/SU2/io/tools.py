@@ -434,7 +434,7 @@ def get_constraintSign( sign ):
 #  Get Adjoint Filename Suffix
 # -------------------------------------------------------------------
 
-def get_adjointSuffix(objective_function=None):
+def get_adjointSuffix(objective_function=None, nObj=1):
     """ gets the adjoint suffix given an objective function """
     
     # adjoint name map
@@ -460,15 +460,20 @@ def get_adjointSuffix(objective_function=None):
                  "AVG_TOTAL_PRESSURE"      : "pt"        ,
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfw"       ,
-                 "FREE_SURFACE"            : "fs"        }
+                 "FREE_SURFACE"            : "fs"        ,
+                 "COMBO" 		   : "combo"    ,}
     
     # if none or false, return map
-    if not objective_function:
-        return name_map
-    
+
     # return desired objective function suffix
-    elif name_map.has_key(objective_function):
+    if name_map.has_key(objective_function):
         return name_map[objective_function]
+    
+    elif nObj >1:
+       return "combo"
+    
+    elif not objective_function:
+        return name_map
     
     # otherwise...
     else:
@@ -921,7 +926,7 @@ def restart2solution(config,state={}):
         solution = config.SOLUTION_ADJ_FILENAME           
         # add suffix
         func_name = config.OBJECTIVE_FUNCTION
-        suffix    = get_adjointSuffix(func_name)
+        suffix    = get_adjointSuffix(func_name, len(func_name))
         restart   = add_suffix(restart,suffix)
         solution  = add_suffix(solution,suffix)
         # expand unsteady time
