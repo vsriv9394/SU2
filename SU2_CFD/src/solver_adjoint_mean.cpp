@@ -1007,7 +1007,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   
   su2double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, CD, CL, Cp, CpTarget,
   CT, CQ, x_origin, y_origin, z_origin, WDrag, Area, invCD, CLCD2, invCQ, CTRCQ2;
-  unsigned short iMarker;
+  unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint;
   
   int rank = MASTER_NODE;
@@ -1050,6 +1050,9 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
         if (nDim == 3) z = geometry->node[iPoint]->GetCoord(2);
         
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        for (iDim=0; iDim<nDim;iDim++)
+          ForceProj_Vector[iDim]=0;
+
         switch (config->GetKind_ObjFunc(iMarker)) {
           case DRAG_COEFFICIENT :
             if (nDim == 2) { ForceProj_Vector[0] += cos(Alpha); ForceProj_Vector[1] += sin(Alpha); }
