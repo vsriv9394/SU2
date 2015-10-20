@@ -1008,7 +1008,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   su2double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, CD, CL, Cp, CpTarget,
   CT, CQ, x_origin, y_origin, z_origin, WDrag, Area, invCD, CLCD2, invCQ, CTRCQ2;
   string Marker_Tag, Monitoring_Tag;
-  unsigned short iMarker, iDim, iMarker_Monitoring;
+  unsigned short iMarker, iDim, iMarker_Monitoring,jMarker;
   unsigned long iVertex, iPoint;
   
   int rank = MASTER_NODE;
@@ -1037,10 +1037,10 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   
   /*--- Evaluate the boundary condition coefficients. ---*/
   
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++)
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
     iMarker = nMarker+1;
     /*--- Find the matching iMarker ---*/
-    for (unsigned short jMarker=0; jMarker<nMarker; jMarker++){
+    for (jMarker=0; jMarker<nMarker; jMarker++){
       Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
       Marker_Tag = config->GetMarker_All_TagBound(jMarker);
       if (Monitoring_Tag==Marker_Tag)
@@ -1048,7 +1048,6 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
     }
     if ((iMarker<nMarker) && (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_Monitoring(iMarker) == YES))
-      
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1058,8 +1057,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
         if (nDim == 3) z = geometry->node[iPoint]->GetCoord(2);
         
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        for (iDim=0; iDim<nDim;iDim++)
-          ForceProj_Vector[iDim]=0;
+        ForceProj_Vector = node[iPoint]->GetForceProj_Vector();
 
         switch (config->GetKind_ObjFunc(iMarker_Monitoring)) {
           case DRAG_COEFFICIENT :
@@ -1155,6 +1153,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
         node[iPoint]->SetForceProj_Vector(ForceProj_Vector);
         
       }
+  }
   
   delete [] ForceProj_Vector;
   

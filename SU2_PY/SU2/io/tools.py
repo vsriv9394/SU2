@@ -464,17 +464,16 @@ def get_adjointSuffix(objective_function=None, nObj=1):
                  "COMBO" 		   : "combo"    }
     
     # if none or false, return map
-
-    # return desired objective function suffix
-    if name_map.has_key(objective_function):
-        return name_map[objective_function]
+    if not objective_function:
+        return name_map
     
     elif nObj >1:
        return "combo"
-    
-    elif not objective_function:
-        return name_map
-    
+   
+    # return desired objective function suffix
+    elif name_map.has_key(objective_function):
+        return name_map[objective_function]
+   
     # otherwise...
     else:
         raise Exception('Unrecognized adjoint function name')
