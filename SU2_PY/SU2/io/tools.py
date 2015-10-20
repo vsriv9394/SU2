@@ -461,7 +461,7 @@ def get_adjointSuffix(objective_function=None, nObj=1):
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfw"       ,
                  "FREE_SURFACE"            : "fs"        ,
-                 "COMBO" 		   : "combo"    ,}
+                 "COMBO" 		   : "combo"    }
     
     # if none or false, return map
 
