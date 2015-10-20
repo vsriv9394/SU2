@@ -116,6 +116,7 @@ private:
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
   unsigned short *Kind_ObjFunc;  /*!< \brief Kind of objective function. */
+  su2double *Weight_ObjFunc;    /*!< \brief Weight applied to objective function. */
   unsigned short Kind_SensSmooth; /*!< \brief Kind of sensitivity smoothing technique. */
   unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
   unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). */
@@ -3590,6 +3591,14 @@ public:
    * \return Kind of objective function.
    */
   unsigned short GetKind_ObjFunc(unsigned short val_obj);
+
+  /*!
+   * \brief Get the weight of objective function. There are several options: Drag coefficient,
+   *        Lift coefficient, efficiency, etc.
+   * \note The objective function will determine the boundary condition of the adjoint problem.
+   * \return Weight of objective function.
+   */
+  su2double GetWeight_ObjFunc(unsigned short val_obj);
 
 	/*!
 	 * \brief Get the kind of sensitivity smoothing technique.

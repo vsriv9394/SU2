@@ -809,6 +809,8 @@ inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc[0]; }
 
 inline unsigned short CConfig::GetKind_ObjFunc(unsigned short val_obj) {return Kind_ObjFunc[val_obj]; }
 
+inline su2double CConfig::GetWeight_ObjFunc(unsigned short val_obj) {return Weight_ObjFunc[val_obj]; }
+
 inline unsigned short CConfig::GetKind_SensSmooth(void) {return Kind_SensSmooth; }
 
 inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Simulation; }
