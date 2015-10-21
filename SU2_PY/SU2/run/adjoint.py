@@ -102,7 +102,7 @@ def adjoint( config ):
     # files out
     objective    = konfig['OBJECTIVE_FUNCTION']
     adj_title    = 'ADJOINT_' + objective
-    suffix       = su2io.get_adjointSuffix(objective, len(objective))
+    suffix       = su2io.get_adjointSuffix(objective)
     restart_name = konfig['RESTART_FLOW_FILENAME']
     restart_name = su2io.add_suffix(restart_name,suffix)
     
