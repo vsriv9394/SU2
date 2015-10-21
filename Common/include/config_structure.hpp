@@ -290,7 +290,7 @@ private:
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
 	unsigned short nDV,		/*!< \brief Number of design variables. */
-	nObj;               /*! \brief Number of objective functions. */
+	nObj, nObjW;              /*! \brief Number of objective functions. */
   unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */

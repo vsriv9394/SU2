@@ -798,7 +798,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Multigrid with the adjoint problem */
   addBoolOption("MG_ADJFLOW", MG_AdjointFlow, true);
   /*!\brief OBJECTIVE_WEIGHT  \n DESCRIPTION: Adjoint problem boundary condition weights. Applies scaling factor to objective(s) \ingroup Config*/
-  addDoubleListOption("OBJECTIVE_WEIGHT", nObj, Weight_ObjFunc);
+
+  addDoubleListOption("OBJECTIVE_WEIGHT", nObjW, Weight_ObjFunc);
   /*!\brief OBJECTIVE_FUNCTION
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n Default: DRAG_COEFFICIENT \ingroup Config*/
   addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
@@ -1570,8 +1571,24 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   Kind_SU2 = val_software;
 
-  if (Adjoint){
-    /*--- Maker sure that nMarker = nObj ---*/
+  /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
+  if (nObj<1){
+    Kind_ObjFunc = new unsigned short[1];
+    Kind_ObjFunc[0]=0;
+    Weight_ObjFunc = new su2double[1];
+    Weight_ObjFunc[0]=0.0;
+    nObj=1;
+  }
+  /*-- Correct for case where Weight_ObjFunc has not been provided or has lenght < kind_objfunc---*/
+  if (nObjW<nObj){
+    if (Weight_ObjFunc!=NULL)
+      delete [] Weight_ObjFunc;
+    Weight_ObjFunc = new su2double[nObj];
+    for (unsigned short iObj=0; iObj<nObj; iObj++)
+      Weight_ObjFunc[iObj]=1.0;
+  }
+  /*--- Maker sure that nMarker = nObj ---*/
+  if (nObj>0){
     if (nMarker_Monitoring!=nObj){
       if (nMarker_Monitoring==1){
         /*-- If only one marker was listed with multiple objectives, set that marker as the marker for each objective ---*/
@@ -1583,6 +1600,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           Marker_Monitoring[iMarker] = marker;
 
       }
+      else if(nObj==1){
+        nObj=nMarker_Monitoring;
+        unsigned short kind_obj = Kind_ObjFunc[0];
+        Kind_ObjFunc = new unsigned short[nMarker_Monitoring];
+        for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
+          Kind_ObjFunc[iMarker] = kind_obj;
+      }
       else{
         cout <<"WARNING: when using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length \n "<<
             "For multiple surfaces per objective, list objective multiple times. \n"<<
@@ -1590,21 +1614,21 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         exit(EXIT_FAILURE);
       }
     }
-  }
-  /*--- Make sure that 1D outputs are written when objective function requires [TODO: does this make config options irrelevant?]---*/
-  unsigned short jMarker=0;
-  nMarker_Out_1D = 0;
-  for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
-    if (Kind_ObjFunc[iMarker]== AVG_OUTLET_PRESSURE || Kind_ObjFunc[iMarker] == AVG_TOTAL_PRESSURE) {
-      Wrt_1D_Output = YES;
-      nMarker_Out_1D++;
+    /*--- Make sure that 1D outputs are written when objective function requires [TODO: does this make config options irrelevant?]---*/
+    unsigned short jMarker=0;
+    nMarker_Out_1D = 0;
+    for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
+      if (Kind_ObjFunc[iMarker]== AVG_OUTLET_PRESSURE || Kind_ObjFunc[iMarker] == AVG_TOTAL_PRESSURE) {
+        Wrt_1D_Output = YES;
+        nMarker_Out_1D++;
+      }
     }
-  }
-  Marker_Out_1D = new string[nMarker_Out_1D];
-  for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
-    if (Kind_ObjFunc[iMarker]== AVG_OUTLET_PRESSURE || Kind_ObjFunc[iMarker] == AVG_TOTAL_PRESSURE) {
-      Marker_Out_1D[jMarker] = Marker_Monitoring[iMarker];
-      jMarker++;
+    Marker_Out_1D = new string[nMarker_Out_1D];
+    for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
+      if (Kind_ObjFunc[iMarker]== AVG_OUTLET_PRESSURE || Kind_ObjFunc[iMarker] == AVG_TOTAL_PRESSURE) {
+        Marker_Out_1D[jMarker] = Marker_Monitoring[iMarker];
+        jMarker++;
+      }
     }
   }
   /*--- Low memory only for ASCII Tecplot ---*/

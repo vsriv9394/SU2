@@ -476,7 +476,7 @@ def get_adjointSuffix(objective_function=None):
        return "combo" 
     # return desired objective function suffix
     elif name_map.has_key(objective[0]):
-        return name_map[objective_function[0]]
+        return name_map[objective[0]]
 
     # otherwise...
     else:
