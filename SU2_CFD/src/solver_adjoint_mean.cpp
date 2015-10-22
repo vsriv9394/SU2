@@ -1051,7 +1051,6 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
         node[iPoint]->SetForceProj_Vector(ForceProj_Vector);
       }
   }
-  cout <<"SetForce"<<endl;
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
     obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
     /*--- Find the matching iMarker ---*/
