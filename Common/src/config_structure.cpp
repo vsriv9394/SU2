@@ -1574,9 +1574,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
   if (nObj<1){
     Kind_ObjFunc = new unsigned short[1];
-    Kind_ObjFunc[0]=0;
+    Kind_ObjFunc[0]=DRAG_COEFFICIENT;
     Weight_ObjFunc = new su2double[1];
-    Weight_ObjFunc[0]=0.0;
+    Weight_ObjFunc[0]=1.0;
     nObj=1;
   }
   /*-- Correct for case where Weight_ObjFunc has not been provided or has lenght < kind_objfunc---*/
