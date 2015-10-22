@@ -3593,6 +3593,7 @@ public:
   unsigned short GetKind_ObjFunc(unsigned short val_obj);
 
   /*!
+   * \author H. Kline
    * \brief Get the weight of objective function. There are several options: Drag coefficient,
    *        Lift coefficient, efficiency, etc.
    * \note The objective function will determine the boundary condition of the adjoint problem.

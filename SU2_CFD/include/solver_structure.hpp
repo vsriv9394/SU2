@@ -540,6 +540,14 @@ public:
 	 */
 	virtual void Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config);
     
+
+	/*!
+   * \author H. Kline
+   * \brief Compute weighted-sum "combo" objective output
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_ComboObj(CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1451,7 +1459,14 @@ public:
 	 * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
 	 */
 	virtual su2double GetCDrag_Visc(unsigned short val_marker);
-    
+
+	/*!
+   * \author H. Kline
+   * \brief Provide the total "combo" objective (weighted sum of other values).
+   * \return Value of the "combo" objective values.
+   */
+	virtual su2double GetTotal_ComboObj(void);
+
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the lift coefficient (inviscid + viscous contribution).
@@ -1548,6 +1563,13 @@ public:
 	 */
 	virtual su2double GetTotal_CNearFieldOF(void);
     
+  /*!
+   * \author H. Kline
+   * \brief Add to the value of the total 'combo' objective.
+   * \param[in] val_obj - Value of the contribution to the 'combo' objective.
+   */
+  virtual void AddTotal_ComboObj(su2double val_obj);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
@@ -2539,6 +2561,7 @@ protected:
   OneD_DensityRef, /*!< \brief flux average density evaluated at an exit */
   OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
   OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
+  Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   Total_CDrag, /*!< \brief Total drag coefficient for all the boundaries. */
 	Total_CLift,		/*!< \brief Total lift coefficient for all the boundaries. */
 	Total_CSideForce,		/*!< \brief Total sideforce coefficient for all the boundaries. */
@@ -2916,6 +2939,13 @@ public:
 	 */
 	void Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config);
 
+	/*!
+	 * \author H. Kline
+	 * \brief Compute weighted-sum "combo" objective output
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Compute_ComboObj(CConfig *config);
+    
 	/*!
 	 * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
 	 *
@@ -3402,6 +3432,13 @@ public:
 	 */
 	su2double GetTotal_CNearFieldOF(void);
 
+  /*!
+   * \author H. Kline
+   * \brief Add to the value of the total 'combo' objective.
+   * \param[in] val_obj - Value of the contribution to the 'combo' objective.
+   */
+  void AddTotal_ComboObj(su2double val_obj);
+
 	/*!
 	 * \brief Set the value of the Equivalent Area coefficient.
 	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
@@ -3438,6 +3475,13 @@ public:
 	 */
 	su2double GetTotal_CLift(void);
     
+  /*!
+   * \author H. Kline
+   * \brief Provide the total "combo" objective (weighted sum of other values).
+   * \return Value of the "combo" objective values.
+   */
+  su2double GetTotal_ComboObj(void);
+
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
 	 * \return Value of the drag coefficient (inviscid + viscous contribution).

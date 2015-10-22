@@ -4038,10 +4038,11 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool frozen_turb = config->GetFrozen_Visc();
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool inv_design = (config->GetInvDesign_Cp() || config->GetInvDesign_HeatFlux());
+  bool output_comboObj = ((config->GetnObj())>1);
   bool output_1d = config->GetWrt_1D_Output();
   bool output_per_surface = false;
   bool output_massflow = (config->GetKind_ObjFunc() == MASS_FLOW_RATE);
-  if (config->GetnMarker_Monitoring() > 1) output_per_surface = true;
+  if ((config->GetnMarker_Monitoring() > 1) &&(config->GetnObj() <=1)) output_per_surface = true;
   
   unsigned short direct_diff = config->GetDirectDiff();
 
@@ -4114,6 +4115,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     aeroelastic_coeff += ",\"pitch_"  + Monitoring_Tag + "\"";
   }
   
+  char combo_obj[] = ",\"ComboObj\"";
   /*--- Header for the residuals ---*/
 
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
@@ -4162,6 +4164,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       if (output_1d) ConvHist_file[0] << oneD_outputs;
       if (output_massflow and !output_1d)  ConvHist_file[0]<< mass_flow_rate;
       if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_flow_coeff;
+      if (output_comboObj) ConvHist_file[0] << combo_obj;
       ConvHist_file[0] << end;
       if (freesurface) {
         ConvHist_file[0] << begin << flow_coeff << free_surface_coeff;
@@ -4230,6 +4233,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   
   bool output_1d  = config[val_iZone]->GetWrt_1D_Output();
   bool output_massflow = (config[val_iZone]->GetKind_ObjFunc() == MASS_FLOW_RATE);
+  bool output_comboObj = ((config[val_iZone]->GetnObj())>1);
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   
   int rank;
@@ -4238,7 +4242,16 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 #else
   rank = MASTER_NODE;
 #endif
-  
+
+  /*-- Compute the total objective if a "combo" objective is used ---*/
+  if (output_comboObj){
+    switch (config[val_iZone]->GetKind_Solver()) {
+      case EULER:                   case NAVIER_STOKES:                   case RANS:
+        solver_container[val_iZone][FinestMesh][FLOW_SOL]->Compute_ComboObj(config[val_iZone]);
+        break;
+    }
+  }
+
   /*--- If 1-D outputs requested, calculated them. Requires info from all nodes,
    Get area-averaged and flux-averaged values at the specified surface ---*/
   
@@ -4259,6 +4272,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     }
   }
 
+
   /*--- Output using only the master node ---*/
   if (rank == MASTER_NODE) {
     
@@ -4271,7 +4285,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000], resid_aux[1000], levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000],
     heat_coeff[1000], fea_coeff[1000], wave_resid[1000], heat_resid[1000], fea_resid[1000], end[1000],
-    oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000];
+    oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000], combo_obj[1000];
 
     su2double dummy = 0.0, *Coord;
     unsigned short iVar, iMarker, iMarker_Monitoring;
@@ -4310,7 +4324,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
     
     bool output_per_surface = false;
-    if (config[val_iZone]->GetnMarker_Monitoring() > 1) output_per_surface = true;
+    if ((config[val_iZone]->GetnMarker_Monitoring() > 1) &&(config[val_iZone]->GetnObj() <=1) ) output_per_surface = true;
 
     unsigned short direct_diff = config[val_iZone]->GetDirectDiff();
 
@@ -4321,7 +4335,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatFluxDiff = 0.0,
     Total_CFEA = 0.0, Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0;
     su2double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
-    OneD_FluxAvgPress = 0.0, OneD_FluxAvgDensity = 0.0, OneD_FluxAvgVelocity = 0.0, OneD_FluxAvgEntalpy = 0.0;
+    OneD_FluxAvgPress = 0.0, OneD_FluxAvgDensity = 0.0, OneD_FluxAvgVelocity = 0.0, OneD_FluxAvgEntalpy = 0.0,
+    Total_ComboObj;
     
     /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
     su2double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
@@ -4440,7 +4455,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         Total_CFx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
         Total_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
         Total_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
-
+        Total_ComboObj         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_ComboObj();
         if (direct_diff != NO_DERIVATIVE){
           D_Total_CLift       = SU2_TYPE::GetDerivative(Total_CLift);
           D_Total_CDrag       = SU2_TYPE::GetDerivative(Total_CDrag);
@@ -4853,6 +4868,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               SPRINTF (levelset_resid, ", %12.10f", log10 (residual_levelset[0]));
             }
             
+            /*--- Combo objective ---*/
+            if (output_comboObj){
+              SPRINTF(combo_obj,", %12.10f", Total_ComboObj);
+            }
             /*--- Fluid structure residual ---*/
 //            if (fluid_structure) {
 //              if (nDim == 2) SPRINTF (levelset_resid, ", %12.10f, %12.10f, 0.0", log10 (residual_fea[0]), log10 (residual_fea[1]));
@@ -5078,7 +5097,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               else cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
 //            }
 //            else if (fluid_structure) cout << "     Res[Rho]" << "   Res[Displx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
-            
+
             break;
             
           case TNE2_EULER :  case TNE2_NAVIER_STOKES:
@@ -5307,6 +5326,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (output_1d) ConvHist_file[0] << oneD_outputs;
             if (output_massflow and !output_1d) ConvHist_file[0] << massflow_outputs;
             if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
+            if (output_comboObj) ConvHist_file[0] << combo_obj;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
@@ -6986,13 +7006,14 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   SumPressure = 0.0, SumStagPressure = 0.0, SumArea = 0.0, SumMach = 0.0, SumTemperature = 0.0, SumForUref = 0.0, SumRhoU = 0.0, SumEnthalpy = 0.0,// sum of (local value ) * (dA) (integral)
   AveragePressure = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
   VelocityRef = 0.0, EnthalpyRef = 0.0, DensityRef = 0.0, PressureRef = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
-  
+  su2double obj_weight;
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   su2double Gamma = config->GetGamma();
   unsigned short nDim = geometry->GetnDim();
-  
+  unsigned short iMarker_Monitoring;
+  string Marker_Tag, Monitoring_Tag;
   
   /*--- Loop over the markers ---*/
   
@@ -7069,6 +7090,25 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
         
       }
       
+    }
+    // TODO: make sure this works in parallel (potential solution: move combination across processors to be pe-marker. will be called more times, but may be needed )
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    for (unsigned short jMarker_Monitoring=0; jMarker_Monitoring <config->GetnMarker_Monitoring(); jMarker_Monitoring++){
+      Monitoring_Tag = config->GetMarker_Monitoring(jMarker_Monitoring);
+      if (Monitoring_Tag==Marker_Tag)
+        iMarker_Monitoring = jMarker_Monitoring;
+    }
+    obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+    switch(config->GetKind_ObjFunc(config->GetMarker_All_Monitoring(iMarker))){
+    case AVG_TOTAL_PRESSURE:
+      solver_container->AddTotal_ComboObj(AveragePressure*obj_weight);
+      break;
+    case AVG_OUTLET_PRESSURE:
+      solver_container->AddTotal_ComboObj(PressureRef*obj_weight);
+      break;
+    case MASS_FLOW_RATE:
+      solver_container->AddTotal_ComboObj(MassFlowRate*obj_weight);
+      break;
     }
   }
   
