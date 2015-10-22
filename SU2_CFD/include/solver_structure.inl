@@ -272,8 +272,6 @@ inline su2double CSolver::GetTotal_CFEA() { return 0; }
 
 inline su2double CSolver::GetTotal_CNearFieldOF() { return 0; }
 
-inline void CSolver::AddTotal_ComboObj(su2double val_obj) {}
-
 inline void CSolver::SetTotal_CEquivArea(su2double val_cequivarea) { }
 
 inline void CSolver::SetTotal_CpDiff(su2double val_pressure) { }
@@ -726,8 +724,6 @@ inline su2double CEulerSolver::GetCEff_Inv(unsigned short val_marker) { return C
 
 inline su2double CEulerSolver::GetTotal_CLift() { return Total_CLift; }
 
-inline su2double CEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
-
 inline su2double CEulerSolver::GetTotal_CDrag() { return Total_CDrag; }
 
 inline su2double CEulerSolver::GetTotal_CMx() { return Total_CMx; }
@@ -771,8 +767,6 @@ inline su2double CEulerSolver::GetTotal_CpDiff() { return Total_CpDiff; }
 inline su2double CEulerSolver::GetTotal_HeatFluxDiff() { return Total_HeatFluxDiff; }
 
 inline su2double CEulerSolver::GetTotal_CNearFieldOF() { return Total_CNearFieldOF; }
-
-inline void CEulerSolver::AddTotal_ComboObj(su2double val_obj) {Total_ComboObj +=val_obj;}
 
 inline void CEulerSolver::SetTotal_CEquivArea(su2double cequivarea) { Total_CEquivArea = cequivarea; }
 
