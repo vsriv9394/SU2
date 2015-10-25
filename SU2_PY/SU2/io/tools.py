@@ -463,24 +463,24 @@ def get_adjointSuffix(objective_function=None):
                  "FREE_SURFACE"            : "fs"        ,
                  "COMBO" 		   : "combo"    }
     
-    # remove white space
-    objective = ''.join(objective_function.split())
-    objective = objective.split(",")
-    nObj = len(objective)
     
     # if none or false, return map
     if not objective_function:
         return name_map
-       
-    elif nObj >1:
-       return "combo" 
-    # return desired objective function suffix
-    elif name_map.has_key(objective[0]):
-        return name_map[objective[0]]
-
-    # otherwise...
     else:
-        raise Exception('Unrecognized adjoint function name')
+        # remove white space
+        objective = ''.join(objective_function.split())
+        objective = objective.split(",")
+        nObj = len(objective)
+        if nObj >1:
+           return "combo" 
+        # return desired objective function suffix
+        elif name_map.has_key(objective[0]):
+            return name_map[objective[0]]
+    
+        # otherwise...
+        else:
+            raise Exception('Unrecognized adjoint function name')
     
 #: def get_adjointSuffix()
     
