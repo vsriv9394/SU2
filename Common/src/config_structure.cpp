@@ -203,6 +203,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   su2double default_vec_3d[3];
   su2double default_vec_4d[4];
+  su2double default_vec_5d[5];
   su2double default_vec_2d[2];
   su2double default_vec_6d[6];
   
@@ -803,6 +804,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief OBJECTIVE_FUNCTION
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n Default: DRAG_COEFFICIENT \ingroup Config*/
   addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
+
+  default_vec_5d[0]=0.0; default_vec_5d[1]=0.0; default_vec_5d[2]=0.0;
+  default_vec_5d[3]=0.0;  default_vec_5d[4]=0.0;
+  /*!\brief OBJ_CHAIN_RULE_COEFF
+  * \n DESCRIPTION: Coefficients defining the objective function gradient using the chain rule
+  * with area-averaged outlet primitive variables. \ingroup Config   */
+  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF",5,Obj_ChainRuleCoeff,default_vec_5d);
+
   default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
   addDoubleArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_vec_2d);
@@ -1618,14 +1627,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     unsigned short jMarker=0;
     nMarker_Out_1D = 0;
     for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
-      if (Kind_ObjFunc[iMarker]== AVG_OUTLET_PRESSURE || Kind_ObjFunc[iMarker] == AVG_TOTAL_PRESSURE) {
+      if (Kind_ObjFunc[iMarker]== AVG_OUTLET_PRESSURE || Kind_ObjFunc[iMarker] == AVG_TOTAL_PRESSURE || Kind_ObjFunc[iMarker]==OUTLET_CHAIN_RULE) {
         Wrt_1D_Output = YES;
         nMarker_Out_1D++;
       }
     }
     Marker_Out_1D = new string[nMarker_Out_1D];
     for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
-      if (Kind_ObjFunc[iMarker]== AVG_OUTLET_PRESSURE || Kind_ObjFunc[iMarker] == AVG_TOTAL_PRESSURE) {
+      if (Kind_ObjFunc[iMarker]== AVG_OUTLET_PRESSURE || Kind_ObjFunc[iMarker] == AVG_TOTAL_PRESSURE || Kind_ObjFunc[iMarker]==OUTLET_CHAIN_RULE) {
         Marker_Out_1D[jMarker] = Marker_Monitoring[iMarker];
         jMarker++;
       }
@@ -4089,6 +4098,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
         case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
         case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
+        case OUTLET_CHAIN_RULE:       cout << "Objective function defined by chain rule." << endl; break;
       }
 		}
 		else{
@@ -5774,6 +5784,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
         case AVG_OUTLET_PRESSURE:      AdjExt = "_pe";       break;
         case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
+        case OUTLET_CHAIN_RULE:       AdjExt = "_chn";       break;
       }
     }
     else{

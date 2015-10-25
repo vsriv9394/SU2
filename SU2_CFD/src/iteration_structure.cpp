@@ -1291,7 +1291,8 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   
   unsigned short iZone, iMesh, ExtIter = config_container[ZONE_0]->GetExtIter();
   unsigned short nZone = config_container[ZONE_0]->GetnZone();
-  
+  unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
+
   bool turbulent = false, flow = false;
   
   switch(config_container[ZONE_0]->GetKind_Solver()){
@@ -1375,6 +1376,12 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
     for (iZone = 0; iZone < nZone; iZone++){
       /*--- Register objective function as output of the iteration ---*/
       if (flow){
+        /*--- For flux-avg or area-avg objective functions the 1D values must be calculated first ---*/
+        if (config_container[iZone]->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE ||
+            config_container[iZone]->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
+            config_container[iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE)
+          output->OneDimensionalOutput(solver_container[iZone][FinestMesh][FLOW_SOL],
+              geometry_container[iZone][FinestMesh], config_container[iZone]);
         solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterObj_Func(config_container[iZone]);
       }
       for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){

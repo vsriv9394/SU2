@@ -4091,7 +4091,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char free_surface_coeff[]= ",\"CFreeSurface\"";
   char wave_coeff[]= ",\"CWave\"";
   char fea_coeff[]= ",\"CFEA\"";
-  char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
+  char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\",\"Sens_BPress\"";
   char oneD_outputs[]= ",\"Avg_TotalPress\",\"Avg_Mach\",\"Avg_Temperature\",\"MassFlowRate\",\"FluxAvg_Pressure\",\"FluxAvg_Density\",\"FluxAvg_Velocity\",\"FluxAvg_Enthalpy\"";
   char Cp_inverse_design[]= ",\"Cp_Diff\"";
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
@@ -4340,7 +4340,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
     su2double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
-    su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
+    su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0, Total_Sens_BPress=0.0;
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
     su2double D_Total_CLift = 0.0, D_Total_CDrag = 0.0, D_Total_CSideForce = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0;
@@ -4597,6 +4597,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           Total_Sens_AoA   = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_AoA();
           Total_Sens_Press = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Press();
           Total_Sens_Temp  = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Temp();
+          Total_Sens_BPress  = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_BPress();
           
           /*--- Adjoint flow residuals ---*/
           
@@ -4666,6 +4667,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           Total_Sens_AoA   = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_AoA();
           Total_Sens_Press = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Press();
           Total_Sens_Temp  = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Temp();
+          Total_Sens_BPress  = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_BPress();
           
           /*--- Adjoint flow residuals ---*/
           for (iVar = 0; iVar < nVar_AdjTNE2; iVar++) {
@@ -4881,7 +4883,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (adjoint) {
               
               /*--- Adjoint coefficients ---*/
-              SPRINTF (adjoint_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, 0.0", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp);
+              SPRINTF (adjoint_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, 0.0, %12.10f", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp, Total_Sens_BPress);
               
               /*--- Adjoint flow residuals ---*/
               if (nDim == 2) {
@@ -4936,7 +4938,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (adjoint) {
               
               /*--- Adjoint coefficients ---*/
-              SPRINTF (adjoint_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, 0.0", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp);
+              SPRINTF (adjoint_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, 0.0, %12.10f", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp,Total_Sens_BPress);
               
               /*--- Adjoint flow residuals ---*/
               for (iVar = 0; iVar < nSpecies+nDim+2; iVar++) {
@@ -5224,10 +5226,17 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             if (incompressible || freesurface) cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";
             else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
-            cout << "      Sens_Geo" << "     Sens_Mach" << endl;
+            if (output_1d)
+              cout << "      Sens_Geo" << "     Sens_BPress" << endl;
+            else
+              cout << "      Sens_Geo" << "     Sens_Mach" << endl;
             
             if (freesurface) {
-              cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo" << "   Sens_Mach" << endl;
+              cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
+              if (output_1d)
+                cout << "     Sens_BPress" << endl;
+              else
+                cout << "   Sens_Mach" << endl;
             }
             break;
             
@@ -5265,10 +5274,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (incompressible || freesurface) cout << "   Res[Psi_Velx]";
               else cout << "     Res[Psi_E]";
             }
-            cout << "     Sens_Geo" << "    Sens_Mach" << endl;
-            
+            if (output_1d)
+               cout << "      Sens_Geo" << "     Sens_BPress" << endl;
+             else
+               cout << "      Sens_Geo" << "     Sens_Mach" << endl;
+
+
             if (freesurface) {
-              cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo" << "   Sens_Mach" << endl;
+              cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
+              if (output_1d)
+                cout << "     Sens_BPress" << endl;
+              else
+                cout << "   Sens_Mach" << endl;
             }
             break;
             
@@ -5526,7 +5543,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout.precision(4);
           cout.setf(ios::scientific, ios::floatfield);
           cout.width(14); cout << Total_Sens_Geo;
-          cout.width(14); cout << Total_Sens_Mach;
+          if (output_1d){
+            cout.width(14); cout << Total_Sens_BPress;
+          }
+          else{
+            cout.width(14); cout << Total_Sens_Mach;
+          }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
           
@@ -5543,7 +5565,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(3);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(12); cout << Total_Sens_Geo;
-            cout.width(12); cout << Total_Sens_Mach;
+            if (output_1d){
+              cout.width(12); cout << Total_Sens_BPress;
+            }
+            else{
+              cout.width(12); cout << Total_Sens_Mach;
+            }
             cout.unsetf(ios_base::floatfield);
             cout << endl;
           }
@@ -5578,7 +5605,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout.precision(4);
           cout.setf(ios::scientific, ios::floatfield);
           cout.width(14); cout << Total_Sens_Geo;
-          cout.width(14); cout << Total_Sens_Mach;
+          if (output_1d){
+            cout.width(14); cout << Total_Sens_BPress;
+          }
+          else{
+            cout.width(14); cout << Total_Sens_Mach;
+          }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
           if (freesurface) {
@@ -5596,7 +5628,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(12); cout << Total_Sens_Geo;
-            cout.width(12); cout << Total_Sens_Mach;
+            if (output_1d){
+              cout.width(14); cout << Total_Sens_BPress;
+            }
+            else{
+              cout.width(14); cout << Total_Sens_Mach;
+            }
             cout << endl;
             cout.unsetf(ios_base::floatfield);
           }
@@ -5619,7 +5656,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout.precision(4);
           cout.setf(ios::scientific, ios::floatfield);
           cout.width(14); cout << Total_Sens_Geo;
-          cout.width(14); cout << Total_Sens_Mach;
+          if (output_1d){
+            cout.width(14); cout << Total_Sens_BPress;
+          }
+          else{
+            cout.width(14); cout << Total_Sens_Mach;
+          }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
           
@@ -7001,12 +7043,13 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Out1D;
-  su2double *Normal = NULL, Area = 0.0, OverArea = 0.0, UnitNormal[3],
-  Stag_Pressure, Mach, Temperature, Pressure = 0.0, Density = 0.0, Velocity2, Enthalpy, RhoU, U,// local values at each node (Velocity2 = V^2). U = normal velocity
-  SumPressure = 0.0, SumStagPressure = 0.0, SumArea = 0.0, SumMach = 0.0, SumTemperature = 0.0, SumForUref = 0.0, SumRhoU = 0.0, SumEnthalpy = 0.0,// sum of (local value ) * (dA) (integral)
-  AveragePressure = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
+  su2double *Normal = NULL, Area = 0.0, UnitNormal[3],
+  Tot_Pressure, Mach, Temperature, Pressure = 0.0, Velocity2, Enthalpy, RhoUA, U,// local values at each node (Velocity2 = V^2). U = normal velocity
+  AveragePt = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
   VelocityRef = 0.0, EnthalpyRef = 0.0, DensityRef = 0.0, PressureRef = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
   su2double obj_weight;
+  su2double TotalArea=0.0;
+  
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
@@ -7040,20 +7083,15 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
           for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
           
-          if (compressible) {
-            Pressure = solver_container->node[iPoint]->GetPressure();
-            Density = solver_container->node[iPoint]->GetDensity();
-          }
-          if (incompressible || freesurface) {
-            Pressure = solver_container->node[iPoint]->GetPressureInc();
-            Density = solver_container->node[iPoint]->GetDensityInc();
-          }
+          if (compressible)                    Pressure = solver_container->node[iPoint]->GetPressure();
+          if (incompressible || freesurface)   Pressure = solver_container->node[iPoint]->GetPressureInc();
           
           /*-- Find velocity normal to the marked surface/opening --*/
           
-          U = 0.0;
+          U = 0.0; RhoUA = 0.0;
           for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
             U += UnitNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
+            RhoUA -=Normal[iDim]*solver_container->node[iPoint]->GetSolution(iDim+1);
           }
           
           Enthalpy = solver_container->node[iPoint]->GetEnthalpy();
@@ -7061,35 +7099,21 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Temperature = solver_container->node[iPoint]->GetTemperature();
           
           Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
-          Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),(Gamma/(Gamma-1.0)));
-          
-          RhoU = U*Density;
-          SumStagPressure += Stag_Pressure * Area;
-          SumArea += Area;
-          SumMach += Mach*Area;
-          SumPressure += Pressure * Area;
-          SumTemperature += Temperature*Area;
-          SumRhoU += RhoU*Area;
-          SumForUref+=RhoU*U*U*Area;
-          SumEnthalpy+=RhoU*Enthalpy*Area;
+          //Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),( Gamma/(Gamma-1.0) ) );
+          Tot_Pressure = Pressure + 0.5*solver_container->node[iPoint]->GetDensity()*Velocity2;
+
+          AveragePt += Tot_Pressure * Area;
+          TotalArea += Area;
+          AverageMach += Mach*Area;
+          PressureRef += Pressure * Area;
+          AverageTemperature += Temperature*Area;
+          MassFlowRate += RhoUA; // RhoU is rho * vn * Area
+          VelocityRef+=RhoUA*U*U; // rho u A
+          EnthalpyRef+=RhoUA*Enthalpy;
           
         }
       }
-      
-      if (SumRhoU != 0.0) { // To avoid division by 0
-        
-        OverArea = 1.0/SumArea;
-        AveragePressure += abs(SumStagPressure*OverArea);
-        AverageMach += abs(SumMach*OverArea);
-        AverageTemperature += abs(SumTemperature*OverArea);
-        MassFlowRate += SumRhoU;
-        PressureRef += abs(SumPressure*OverArea);
-        VelocityRef += abs(sqrt(abs(SumForUref/SumRhoU)));
-        EnthalpyRef +=abs(SumEnthalpy/SumRhoU);
-        DensityRef +=abs(PressureRef*Gamma/(Gamma-1)/(EnthalpyRef-0.5*VelocityRef*VelocityRef));
-        
-      }
-      
+
     }
     // TODO: make sure this works in parallel (potential solution: move combination across processors to be pe-marker. will be called more times, but may be needed )
     Marker_Tag = config->GetMarker_All_TagBound(iMarker);
@@ -7101,7 +7125,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
     obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
     switch(config->GetKind_ObjFunc(config->GetMarker_All_Monitoring(iMarker))){
     case AVG_TOTAL_PRESSURE:
-      solver_container->AddTotal_ComboObj(AveragePressure*obj_weight);
+      solver_container->AddTotal_ComboObj(AveragePt*obj_weight);
       break;
     case AVG_OUTLET_PRESSURE:
       solver_container->AddTotal_ComboObj(PressureRef*obj_weight);
@@ -7116,7 +7140,8 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
   /*--- Add AllBound information using all the nodes ---*/
   
-  su2double My_AveragePressure     = AveragePressure;    AveragePressure = 0.0;
+  su2double My_Area                = TotalArea;          TotalArea = 0.0;
+  su2double My_AveragePt           = AveragePt;          AveragePt = 0.0;
   su2double My_AverageMach         = AverageMach;        AverageMach = 0.0;
   su2double My_AverageTemperature  = AverageTemperature; AverageTemperature = 0.0;
   su2double My_MassFlowRate        = MassFlowRate;       MassFlowRate = 0.0;
@@ -7125,7 +7150,8 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   su2double My_EnthalpyRef         = EnthalpyRef;        EnthalpyRef = 0.0;
   su2double My_DensityRef          = DensityRef;         DensityRef = 0.0;
   
-  SU2_MPI::Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&My_Area, &TotalArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&My_AveragePt, &AveragePt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&My_AverageMach, &AverageMach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&My_AverageTemperature, &AverageTemperature, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&My_MassFlowRate, &MassFlowRate, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -7137,12 +7163,19 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
 #endif
   
   /*--- Set the 1D output ---*/
-  
-  solver_container->SetOneD_TotalPress(AveragePressure);
-  solver_container->SetOneD_Mach(AverageMach);
-  solver_container->SetOneD_Temp(AverageTemperature);
+  /*--- DensityRef depends on the final values of other flux avg variables ---*/
+  VelocityRef=sqrt(VelocityRef/MassFlowRate);
+  PressureRef=PressureRef/TotalArea;
+  EnthalpyRef=EnthalpyRef/MassFlowRate;
+  DensityRef =PressureRef*Gamma/(Gamma-1)/(EnthalpyRef-0.5*VelocityRef*VelocityRef);
+
+  /*Area averaged values*/
+  solver_container->SetOneD_TotalPress(AveragePt/TotalArea);
+  solver_container->SetOneD_Mach(AverageMach/TotalArea);
+  solver_container->SetOneD_Temp(AverageTemperature/TotalArea);
   solver_container->SetOneD_MassFlowRate(MassFlowRate);
-  
+
+  /*Flux averaged values*/
   solver_container->SetOneD_FluxAvgPress(PressureRef);
   solver_container->SetOneD_FluxAvgDensity(DensityRef);
   solver_container->SetOneD_FluxAvgVelocity(VelocityRef);
