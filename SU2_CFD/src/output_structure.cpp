@@ -3476,38 +3476,39 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-
-        if (config->GetWrite_Vorticity()){
-            jPoint = 0;
-            for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
-                /*--- Check for halos & write only if requested ---*/
-
-                if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
-                    /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
-                    if (nDim == 3){
-                      Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[0];
-                      Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[1];
-                     }
-                    Buffer_Send_Vol[jPoint] =solver[FLOW_SOL]->node[iPoint]->GetVorticity()[2];
-                    jPoint++;
-                  }
-              }
-              /*--- Gather the data on the master node. ---*/
-#ifdef HAVE_MPI
-              MPI_Barrier(MPI_COMM_WORLD);
-              if (nDim == 3){
-                SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-                SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-              }
-              SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#else
-              if (nDim == 3){
-                for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
-                for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
-              }
-              for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
-#endif
-          }
+//byz
+//        if (config->GetWrite_Vorticity()){
+//            jPoint = 0;
+//            for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+//                /*--- Check for halos & write only if requested ---*/
+//
+//                if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+//                    /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
+//                    if (nDim == 3){
+//                      Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[0];
+//                      Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[1];
+//                     }
+//                    Buffer_Send_Vol[jPoint] =solver[FLOW_SOL]->node[iPoint]->GetVorticity()[2];
+//                    jPoint++;
+//                  }
+//              }
+//              /*--- Gather the data on the master node. ---*/
+//#ifdef HAVE_MPI
+//              MPI_Barrier(MPI_COMM_WORLD);
+//              if (nDim == 3){
+//                SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//                SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//              }
+//              SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//#else
+//              if (nDim == 3){
+//                for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+//                for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+//              }
+//              for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+//#endif
+//          }
+//byz
         /*--- The master node unpacks and sorts this variable by global index ---*/
         if (rank == MASTER_NODE) {
           jPoint = 0; iVar = iVar_Vort;
@@ -3944,7 +3945,19 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
         restart_file << "\t\"Sharp_Edge_Dist\"";
       }
     }
-    
+/*byz*/
+   if (config->GetWrite_Vorticity()){
+      if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)){
+        restart_file<<"\t\"Vort_z\"";        
+        if(nDim == 3){
+	    restart_file<<"\t\"Vort_x\"\t\"Vort_y\"";
+	  }
+        restart_file<<"\t\"P_fluct\"";
+      }
+      
+  }
+/*byz*/    
+
     if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
       restart_file << "\t\"Mach\"\t\"Pressure\"\t\"Temperature\"\t\"Temperature_ve\"";
     }
@@ -4219,6 +4232,12 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       
     case EULER : case NAVIER_STOKES: case RANS :
       ConvHist_file[0] << begin << flow_coeff;
+//byz
+//      if (config->GetWrite_Vorticity()) ConvHist_file[0] << ",\"CAvg_Vort\"";
+
+      if (config->GetWrite_Vorticity()) ConvHist_file[0] << ",\"CAvg_Vort\""<<",\"CAvg_P_fluc\"";
+      if (config->GetAeroacoustic_Analysis() ) ConvHist_file[0] << ",\"CFD_P_Fluc\""<<",\"CAA_P_Fluc\"";
+//byz
       if (isothermal) ConvHist_file[0] << heat_coeff;
       if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
       if (inv_design) {
@@ -4404,6 +4423,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     D_Total_CT = 0.0, D_Total_CQ = 0.0, D_Total_CFreeSurface = 0.0, D_Total_CWave = 0.0, D_Total_CHeat = 0.0, D_Total_CpDiff = 0.0, D_Total_HeatFluxDiff = 0.0,
     D_Total_CFEA = 0.0, D_Total_Heat = 0.0, D_Total_MaxHeat = 0.0, D_Total_Mdot = 0.0;
 
+//byz
+    su2double AvgVorticity = 0.0, AvgVorticity_Tangent = 0.0;
+    su2double Avg_PressureFluctuation = 0.0, CFD_PressureFluctuation=0.0, CAA_PressureFluctuation=0.0;
+//byz
+
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
     *residual_turbulent    = NULL,
@@ -4514,7 +4538,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         Total_CFx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
         Total_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
         Total_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
-
+//byz
+        AvgVorticity      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAvg_Vorticity();
+        Avg_PressureFluctuation = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAvg_PressureFluctuation();        
+        CFD_PressureFluctuation = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetCFD_PressureFluctuation();
+        CAA_PressureFluctuation = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetCAA_PressureFluctuation();
+    //    cout<<CAA_PressureFluctuation<<endl;
+//byz
         if (direct_diff != NO_DERIVATIVE){
           D_Total_CLift       = SU2_TYPE::GetDerivative(Total_CLift);
           D_Total_CDrag       = SU2_TYPE::GetDerivative(Total_CDrag);
@@ -4820,6 +4850,17 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                        D_Total_CLift, D_Total_CDrag, D_Total_CSideForce, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
                        D_Total_CFz, D_Total_CEff);
             }
+//byz
+            if (config[val_iZone]-> GetAeroacoustic_Analysis())
+              SPRINTF(direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
+                       Total_CFz, Total_CEff,CFD_PressureFluctuation,CAA_PressureFluctuation);
+            if (config[val_iZone]->GetWrite_Vorticity())
+              SPRINTF(direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
+                       Total_CFz, Total_CEff, AvgVorticity,Avg_PressureFluctuation);
+//            if (config[val_iZone]->GetWrite_Vorticity())
+//              SPRINTF(direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
+//                       Total_CFz, Total_CEff, AvgVorticity);
+//byz
             if (isothermal)
               SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat);

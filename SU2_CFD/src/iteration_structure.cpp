@@ -48,9 +48,9 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
   
 #ifdef HAVE_MPI
   int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- Set the initial condition ---*/
   
   for (iZone = 0; iZone < nZone; iZone++)
@@ -228,9 +228,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 			if (Physical_t >=  config_container[iZone]->GetTotal_UnstTime())
 				integration_container[iZone][FLOW_SOL]->SetConvergence(true);
 
-      if (config_container[iZone]->GetAeroacoustic_Analysis()){
-        SetAeroacoustic_Analysis(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0][FLOW_SOL], config_container[iZone]);
-      }
+
       
 		}
     
@@ -2064,7 +2062,4 @@ void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
   
 }
 
-void SetAeroacoustic_Analysis(CGeometry *geometry, CSolver *solver,
-                              CConfig *config){
 
-}

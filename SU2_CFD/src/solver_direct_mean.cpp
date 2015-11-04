@@ -30,7 +30,8 @@
  */
 
 #include "../include/solver_structure.hpp"
-
+#include <fstream>
+#include <iostream>
 CEulerSolver::CEulerSolver(void) : CSolver() {
 
   /*--- Basic array initialization ---*/
@@ -3120,10 +3121,11 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
 void CEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                   unsigned short iMesh) {
-  if(config->GetKind_Solver() == NAVIER_STOKES || config->GetKind_Solver() == RANS){
+  if(config->GetKind_Solver() == NAVIER_STOKES || config->GetKind_Solver() == RANS ||config->GetKind_Solver() == EULER){
 
-    SetAvg_Vorticity(config, geometry);
-
+//    SetAvg_Vorticity(config, geometry);
+    SetAvg_PressureFluctuation(config, geometry);
+    SetCFD_PressureFluctuation(config, geometry);
     }
 }
 
@@ -11598,6 +11600,20 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
 
 }
 
+
+void CNSSolver::Set_Tau (CGeometry *geometry, CConfig *config) {
+    unsigned long iVertex, iPoint, iPointNormal;
+
+
+
+
+/*--- Loop over the vertices to compute the forces ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+    node[iPoint]-> Set_tau_node( config  );
+
+}
+}
 void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 
   unsigned long iVertex, iPoint, iPointNormal;
@@ -12561,7 +12577,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   }
 }
 
-void CNSSolver::SetAvg_Vorticity(CConfig *config, CGeometry *geometry){
+void CEulerSolver::SetAvg_Vorticity(CConfig *config, CGeometry *geometry){
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   su2double *Coord,*Coord_Avg, MinCoordValues[3], MaxCoordValues[3], Vol, Vorticity;
@@ -12619,3 +12635,674 @@ void CNSSolver::SetAvg_Vorticity(CConfig *config, CGeometry *geometry){
   AvgVorticity = sqrt(AvgVorticity);
 
 }
+
+
+
+void CEulerSolver::SetAvg_PressureFluctuation(CConfig *config, CGeometry *geometry){
+  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned long iPoint,Global_ClosestIndex, ClosestIndex;
+  su2double   MinCoordValues[3], MaxCoordValues[3], Vol, PressureFluctuation;
+  su2double  *Coord_test;
+  su2double  PressureFluctuation_temp = 0.0;
+  su2double  Local_AvgPressureFluctuation, FreeStreamPressure;
+  bool is_closest = false;
+  double this_distance, shortest_distance, coord1, coord2;
+  su2double *Coord, *Observer_Location;
+  double ain, aout; 
+    int  ind; 
+   ind = 0;
+    struct { 
+        double val; 
+        int rank; 
+    } in, out; 
+   int myrank;
+//    int i, myrank, root; 
+//  /*--- Compute mean flow and turbulence gradients ---*/
+//  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+//    SetPrimitive_Gradient_GG(geometry, config);
+//  }
+//  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+//    SetPrimitive_Gradient_LS(geometry, config);
+//  }
+
+  /*--- Set to zero displacements of all the points that are not going to be moved
+   except the surfaces ---*/
+//  cout<<Observer_Location[0]<<",  "<<Observer_Location[1]<<endl;
+  Observer_Location = config->GetAcousticObs_Position();
+  shortest_distance = 10000000;
+  Avg_PressureFluctuation= 0.0;
+  Local_AvgPressureFluctuation= 0.0;
+  FreeStreamPressure = 0.0;
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      Coord = geometry->node[iPoint]->GetCoord();
+     this_distance = (SU2_TYPE::GetPrimary(Coord[0])-SU2_TYPE::GetPrimary(Observer_Location[0]))*(SU2_TYPE::GetPrimary(Coord[0])-SU2_TYPE::GetPrimary(Observer_Location[0]));
+     this_distance = this_distance+(SU2_TYPE::GetPrimary(Coord[1])-SU2_TYPE::GetPrimary(Observer_Location[1]))*(SU2_TYPE::GetPrimary(Coord[1])-SU2_TYPE::GetPrimary(Observer_Location[1]));
+     this_distance = sqrt(this_distance);
+     if (this_distance<shortest_distance){
+         shortest_distance = this_distance; 
+        ClosestIndex = iPoint;
+     }
+//    if (iPoint == 8211){ 
+//          Coord_test = geometry->node[iPoint]->GetCoord();
+//     cout<<Coord_test[0]<<",  "<<Coord_test[1]<<",  "<<iPoint<<endl;
+//    }
+   }
+//    cout<<shortest_distance<<myrank<<endl;
+       ain=shortest_distance;
+//         MPI::COMM_WORLD.Get_rank();
+     MPI_Comm_rank(MPI_COMM_WORLD, &myrank); 
+//    for (i=0; i<30; ++i) { 
+        in.val = ain; 
+        in.rank = myrank; 
+//    } 
+//   cout<<in.rank<<endl;
+  MPI_Reduce(&in, &out, 1, MPI_DOUBLE_INT, MPI_MINLOC, MASTER_NODE, MPI_COMM_WORLD ); 
+//   MPI_AD::Reduce( &in, &out, 1, MPI_DOUBLE_INT, MPI_MINLOC, MASTER_NODE, MPI_COMM_WORLD ); 
+    /* At this point, the answer resides on process root 
+ *      */ 
+    if (myrank == MASTER_NODE) { 
+            aout = out.val; 
+            ind = out.rank; 
+    }
+MPI_Bcast( &ind, 1,MPI_INT , MASTER_NODE, MPI_COMM_WORLD );
+     if (myrank==ind){
+//    MPI_AD::Reduce(,&Avg_PressureFluctuation,1,MPI_DOUBLE,MPI_MINLOC,MASTER_NODE,MPI_COMM_WORLD);
+//    Coord_test = geometry->node[GlobalIndex]->GetCoord();
+ //    cout<<Coord_test[0]<<",  "<<Coord_test[1]<<",  "<<GlobalIndex<<endl;
+
+//       cout<<shortest_distance<<",  "<< ClosestIndex<<",   "<<ind<<endl;
+//       cout<<node[ClosestIndex]->GetPressure()<<endl;
+//     cout<<geometry->node[GlobalIndex]->GetCoord()<<endl;
+//          if (((Coord[0] > MinCoordValues[0]) && (Coord[0] < MaxCoordValues[0])) &&
+//              ((Coord[1] > MinCoordValues[1]) && (Coord[1] < MaxCoordValues[1]))) {
+//            GlobalIndex = geometry->node[iPoint]-> GetGlobalIndex();
+//          if (GlobalIndex == 12285){
+//          if (GlobalIndex == 8211){ //NF (1.5,0.5)
+//          if (GlobalIndex == 2403){ //FF(1.0,-10.0)
+//        cout<<GlobalIndex<<endl;
+
+//      Coord = geometry->node[ClosestIndex]->GetCoord();
+//     coord1 = SU2_TYPE::GetPrimary(Coord[0]);
+//      coord2= SU2_TYPE::GetPrimary(Coord[1]);
+//      cout<<coord1<<",  "<<coord2<<",  "<<myrank<<endl;
+
+                FreeStreamPressure = config->GetPressure_FreeStreamND();
+//          cout<<"p_infty="<<FreeStreamPressure<<endl;
+//        cout<<node[iPoint]->GetPressure()<<endl;
+//analysis_only                Local_AvgPressureFluctuation = (node[ClosestIndex]->GetPressure()-FreeStreamPressure)/FreeStreamPressure;
+/*opt-only*/ 
+                Local_AvgPressureFluctuation = node[ClosestIndex]->GetPressure();
+//                Local_AvgPressureFluctuation = node[ClosestIndex]->GetPressure()-FreeStreamPressure;
+//               Local_AvgPressureFluctuation = Local_AvgPressureFluctuation/FreeStreamPressure;
+                 Local_AvgPressureFluctuation = Local_AvgPressureFluctuation*Local_AvgPressureFluctuation;
+/*opt-only */
+//                Local_AvgPressureFluctuation = node[iPoint]->GetPressure();
+//           cout<<Local_AvgPressureFluctuation<<endl;
+//              Vorticity = node[iPoint]->GetVorticity(2);
+//              Local_AvgVorticity += node[iPoint]->GetSolution(0)*Vorticity*Vorticity*Vol;
+//         }
+//        }
+   
+     }
+#ifdef HAVE_MPI
+  SU2_MPI::Reduce(&Local_AvgPressureFluctuation,&Avg_PressureFluctuation,1,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+#endif
+    Avg_PressureFluctuation = sqrt(Avg_PressureFluctuation);
+//  AvgVorticity = sqrt(AvgVorticity);
+//
+//        cout<<Avg_PressureFluctuation<<endl;
+}
+
+
+
+
+
+void CEulerSolver::SetCFD_PressureFluctuation(CConfig *config, CGeometry *geometry){
+  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned long iPoint,Global_ClosestIndex, ClosestIndex;
+  su2double   MinCoordValues[3], MaxCoordValues[3], Vol, PressureFluctuation;
+  su2double  *Coord_test;
+  su2double  PressureFluctuation_temp = 0.0;
+  su2double  Local_AvgPressureFluctuation, FreeStreamPressure;
+  bool is_closest = false;
+  double this_distance, shortest_distance, coord1, coord2;
+  su2double *Coord, *Observer_Location;
+  double ain, aout; 
+    int  ind; 
+   ind = 0;
+    struct { 
+        double val; 
+        int rank; 
+    } in, out; 
+   int myrank;
+  Observer_Location = config->GetAcousticObs_Position();
+  shortest_distance = 10000000;
+  CFD_PressureFluctuation= 0.0;
+  Local_AvgPressureFluctuation= 0.0;
+  FreeStreamPressure = 0.0;
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      Coord = geometry->node[iPoint]->GetCoord();
+     this_distance = (SU2_TYPE::GetPrimary(Coord[0])-SU2_TYPE::GetPrimary(Observer_Location[0]))*(SU2_TYPE::GetPrimary(Coord[0])-SU2_TYPE::GetPrimary(Observer_Location[0]));
+     this_distance = this_distance+(SU2_TYPE::GetPrimary(Coord[1])-SU2_TYPE::GetPrimary(Observer_Location[1]))*(SU2_TYPE::GetPrimary(Coord[1])-SU2_TYPE::GetPrimary(Observer_Location[1]));
+     this_distance = sqrt(this_distance);
+     if (this_distance<shortest_distance){
+         shortest_distance = this_distance; 
+        ClosestIndex = iPoint;
+     }
+   }
+       ain=shortest_distance;
+     MPI_Comm_rank(MPI_COMM_WORLD, &myrank); 
+        in.val = ain; 
+        in.rank = myrank; 
+  MPI_Reduce(&in, &out, 1, MPI_DOUBLE_INT, MPI_MINLOC, MASTER_NODE, MPI_COMM_WORLD ); 
+   if (myrank == MASTER_NODE) { 
+            aout = out.val; 
+            ind = out.rank; 
+    }
+MPI_Bcast( &ind, 1,MPI_INT , MASTER_NODE, MPI_COMM_WORLD );
+     if (myrank==ind){
+                FreeStreamPressure = config->GetPressure_FreeStreamND();                              
+                Local_AvgPressureFluctuation = node[ClosestIndex]->GetPressure()-FreeStreamPressure;
+   //    cout<< std::setprecision(10) <<geometry->node[ClosestIndex ]->GetCoord()[0]<<",   "<<geometry->node[ClosestIndex ]->GetCoord()[1]<<endl;
+//                Local_AvgPressureFluctuation = Local_AvgPressureFluctuation/FreeStreamPressure;
+//                 Local_AvgPressureFluctuation = Local_AvgPressureFluctuation*Local_AvgPressureFluctuation;
+   
+     }
+#ifdef HAVE_MPI
+  SU2_MPI::Reduce(&Local_AvgPressureFluctuation,&CFD_PressureFluctuation,1,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+#endif
+
+//  if (myrank == MASTER_NODE){
+//      CFD_pressure_file << CFD_PressureFluctuation << " ";
+//      CFD_pressure_file << "\n";
+//  }
+
+//    CFD_PressureFluctuation = sqrt(CFD_PressureFluctuation);
+}
+
+void CEulerSolver::SetCAA_PressureFluctuation(CConfig *config, CGeometry *geometry, ofstream &CAA_pressure_file, ofstream &time_file){
+  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned long iPoint, ClosestIndex,iMarker,iVertex,nVertex,Max_nVertex,Tot_nPanels,iPanel;
+  int  iProcessor, nProcessor;
+  su2double  Local_Panel_PressureFluctuation, Panel_PressureFluctuation, FreeStreamPressure,FreeStreamDensity,Local_AvgPressureFluctuation,Physical_dt,Physical_t;
+  bool is_closest = false;
+  double this_distance, shortest_distance, coord1, coord2;
+  su2double *Coord, *Observer_Location, *Normal;
+  su2double tObs, c0, Area;
+  su2double Density_n,Pressure_n,U_n,U_n1,U_dot, Density_n1,Velocity2,StaticEnergy_n1,Pressure_n1,L11_n,L12_n,L21_n,L22_n,F1_n,F2_n,Fr_n,L11_n1,L12_n1,L21_n1,L22_n1,F1_n1,F2_n1,Fr_n1,Fr_dot,Integrand1,Integrand2,Integrand3;
+  su2double ux, uy, ux_fs, uy_fs, ux_p, uy_p, ux_n1, uy_n1, ux_n1_p, uy_n1_p;
+  su2double tau11_n=0.0, tau12_n=0.0, tau21_n=0.0, tau22_n=0.0,tau11_n1=0.0, tau12_n1=0.0, tau21_n1=0.0, tau22_n1=0.0;
+
+  unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
+  double ain, aout;
+    int  ind;
+   ind = 0;
+    struct {
+        double val;
+        int rank;
+    } in, out;
+   int myrank;
+  Observer_Location = config->GetAcousticObs_Position();
+  shortest_distance = 10000000;
+  CAA_PressureFluctuation= 0.0;
+  Local_Panel_PressureFluctuation= 0.0;
+  Panel_PressureFluctuation=0.0;
+  Local_AvgPressureFluctuation=0.0;
+  FreeStreamPressure = config->GetPressure_FreeStreamND();
+  FreeStreamDensity = config->GetDensity_FreeStreamND();
+  c0= sqrt(Gamma*FreeStreamPressure / FreeStreamDensity);
+  ux_fs = config->GetVelocity_FreeStreamND()[0];
+  uy_fs = config->GetVelocity_FreeStreamND()[1];
+
+  unsigned long ExtIter = config->GetExtIter();
+
+  Physical_dt = config->GetDelta_UnstTime();
+  Physical_t  = ExtIter*Physical_dt;
+
+
+     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+     MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+
+
+      if (myrank == MASTER_NODE) Buffer_Recv_nVertex = new unsigned long [nProcessor];
+
+
+      nVertex =  0;
+      Max_nVertex=0;
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+
+    /* --- Loop over boundary markers to select those for Euler walls and NS walls --- */
+
+    if(config->GetMarker_All_PorousInterface(iMarker) == YES){
+
+        nVertex =    geometry->GetnVertex(iMarker);
+
+
+    }
+  }
+  Buffer_Send_nVertex[0]=nVertex;
+
+
+
+#ifdef HAVE_MPI
+  SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
+   SU2_MPI::Allreduce(&nVertex,&Max_nVertex,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
+    SU2_MPI::Reduce(&nVertex,&Tot_nPanels,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
+#endif
+
+
+
+
+su2double *Buffer_Send_pp= new su2double [Max_nVertex];
+su2double *Buffer_Send_r = new su2double [Max_nVertex];
+su2double *Buffer_Send_rx = new su2double [Max_nVertex];
+su2double *Buffer_Send_ry = new su2double [Max_nVertex];
+su2double *Buffer_Send_nx = new su2double [Max_nVertex];
+su2double *Buffer_Send_ny = new su2double [Max_nVertex];
+su2double *Buffer_Send_dS = new su2double [Max_nVertex];
+su2double *Buffer_Send_x = new su2double [Max_nVertex];
+su2double *Buffer_Send_y = new su2double [Max_nVertex];
+su2double *Buffer_Send_pp_CAA = new su2double [Max_nVertex];
+ //zero send buffers
+for (int i=0; i <Max_nVertex; i++){
+Buffer_Send_pp[i]=0.0;
+Buffer_Send_r[i]=0.0;
+Buffer_Send_rx[i]=0.0;
+Buffer_Send_ry[i]=0.0;
+Buffer_Send_nx[i]=0.0;
+Buffer_Send_ny[i]=0.0;
+Buffer_Send_dS[i]=0.0;
+Buffer_Send_x[i]=0.0;
+Buffer_Send_y[i]=0.0;
+Buffer_Send_pp_CAA[i]=0.0;
+}
+
+
+
+su2double *Buffer_Recv_pp = NULL;
+su2double *Buffer_Recv_r = NULL;
+su2double *Buffer_Recv_rx = NULL;
+su2double *Buffer_Recv_ry = NULL;
+su2double *Buffer_Recv_nx = NULL;
+su2double *Buffer_Recv_ny = NULL;
+su2double *Buffer_Recv_dS = NULL;
+su2double *Buffer_Recv_x = NULL;
+su2double *Buffer_Recv_y = NULL;
+su2double *Buffer_Recv_pp_CAA = NULL;
+
+su2double *pp_Panel = NULL;
+su2double *r_Panel = NULL;
+su2double *tObs_Panel = NULL;
+su2double *rx_Panel = NULL;
+su2double *ry_Panel = NULL;
+su2double *nx_Panel = NULL;
+su2double *ny_Panel = NULL;
+su2double *dS_Panel = NULL;
+su2double *x_Panel = NULL;
+su2double *y_Panel = NULL;
+su2double *pp_CAA_Panel = NULL;
+if (myrank == MASTER_NODE) {
+
+  Buffer_Recv_pp = new su2double [nProcessor*Max_nVertex];
+  Buffer_Recv_r = new su2double [nProcessor*Max_nVertex];
+  Buffer_Recv_rx = new su2double [nProcessor*Max_nVertex];
+  Buffer_Recv_ry = new su2double [nProcessor*Max_nVertex];
+  Buffer_Recv_nx = new su2double [nProcessor*Max_nVertex];
+  Buffer_Recv_ny = new su2double [nProcessor*Max_nVertex];
+  Buffer_Recv_dS = new su2double [nProcessor*Max_nVertex];
+  Buffer_Recv_x = new su2double [nProcessor*Max_nVertex];
+  Buffer_Recv_y = new su2double [nProcessor*Max_nVertex];
+  Buffer_Recv_pp_CAA= new su2double [nProcessor*Max_nVertex];
+
+  pp_Panel = new su2double [Tot_nPanels];
+  r_Panel = new su2double [Tot_nPanels];
+  tObs_Panel = new su2double [Tot_nPanels];
+  r_Panel = new su2double [Tot_nPanels];
+  rx_Panel = new su2double [Tot_nPanels];
+  ry_Panel = new su2double [Tot_nPanels];
+  nx_Panel = new su2double [Tot_nPanels];
+  ny_Panel = new su2double [Tot_nPanels];
+  dS_Panel = new su2double [Tot_nPanels];
+  x_Panel = new su2double [Tot_nPanels];
+  y_Panel = new su2double [Tot_nPanels];
+  pp_CAA_Panel= new su2double [Tot_nPanels];
+}
+
+for (iMarker = 0; iMarker < nMarker; iMarker++){
+
+          /* --- Loop over boundary markers to select those for Euler walls and NS walls --- */
+
+    if(config->GetMarker_All_PorousInterface(iMarker) == YES){
+
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Coord = geometry->node[iPoint]->GetCoord();
+       this_distance = (SU2_TYPE::GetPrimary(Coord[0])-SU2_TYPE::GetPrimary(Observer_Location[0]))*(SU2_TYPE::GetPrimary(Coord[0])-SU2_TYPE::GetPrimary(Observer_Location[0]));
+       this_distance = this_distance+(SU2_TYPE::GetPrimary(Coord[1])-SU2_TYPE::GetPrimary(Observer_Location[1]))*(SU2_TYPE::GetPrimary(Coord[1])-SU2_TYPE::GetPrimary(Observer_Location[1]));
+       this_distance = sqrt(this_distance);
+
+
+       if (this_distance<shortest_distance){
+           shortest_distance = this_distance;
+          ClosestIndex = iPoint;
+       }
+
+        //extract pressure fluctuation at every panel
+       Local_Panel_PressureFluctuation = node[iPoint ]->GetPressure()-FreeStreamPressure;
+        Local_Panel_PressureFluctuation = Local_Panel_PressureFluctuation/FreeStreamPressure; // REMOVE when rest of the code ready (p'= p-p_fs)
+
+
+           Buffer_Send_pp[iVertex]=  Local_Panel_PressureFluctuation  ;                                                                     //   p'
+
+           Buffer_Send_r[iVertex]= this_distance; //distance (r) from current panel to the observer                                         // r_mag
+           Buffer_Send_rx[iVertex]= (SU2_TYPE::GetPrimary(Observer_Location[0])-SU2_TYPE::GetPrimary(Coord[0]))   / this_distance;                                                      // r_x
+           Buffer_Send_ry[iVertex]=  (SU2_TYPE::GetPrimary(Observer_Location[1])-SU2_TYPE::GetPrimary(Coord[1]))   / this_distance;                                                      // r_y
+
+
+           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+           Area  = 0.0; for ( iDim = 0; iDim < 2; iDim++)   Area += Normal[iDim]*Normal[iDim];  Area  = sqrt( Area );
+
+           Buffer_Send_nx[iVertex]= Normal[0]/Area ;                                                                                       // n_x
+           Buffer_Send_ny[iVertex]= Normal[1]/Area ;                                                                                       // n_y
+           Buffer_Send_dS[iVertex]= Area ;                                                                                                 // dS
+           Buffer_Send_x[iVertex]=     SU2_TYPE::GetPrimary(Coord[0]);                                                                     // x
+           Buffer_Send_y[iVertex]=     SU2_TYPE::GetPrimary(Coord[1]);                                                                     // y
+
+
+           // Extract rho_n, p_n
+           Density_n = node[iPoint]->GetSolution(0);
+           Pressure_n = node[iPoint]->GetPressure();
+           // Extract rho_n-1
+           Density_n1 = node[iPoint]-> GetSolution_time_n1()[0];
+
+
+
+          ux= (node[iPoint]->GetSolution(1))/Density_n;
+          uy= (node[iPoint]->GetSolution(2))/Density_n;
+          ux_p = ux-ux_fs;
+          uy_p = uy-uy_fs;
+          ux_n1= (node[iPoint]->GetSolution_time_n1()[1])/Density_n1;
+          uy_n1= (node[iPoint]->GetSolution_time_n1()[2])/Density_n1;
+          ux_n1_p = ux_n1 - ux_fs;
+          uy_n1_p = uy_n1 - uy_fs;
+
+          if(config->GetKind_Solver() == NAVIER_STOKES || config->GetKind_Solver() == RANS){
+
+//        Set_Tau at time levels n and n-1
+          tau11_n = node[iPoint]->GetTau_time_n()[0][0];
+          tau12_n = node[iPoint]->GetTau_time_n()[0][1];
+          tau21_n = node[iPoint]->GetTau_time_n()[1][0];
+          tau22_n = node[iPoint]->GetTau_time_n()[1][1];
+
+          tau11_n1 = node[iPoint]->GetTau_time_n1()[0][0];
+          tau12_n1 = node[iPoint]->GetTau_time_n1()[0][1];
+          tau21_n1 = node[iPoint]->GetTau_time_n1()[1][0];
+          tau22_n1 = node[iPoint]->GetTau_time_n1()[1][1];
+
+//          cout<<tau11_n<<",  "<<tau12_n<<",  "<<tau21_n<<",  "<<tau22_n<<",  "<<tau11_n1<<",  "<<tau12_n1<<",  "<<tau21_n1<<",  "<<tau22_n1<<",  "<<iVertex<<endl;
+
+          }
+           // Compute U_n
+          U_n = (Density_n*ux_p*Buffer_Send_nx[iVertex]+Density_n*uy_p*Buffer_Send_ny[iVertex])/FreeStreamDensity;
+
+
+           // Compute U_n-1
+          U_n1 = (Density_n1*ux_n1_p*Buffer_Send_nx[iVertex]+Density_n1*uy_n1_p*Buffer_Send_ny[iVertex])/FreeStreamDensity;
+
+           // Compute U_dot from U_n and U_n-1
+           U_dot = (U_n-U_n1)/Physical_dt;                                                                                                       // U_dot
+
+       //    cout<< "dt and t: "<<Physical_dt <<",  " <<Physical_t<<endl;
+
+
+           // Recompute p_n-1
+           Velocity2 = 0.0;
+           Velocity2 = ux_n1*ux_n1 + uy_n1*uy_n1;
+           StaticEnergy_n1= node[iPoint]->GetSolution_time_n1()[nDim+1]/Density_n1 - 0.5*Velocity2;
+           Pressure_n1=  Gamma_Minus_One* Density_n1* StaticEnergy_n1;
+          // FluidModel->SetTDState_rhoe(Density_n1, StaticEnergy_n1);
+          // Pressure_n1= FluidModel->GetPressure();
+
+
+
+           // Compute L11, L12, L21 and L22 at level n
+           L11_n = (Pressure_n - FreeStreamPressure)  + Density_n*ux_p*ux_p - tau11_n;
+           L12_n = Density_n*ux_p*uy_p- tau12_n;
+           L21_n = Density_n*ux_p*uy_p- tau21_n;
+           L22_n = (Pressure_n - FreeStreamPressure)  + Density_n*uy_p*uy_p- tau22_n;
+
+
+
+//           cout<<tau11_n<<",  "<<L11_n<<",  "<<tau12_n<<",  "<<L12_n<<",  "<<tau21_n<<",  "<<L21_n<<",  "<<tau22_n<<",  "<<L22_n<<",  "<<iVertex<<endl;
+ //          cout<< Pressure_n - FreeStreamPressure  <<",  "<< Density_n*ux_p*ux_p <<",  "<<  -tau11_n  <<",  "<<  Pressure_n - FreeStreamPressure  <<",  "<<  Density_n*uy_p*uy_p   <<",  "<<   -tau22_n <<",  "<<iVertex<<endl;
+
+
+           // Compute F1_n
+           F1_n = L11_n*Buffer_Send_nx[iVertex]+L12_n*Buffer_Send_ny[iVertex];
+           F2_n = L21_n*Buffer_Send_nx[iVertex]+L22_n*Buffer_Send_ny[iVertex];
+
+           // Compute Fr_n
+           Fr_n = F1_n*Buffer_Send_rx[iVertex]+F2_n*Buffer_Send_ry[iVertex];
+
+           // Compute L11, L12, L21 and L22 at level n-1
+           L11_n1 = (Pressure_n1 - FreeStreamPressure)  + Density_n1*ux_n1_p*ux_n1_p-tau11_n1;
+           L12_n1 = Density_n1*ux_n1_p*uy_n1_p-tau12_n1;
+           L21_n1 = Density_n1*ux_n1_p*uy_n1_p-tau21_n1;
+           L22_n1 = (Pressure_n1 - FreeStreamPressure)  +  Density_n1*uy_n1_p*uy_n1_p-tau22_n1;
+
+
+           // Compute F1_n-1
+           F1_n1 = L11_n1*Buffer_Send_nx[iVertex]+L12_n1*Buffer_Send_ny[iVertex];
+           F2_n1 = L21_n1*Buffer_Send_nx[iVertex]+L22_n1*Buffer_Send_ny[iVertex];
+
+           // Compute Fr_n-1
+           Fr_n1 = F1_n1*Buffer_Send_rx[iVertex]+F2_n1*Buffer_Send_ry[iVertex];
+
+           // Compute Fr_dot from Fr_n and Fr_n-1
+           Fr_dot = (Fr_n-Fr_n1)/Physical_dt;                                                                                                      // Fr_dot
+
+           // Compute p' contribution from the i-th panel at time level n
+           Integrand1 = FreeStreamDensity*U_dot/Buffer_Send_r[iVertex];
+           Integrand2 = Fr_dot/c0/Buffer_Send_r[iVertex];
+           Integrand3 = Fr_n/Buffer_Send_r[iVertex]/Buffer_Send_r[iVertex]*Buffer_Send_r[iVertex];
+
+           Buffer_Send_pp_CAA[iVertex]= (Integrand1+Integrand2+Integrand3)/4/3.141592653589793*Buffer_Send_dS[iVertex];
+
+//  cout<<Integrand1<<",  "<<Integrand2<<",  "<<Integrand3<<",  "<<iVertex<<endl;
+//  cout<<Integrand1<<",  "<<Integrand2<<",  "<<Integrand3<<",  "<< Buffer_Send_pp_CAA[iVertex]<<",  "<<c0<<",  "<<FreeStreamPressure<<",  "<<FreeStreamDensity<<", "<<Pressure_n<<", "<<Pressure_n1<<", "<<Density_n1<<",  "<<Density_n<<",  "<<ux<<",  "<<uy<<",  "<<ux_fs<<",  "<<uy_fs<<",  "<< iVertex<<endl;
+
+      }
+    }
+ }
+
+
+//extracting pressure directly from a point LOCATED ON POROUS INTERFACE that is closest to the Observation Point. Not necessary //
+       ain=shortest_distance;
+        in.val = ain;
+        in.rank = myrank;
+  MPI_Reduce(&in, &out, 1, MPI_DOUBLE_INT, MPI_MINLOC, MASTER_NODE, MPI_COMM_WORLD );
+   if (myrank == MASTER_NODE) {
+            aout = out.val;
+            ind = out.rank;
+    }
+MPI_Bcast( &ind, 1,MPI_INT , MASTER_NODE, MPI_COMM_WORLD );
+     if (myrank==ind){
+
+                Local_AvgPressureFluctuation = node[ClosestIndex]->GetPressure()-FreeStreamPressure;
+ //               Local_AvgPressureFluctuation = Local_AvgPressureFluctuation/FreeStreamPressure;
+//                 Local_AvgPressureFluctuation = Local_AvgPressureFluctuation*Local_AvgPressureFluctuation;
+
+     }
+#ifdef HAVE_MPI
+  SU2_MPI::Reduce(&Local_AvgPressureFluctuation,&CAA_PressureFluctuation,1,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+#endif
+//    CFD_PressureFluctuation = sqrt(CFD_PressureFluctuation);
+
+//extracting pressure directly from a point LOCATED ON POROUS INTERFACT that is closest to the Obsercation Point. Not necessary //
+
+
+//  for(int i=0; i<nVertex; ++i)
+//     cout<<"pp in buffer: "<<Buffer_Send_pp[i]<< ",  "<< myrank<<endl;
+
+
+
+  SU2_MPI::Gather(Buffer_Send_pp, Max_nVertex, MPI_DOUBLE, Buffer_Recv_pp,Max_nVertex , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_r, Max_nVertex, MPI_DOUBLE, Buffer_Recv_r,Max_nVertex , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
+  SU2_MPI::Gather(Buffer_Send_rx, Max_nVertex, MPI_DOUBLE, Buffer_Recv_rx,Max_nVertex , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_ry, Max_nVertex, MPI_DOUBLE, Buffer_Recv_ry,Max_nVertex , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_nx, Max_nVertex, MPI_DOUBLE, Buffer_Recv_nx,Max_nVertex , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_ny, Max_nVertex, MPI_DOUBLE, Buffer_Recv_ny,Max_nVertex , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_dS, Max_nVertex, MPI_DOUBLE, Buffer_Recv_dS,Max_nVertex , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_x, Max_nVertex, MPI_DOUBLE, Buffer_Recv_x,Max_nVertex , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_y, Max_nVertex, MPI_DOUBLE, Buffer_Recv_y,Max_nVertex , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
+   SU2_MPI::Gather(Buffer_Send_pp_CAA, Max_nVertex, MPI_DOUBLE, Buffer_Recv_pp_CAA,Max_nVertex , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+ if (myrank == MASTER_NODE) {
+ //   for(int i=0; i<nProcessor*Max_nVertex; ++i)
+  //  cout<<"pp in MASTER buffer: "<< Buffer_Recv_pp[i]<< ",  "<< i <<endl;
+  //   cout<<"Total num of panels: "<<Tot_nPanels<<endl;
+     CAA_pressure_file  <<  ExtIter  << "\t";
+     CAA_pressure_file << std::setprecision(15) << Physical_t  << "\t";
+     time_file  <<  ExtIter  << "\t";
+     time_file << std::setprecision(15) << Physical_t  << "\t";
+  unsigned long Total_Index;
+  iPanel = 0;
+  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    for (iVertex = 0; iVertex < Buffer_Recv_nVertex[iProcessor]; iVertex++) {
+
+      /*--- Current index position and global index ---*/
+      Total_Index  = iProcessor*Max_nVertex+iVertex;
+
+      pp_Panel[iPanel] =  Buffer_Recv_pp[Total_Index];
+
+      r_Panel[iPanel] =  Buffer_Recv_r[Total_Index];
+      tObs = Physical_t +Buffer_Recv_r[Total_Index] /c0;
+      tObs_Panel[iPanel] =   tObs;
+
+      rx_Panel[iPanel] =  Buffer_Recv_rx[Total_Index];
+      ry_Panel[iPanel] =  Buffer_Recv_ry[Total_Index];
+      nx_Panel[iPanel] =  Buffer_Recv_nx[Total_Index];
+      ny_Panel[iPanel] =  Buffer_Recv_ny[Total_Index];
+      dS_Panel[iPanel] =  Buffer_Recv_dS[Total_Index];
+
+      x_Panel[iPanel] =  Buffer_Recv_x[Total_Index];
+      y_Panel[iPanel] =  Buffer_Recv_y[Total_Index];
+
+      pp_CAA_Panel[iPanel] = Buffer_Recv_pp_CAA [Total_Index];
+//      time_file << std::setprecision(15) <<   tObs << "\t";
+ //     CAA_pressure_file << std::setprecision(15) <<   Buffer_Recv_pp[Total_Index]  << "\t";
+//      cout<<  Buffer_Recv_r[Total_Index]  << "\t"<<Buffer_Recv_pp[Total_Index] <<endl;
+
+      iPanel = iPanel+1;
+
+    }
+  }
+
+  ofstream geo_file ;
+  geo_file.open("geo_CAA.dat");
+  for (int iPanel = 0; iPanel<Tot_nPanels;iPanel++){
+      time_file << std::setprecision(15) <<tObs_Panel[iPanel]      << "\t";
+   //   CAA_pressure_file << std::setprecision(15) <<  pp_Panel[iPanel]    << "\t";
+
+      CAA_pressure_file << std::setprecision(15) << pp_CAA_Panel  [iPanel]    << "\t";
+
+
+      geo_file<< std::setprecision(10) <<  x_Panel[iPanel]   << "\t"<<  y_Panel[iPanel]<< "\t" <<  nx_Panel[iPanel]   << "\t"  <<  ny_Panel[iPanel]   << "\t" <<  rx_Panel[iPanel]   << "\t"  <<  ry_Panel[iPanel]   << "\t"<<r_Panel[iPanel]   << "\t"  <<  dS_Panel[iPanel]   <<"\n";
+
+
+  }
+   CAA_pressure_file << "\n";
+    time_file << "\n";
+
+ }
+
+}
+
+
+
+
+
+
+
+
+void CEulerSolver::SetAeroacoustic_Analysis( CConfig *config,CGeometry *geometry,
+                              ofstream &CFD_pressure_file,ofstream &CAA_pressure_file,ofstream &time_file ){
+
+    unsigned short iMarker,iDim;
+    unsigned long iVertex, iPoint,nMarker, GlobalIdx;
+    su2double *Normal, Area, Prod, Sens = 0.0, SensDim;
+
+    su2double *Coord, *Observer_Location;
+    su2double  FreeStreamPressure,Physical_dt,Physical_t;
+    double coord1, coord2;
+    Observer_Location = config->GetAcousticObs_Position();
+      nMarker      = config->GetnMarker_All();
+    su2double  CFD_PressureFluctuation=0.0,   CAA_PressureFluctuation = 0.0;
+      FreeStreamPressure = config->GetPressure_FreeStreamND();
+  unsigned long ExtIter = config->GetExtIter();
+
+  Physical_dt = config->GetDelta_UnstTime();
+  Physical_t  = ExtIter*Physical_dt;
+
+     SetCAA_PressureFluctuation(config, geometry,CAA_pressure_file,time_file);
+     SetCFD_PressureFluctuation(config, geometry);
+
+      CFD_PressureFluctuation=GetCFD_PressureFluctuation();
+
+#ifdef HAVE_MPI
+  int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+      if (rank == MASTER_NODE){
+          CFD_pressure_file  <<  ExtIter  << " ";
+          CFD_pressure_file << std::setprecision(15) << Physical_t  << " ";
+             CFD_pressure_file << std::setprecision(15) << CFD_PressureFluctuation << " ";
+             CFD_pressure_file << "\n";
+      }
+
+
+//solver->GetCAA_PressureFluctuation()
+//    for (iMarker = 0; iMarker < nMarker; iMarker++){
+
+//      /* --- Loop over boundary markers to select those for Euler walls and NS walls --- */
+
+//      if(config->GetMarker_All_PorousInterface(iMarker) == YES){
+
+//        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+//          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//          GlobalIdx = geometry->node[iPoint]->GetGlobalIndex();
+
+////          for (iDim = 0; iDim < nDim; iDim++){
+//   //                 solver->node[]
+//            Coord = geometry->node[iPoint]->GetCoord();
+////            coord1 = SU2_TYPE::GetPrimary(Coord[0]);
+////             coord2= SU2_TYPE::GetPrimary(Coord[1]);
+////            cout<<coord1<<",  "<<coord2<<",  "<<iVertex<<endl;
+////      }
+//            if (  iVertex == 8 ){
+//                 CAA_PressureFluctuation = solver->node[GlobalIdx]->GetPressure();
+//                 CAA_PressureFluctuation = (CAA_PressureFluctuation-FreeStreamPressure)/FreeStreamPressure*2;
+//                 solver->SetCAA_PressureFluctuation(CAA_PressureFluctuation);
+////                cout<<SU2_TYPE::GetPrimary(Coord[0])<<",  "<<SU2_TYPE::GetPrimary(Coord[1])<<",  "<<iVertex<<endl;
+//            }
+////         if ( abs(SU2_TYPE::GetPrimary(Coord[0])-SU2_TYPE::GetPrimary(Observer_Location[0]))<0.0001   &&  abs(SU2_TYPE::GetPrimary(Coord[1])-SU2_TYPE::GetPrimary(Observer_Location[1]))<0.0001        ){
+////             cout<<SU2_TYPE::GetPrimary(Coord[0])<<",  "<<SU2_TYPE::GetPrimary(Coord[1])<<",  "<<iVertex<<endl;
+////         }
+//        }
+//  }
+
+//  }
+
+
+}
+
+
+
+
+
+
+
+
+
+

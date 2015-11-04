@@ -107,6 +107,10 @@ inline su2double *CVariable::GetSolution_time_n(void) { return Solution_time_n; 
 
 inline su2double *CVariable::GetSolution_time_n1(void) { return Solution_time_n1; }
 
+inline su2double **CVariable::GetTau_time_n(void) { return tau_time_n; }
+
+inline su2double **CVariable::GetTau_time_n1(void) { return tau_time_n1; }
+
 inline su2double CVariable::GetAuxVar(void) { return AuxVar; }
 
 inline su2double *CVariable::GetUndivided_Laplacian(void) { return Undivided_Laplacian; }

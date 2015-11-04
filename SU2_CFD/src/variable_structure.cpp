@@ -37,9 +37,12 @@ CVariable::CVariable(void) {
 
   /*--- Array initialization ---*/
   Solution = NULL;
-	Solution_Old = NULL;
+    Solution_Old = NULL;
 	Solution_time_n = NULL;
 	Solution_time_n1 = NULL;
+    tau = NULL;
+    tau_time_n = NULL;
+    tau_time_n1 = NULL;
 	Gradient = NULL;
 	Limiter = NULL;
 	Solution_Max = NULL;
@@ -59,6 +62,9 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
 	Solution_Old = NULL;
 	Solution_time_n = NULL;
 	Solution_time_n1 = NULL;
+    tau = NULL;
+    tau_time_n = NULL;
+    tau_time_n1 = NULL;
 	Gradient = NULL;
 	Limiter = NULL;
 	Solution_Max = NULL;
@@ -85,13 +91,16 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
 
 CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config) {
   
-	unsigned short iVar, iDim;
+    unsigned short iVar, iDim,jDim;
 	
   /*--- Array initialization ---*/
   Solution = NULL;
 	Solution_Old = NULL;
 	Solution_time_n = NULL;
 	Solution_time_n1 = NULL;
+    tau = NULL;
+    tau_time_n = NULL;
+    tau_time_n1 = NULL;
 	Gradient = NULL;
 	Limiter = NULL;
 	Solution_Max = NULL;
@@ -115,6 +124,17 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
 	for (iVar = 0; iVar < nVar; iVar++)
 		Solution[iVar] = 0.0;
 
+    tau = new su2double*[nDim];
+    for (iDim  = 0;  iDim <  nDim ;  iDim++){
+        tau[iDim] = new su2double[nDim];
+
+    }
+
+    for (iDim  = 0;  iDim <  nDim ;  iDim++){
+    for ( jDim  = 0;    jDim<  nDim ; jDim  ++){
+        tau [iDim  ][ jDim ]  = 0.0;
+       }
+    }
 	Solution_Old = new su2double [nVar];
 	
 	Gradient = new su2double* [nVar];
@@ -127,6 +147,27 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
 	if (config->GetUnsteady_Simulation() != NO) {
 		Solution_time_n = new su2double [nVar];
 		Solution_time_n1 = new su2double [nVar];
+
+
+        tau_time_n  = new su2double*[nDim];
+        tau_time_n1  = new su2double*[nDim];
+        for (iDim  = 0;  iDim <  nDim ;  iDim++){
+           tau_time_n  [iDim] = new su2double[nDim];
+           tau_time_n1  [iDim] = new su2double[nDim];
+        }
+
+        for (iDim  = 0;  iDim <  nDim ;  iDim++){
+            for ( jDim  = 0;    jDim<  nDim ; jDim  ++){
+            tau_time_n  [iDim  ][ jDim ]  = 0.0;
+           }
+        }
+        for (iDim  = 0;  iDim <  nDim ;  iDim++){
+            for ( jDim  = 0;    jDim<  nDim ; jDim  ++){
+            tau_time_n1  [iDim  ][ jDim ]  = 0.0;
+           }
+        }
+
+
 	}
 	
 }
@@ -135,9 +176,12 @@ CVariable::~CVariable(void) {
 	unsigned short iVar;
 
   if (Solution            != NULL) delete [] Solution;
+    if (tau            != NULL) delete [] tau;
 	if (Solution_Old        != NULL) delete [] Solution_Old;
 	if (Solution_time_n     != NULL) delete [] Solution_time_n;
 	if (Solution_time_n1    != NULL) delete [] Solution_time_n1;
+    if ( tau_time_n    != NULL) delete [] tau_time_n ;
+    if (tau_time_n1    != NULL) delete [] tau_time_n1;
 	if (Limiter             != NULL) delete [] Limiter;
 	if (Solution_Max        != NULL) delete [] Solution_Max;
 	if (Solution_Min        != NULL) delete [] Solution_Min;
@@ -231,12 +275,63 @@ void CVariable::Set_Solution_time_n(void) {
   
 }
 
+void CVariable::Set_tau_time_n(void) {
+
+    for (unsigned short iDim  = 0; iDim  < nDim; iDim ++){
+        for (unsigned short jDim  = 0;  jDim  < nDim;  jDim ++){
+
+        tau_time_n[iDim][jDim] = tau[iDim][jDim];
+
+        }
+    }
+
+}
+
 void CVariable::Set_Solution_time_n1(void) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution_time_n1[iVar] = Solution_time_n[iVar];
   
 }
+
+void CVariable::Set_tau_time_n1(void) {
+
+    for (unsigned short iDim  = 0; iDim  < nDim; iDim ++){
+        for (unsigned short jDim  = 0;  jDim  < nDim;  jDim ++){
+
+        tau_time_n1[iDim][jDim] = tau_time_n[iDim][jDim];
+
+        }
+    }
+
+}
+
+
+void CVariable::Set_tau_node(CConfig *config) {
+    su2double Viscosity = 0.0, div_vel,Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}},
+            delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+        Grad_Vel[iDim][jDim] =  GetGradient_Primitive(iDim+1, jDim);
+      }
+    }
+
+    if (config->GetKind_Regime() == COMPRESSIBLE)   {
+      Viscosity =  GetLaminarViscosity();
+    }
+
+
+    /*--- Evaluate Tau ---*/
+
+    div_vel = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+        tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) - 2.0/3.0*Viscosity*div_vel*delta[iDim][jDim];
+      }
+    }
+}
+
 
 void CVariable::Set_Solution_time_n(su2double *val_sol) {
 

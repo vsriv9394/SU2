@@ -343,8 +343,24 @@ int main(int argc, char *argv[]) {
 	  strcpy (cstrFSI, filenameHistFSI.data());
 	  historyFile_FSI.open (cstrFSI);
 	  historyFile_FSI << "Time,Iteration,Aitken,URes,logResidual,orderMagnResidual" << endl;
-	  historyFile_FSI.close();
+      historyFile_FSI.close();
   }
+
+
+ ofstream CFD_pressure_file ;
+if (config_container[ZONE_0]->GetAeroacoustic_Analysis()){
+    CFD_pressure_file.open("pp_CFD.dat");
+ }
+
+ofstream CAA_pressure_file ;
+if (config_container[ZONE_0]->GetAeroacoustic_Analysis()){
+   CAA_pressure_file.open("pp_CAA.dat");
+}
+
+ofstream time_file ;
+if (config_container[ZONE_0]->GetAeroacoustic_Analysis()){
+    time_file.open("time.dat");
+}
 
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     
@@ -439,8 +455,10 @@ int main(int argc, char *argv[]) {
 
     }
 	}
-    
-    
+
+    if (config_container[ZONE_0]->GetAeroacoustic_Analysis()){
+      solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetAeroacoustic_Analysis( config_container[ZONE_0],geometry_container[ZONE_0][MESH_0],CFD_pressure_file,CAA_pressure_file, time_file);
+    }
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
     

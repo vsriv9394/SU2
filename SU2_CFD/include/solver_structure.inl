@@ -546,6 +546,8 @@ inline void CSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver:: Set_Tau (CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::Viscous_DeltaForces(CGeometry *geometry, CConfig *config) { }
@@ -1059,8 +1061,25 @@ inline su2double CDiscAdjSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; 
 
 inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 
-inline double CSolver::GetAvg_Vorticity(){return 0.0;}
+inline su2double CSolver::GetAvg_Vorticity(){return 0.0;}
 
-inline double  CNSSolver::GetAvg_Vorticity(){return AvgVorticity;}
+inline su2double  CEulerSolver::GetAvg_Vorticity(){return AvgVorticity;}
 
 inline void CSolver::SetAvg_Vorticity(CConfig *config, CGeometry *geometry){}
+
+inline su2double CSolver::GetAvg_PressureFluctuation(){return 0.0;}
+inline void CSolver::SetAvg_PressureFluctuation(CConfig *config, CGeometry *geometry){}
+inline su2double CEulerSolver::GetAvg_PressureFluctuation(){return Avg_PressureFluctuation;}
+
+inline su2double CSolver::GetCFD_PressureFluctuation(){return 0.0;}
+inline void CSolver::SetCFD_PressureFluctuation(CConfig *config, CGeometry *geometry){}
+inline su2double CEulerSolver::GetCFD_PressureFluctuation(){return CFD_PressureFluctuation;}
+
+inline su2double CSolver::GetCAA_PressureFluctuation(){return 0.0;}
+inline void CSolver::SetCAA_PressureFluctuation(CConfig *config, CGeometry *geometry, ofstream &CAA_pressure_file, ofstream &time_file){}
+inline su2double CEulerSolver::GetCAA_PressureFluctuation(){return CAA_PressureFluctuation;}
+
+
+inline void CSolver::SetAeroacoustic_Analysis(CConfig *config, CGeometry *geometry, ofstream &CFD_pressure_file, ofstream &CAA_pressure_file, ofstream &time_file){}
+
+

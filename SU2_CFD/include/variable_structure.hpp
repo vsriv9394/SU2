@@ -59,6 +59,7 @@ protected:
   bool Non_Physical;			/*!< \brief Non-physical points in the solution (force first order). */
 	su2double *Solution_time_n,	/*!< \brief Solution of the problem at time n for dual-time stepping technique. */
 	*Solution_time_n1;			/*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
+    su2double **tau, **tau_time_n, **tau_time_n1;
 	su2double **Gradient;		/*!< \brief Gradient of the solution of the problem. */ 
 	su2double *Limiter;				/*!< \brief Limiter of the solution of the problem. */
 	su2double *Solution_Max;		/*!< \brief Max solution for limiter computation. */
@@ -184,6 +185,17 @@ public:
 	 * \brief Set the variable solution at time n-1.
 	 */	
 	void Set_Solution_time_n1(void);
+    /*!
+    * \brief Set the variable solution at time n.
+    */
+   void Set_tau_time_n(void);
+
+   /*!
+    * \brief Set the variable solution at time n-1.
+    */
+   void Set_tau_time_n1(void);
+
+   void Set_tau_node(CConfig *config);
 
   /*!
    * \brief Set the variable solution at time n.
@@ -278,6 +290,19 @@ public:
 	 * \return Pointer to the solution (at time n-1) vector.
 	 */	
 	su2double *GetSolution_time_n1(void);
+
+    /*!
+     * \brief Get the solution at time n.
+     * \return Pointer to the solution (at time n) vector.
+     */
+    su2double **GetTau_time_n(void);
+
+    /*!
+     * \brief Get the solution at time n-1.
+     * \return Pointer to the solution (at time n-1) vector.
+     */
+    su2double **GetTau_time_n1(void);
+
 
 	/*!
 	 * \brief Set the value of the old residual.

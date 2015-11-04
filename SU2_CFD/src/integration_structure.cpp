@@ -442,7 +442,14 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		solver->node[iPoint]->Set_Solution_time_n1();
 		solver->node[iPoint]->Set_Solution_time_n();
-    
+
+        if(config->GetKind_Solver() == NAVIER_STOKES || config->GetKind_Solver() == RANS){
+        solver-> Set_Tau (geometry, config);
+        solver->node[iPoint]->Set_tau_time_n1();
+        solver->node[iPoint]->Set_tau_time_n();
+        }
+
+
 		geometry->node[iPoint]->SetVolume_nM1();
 		geometry->node[iPoint]->SetVolume_n();
     

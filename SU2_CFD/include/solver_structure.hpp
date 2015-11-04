@@ -1009,7 +1009,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Viscous_Forces(CGeometry *geometry, CConfig *config);
-    
+    virtual void Set_Tau(CGeometry *geometry, CConfig *config);
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2393,10 +2393,16 @@ public:
 	 */
 	virtual void SetWAitken_Dyn_tn1(su2double waitk_tn1);
 
+  virtual void SetAeroacoustic_Analysis(CConfig *config, CGeometry *geometry, ofstream &CFD_pressure_file, ofstream &CAA_pressure_file, ofstream &time_file);
+       virtual void SetCAA_PressureFluctuation(CConfig* config, CGeometry *geometry, ofstream &CAA_pressure_file, ofstream &time_file);
+        virtual void SetCFD_PressureFluctuation(CConfig* config, CGeometry *geometry);
+        virtual void SetAvg_PressureFluctuation(CConfig* config, CGeometry *geometry);
+        virtual void SetAvg_Vorticity(CConfig* config, CGeometry *geometry);
 
-  virtual void SetAvg_Vorticity(CConfig* config, CGeometry *geometry);
-
-  virtual double GetAvg_Vorticity();
+    virtual su2double GetCAA_PressureFluctuation();
+	virtual su2double GetCFD_PressureFluctuation();
+	virtual su2double GetAvg_PressureFluctuation();
+        virtual su2double GetAvg_Vorticity();
 };
 
 /*!
@@ -2604,7 +2610,10 @@ protected:
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
-
+  su2double AvgVorticity;    
+  su2double  Avg_PressureFluctuation; 
+  su2double  CFD_PressureFluctuation; 
+  su2double  CAA_PressureFluctuation;
 public:
 
 
@@ -3774,7 +3783,25 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config);
-  
+//byz
+        void SetAvg_Vorticity(CConfig *config, CGeometry *geometry);
+
+        su2double GetAvg_Vorticity();
+	void SetAvg_PressureFluctuation(CConfig *config, CGeometry *geometry);
+
+	su2double GetAvg_PressureFluctuation();
+	
+	void SetCFD_PressureFluctuation(CConfig *config, CGeometry *geometry);
+
+	su2double GetCFD_PressureFluctuation();
+
+    void SetCAA_PressureFluctuation(CConfig *config, CGeometry *geometry, ofstream &CAA_pressure_file, ofstream &time_file );
+
+    su2double GetCAA_PressureFluctuation();
+
+     void SetAeroacoustic_Analysis(CConfig *config, CGeometry *geometry, ofstream &CFD_pressure_file, ofstream &CAA_pressure_file, ofstream &time_file);
+
+//byz  
 };
 
 /*!
@@ -3917,7 +3944,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Viscous_Forces(CGeometry *geometry, CConfig *config);
-    
+    void Set_Tau(CGeometry *geometry, CConfig *config);
 	/*!
 	 * \brief Get the non dimensional lift coefficient (viscous contribution).
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -4041,9 +4068,9 @@ public:
 
   void SetOmega_Max(su2double val_omega_max);
 
-  void SetAvg_Vorticity(CConfig *config, CGeometry *geometry);
+//  void SetAvg_Vorticity(CConfig *config, CGeometry *geometry);
 
-  double GetAvg_Vorticity();
+//  su2double GetAvg_Vorticity();
 
 };
 
@@ -7732,7 +7759,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Viscous_Forces(CGeometry *geometry, CConfig *config);
-  
+ //   void Set_Tau(CGeometry *geometry, CConfig *config);
 	/*!
 	 * \brief Get the non dimensional lift coefficient (viscous contribution).
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
