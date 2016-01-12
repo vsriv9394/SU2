@@ -1061,8 +1061,11 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   
   su2double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, CD, CL, Cp, CpTarget,
   CT, CQ, x_origin, y_origin, z_origin, WDrag, Area, invCD, CLCD2, invCQ, CTRCQ2;
-  unsigned short iMarker;
+  unsigned short iMarker,jMarker,iMarker_Monitoring, iDim;
   unsigned long iVertex, iPoint;
+  string Marker_Tag, Monitoring_Tag;
+  su2double obj_weight=1.0;
+  su2double *ForceProj_Vector2;
   
   int rank = MASTER_NODE;
 
@@ -1089,12 +1092,41 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   x_origin = RefOriginMoment[0]; y_origin = RefOriginMoment[1]; z_origin = RefOriginMoment[2];
   
   /*--- Evaluate the boundary condition coefficients. ---*/
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
+  /*--- Since there may be more than one objective per marker, first we have to set all
+   * Force projection vectors to 0.
+   */
+  for (iMarker = 0; iMarker<nMarker; iMarker++){
+    if ((iMarker<nMarker) && (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+           (config->GetMarker_All_Monitoring(iMarker) == YES))
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        for (iDim=0; iDim<nDim; iDim++)
+          ForceProj_Vector[iDim]=0.0;
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        node[iPoint]->SetForceProj_Vector(ForceProj_Vector);
+      }
+  }
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
+    obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+    /*--- Find the matching iMarker ---*/
+    Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+    for (jMarker=0; jMarker<nMarker; jMarker++){
+      Marker_Tag = config->GetMarker_All_TagBound(jMarker);
+      if (Monitoring_Tag==Marker_Tag)
+        iMarker = jMarker;
+    }
+
     
     if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-        (config->GetMarker_All_Monitoring(iMarker) == YES))
-      
+        (config->GetMarker_All_Monitoring(iMarker) == YES)){
+      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      iMarker_Monitoring=0;
+      for (unsigned short jMarker_Monitoring=0; jMarker_Monitoring <config->GetnMarker_Monitoring(); jMarker_Monitoring++){
+        Monitoring_Tag = config->GetMarker_Monitoring(jMarker_Monitoring);
+        if (Monitoring_Tag==Marker_Tag)
+          iMarker_Monitoring = jMarker_Monitoring;
+      }
+
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1104,44 +1136,48 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
         if (nDim == 3) z = geometry->node[iPoint]->GetCoord(2);
         
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        switch (config->GetKind_ObjFunc()) {
+        ForceProj_Vector2 = node[iPoint]->GetForceProj_Vector();
+        for (iDim=0; iDim<nDim;iDim++)
+          ForceProj_Vector[iDim]=ForceProj_Vector2[iDim];
+
+        switch (config->GetKind_ObjFunc(iMarker_Monitoring)) {
           case DRAG_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha); ForceProj_Vector[1] = sin(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta); ForceProj_Vector[1] = sin(Beta); ForceProj_Vector[2] = sin(Alpha)*cos(Beta); }
+            if (nDim == 2) { ForceProj_Vector[0] += obj_weight*cos(Alpha); ForceProj_Vector[1] += obj_weight*sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] += obj_weight*cos(Alpha)*cos(Beta); ForceProj_Vector[1] += obj_weight*sin(Beta); ForceProj_Vector[2] += obj_weight*sin(Alpha)*cos(Beta); }
             break;
           case LIFT_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -sin(Alpha); ForceProj_Vector[1] = cos(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] = -sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = cos(Alpha); }
+            if (nDim == 2) { ForceProj_Vector[0] += -obj_weight*sin(Alpha); ForceProj_Vector[1] += obj_weight*cos(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] += -obj_weight*sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] += obj_weight*cos(Alpha); }
             break;
           case SIDEFORCE_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = -sin(Beta) * cos(Alpha); ForceProj_Vector[1] = cos(Beta); ForceProj_Vector[2] = -sin(Beta) * sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] += -obj_weight*sin(Beta) * cos(Alpha); ForceProj_Vector[1] += obj_weight*cos(Beta); ForceProj_Vector[2] += -obj_weight*sin(Beta) * sin(Alpha); }
             break;
           case INVERSE_DESIGN_PRESSURE :
             Cp = solver_container[FLOW_SOL]->GetCPressure(iMarker, iVertex);
             CpTarget = solver_container[FLOW_SOL]->GetCPressureTarget(iMarker, iVertex);
             Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
             if (nDim == 3) Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
-            ForceProj_Vector[0] = -2.0*(Cp-CpTarget)*Normal[0]/Area; ForceProj_Vector[1] = -2.0*(Cp-CpTarget)*Normal[1]/Area;
-            if (nDim == 3) ForceProj_Vector[2] = -2.0*(Cp-CpTarget)*Normal[2]/Area;
+            ForceProj_Vector[0] += -obj_weight*2.0*(Cp-CpTarget)*Normal[0]/Area; ForceProj_Vector[1] += -obj_weight*2.0*(Cp-CpTarget)*Normal[1]/Area;
+            if (nDim == 3) ForceProj_Vector[2] += -obj_weight*2.0*(Cp-CpTarget)*Normal[2]/Area;
             break;
           case MOMENT_X_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = (y - y_origin)/RefLengthMoment; }
+            if (nDim == 3) {  ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += -obj_weight*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] += obj_weight*(y - y_origin)/RefLengthMoment; }
             break;
           case MOMENT_Y_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] = (z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] += obj_weight*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += -obj_weight*(x - x_origin)/RefLengthMoment;}
             break;
           case MOMENT_Z_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = (x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = (x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] += -obj_weight*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += obj_weight*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] += -obj_weight*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += obj_weight*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
             break;
           case EFFICIENCY :
-            if (nDim == 2) { ForceProj_Vector[0] = -(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] = (invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
-            if (nDim == 3) { ForceProj_Vector[0] = -(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] = -CLCD2*sin(Beta); ForceProj_Vector[2] = (invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
+            if (nDim == 2) { ForceProj_Vector[0] += -obj_weight*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] += obj_weight*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
+            if (nDim == 3) { ForceProj_Vector[0] += -obj_weight*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] += -obj_weight*CLCD2*sin(Beta); ForceProj_Vector[2] += obj_weight*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
             break;
           case EQUIVALENT_AREA :
             WDrag = config->GetWeightCd();
@@ -1149,47 +1185,45 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = sin(Beta)*WDrag; ForceProj_Vector[2] = sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case NEARFIELD_PRESSURE :
-            WDrag = config->GetWeightCd();
+            WDrag = obj_weight*config->GetWeightCd();
             if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha)*WDrag; ForceProj_Vector[1] = sin(Alpha)*WDrag; }
             if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = sin(Beta)*WDrag; ForceProj_Vector[2] = sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case FORCE_X_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = 1.0; ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 1.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] += obj_weight*1.0; ForceProj_Vector[1] += 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += obj_weight*1.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += 0.0; }
             break;
           case FORCE_Y_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 1.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 1.0; ForceProj_Vector[2] = 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += obj_weight*1.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += obj_weight*1.0; ForceProj_Vector[2] += 0.0; }
             break;
           case FORCE_Z_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += obj_weight*1.0; }
             break;
           case THRUST_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += obj_weight*1.0; }
             break;
           case TORQUE_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) {  ForceProj_Vector[0] += obj_weight*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -obj_weight*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] += obj_weight*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -obj_weight*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
             break;
           case FIGURE_OF_MERIT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) {
-              ForceProj_Vector[0] = -invCQ;
-              ForceProj_Vector[1] = -CTRCQ2*(z - z_origin);
-              ForceProj_Vector[2] =  CTRCQ2*(y - y_origin);
+              ForceProj_Vector[0] += -obj_weight*invCQ;
+              ForceProj_Vector[1] += -obj_weight*CTRCQ2*(z - z_origin);
+              ForceProj_Vector[2] +=  obj_weight*CTRCQ2*(y - y_origin);
             }
             break;
           default :
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
             break;
         }
         
@@ -1198,7 +1232,8 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
         node[iPoint]->SetForceProj_Vector(ForceProj_Vector);
         
       }
-  
+    }
+  }
   delete [] ForceProj_Vector;
   
 }

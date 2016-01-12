@@ -745,7 +745,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("OBJECTIVE_WEIGHT", nObjW, Weight_ObjFunc);
   /*!\brief OBJECTIVE_FUNCTION
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
-  addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
+  addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
 
   default_vec_5d[0]=0.0; default_vec_5d[1]=0.0; default_vec_5d[2]=0.0;
   default_vec_5d[3]=0.0;  default_vec_5d[4]=0.0;

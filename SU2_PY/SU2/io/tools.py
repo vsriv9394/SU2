@@ -473,7 +473,7 @@ def get_adjointSuffix(objective_function=None):
                  "AVG_TOTAL_PRESSURE"      : "pt"        ,
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfr"       ,
-                 "OUTFLOW_GENERALIZED"       : "chn"     ,
+                 "OUTFLOW_GENERALIZED"     : "chn"       ,
                  "FREE_SURFACE"            : "fs"        ,
                  "COMBO"                   : "combo"}
     

@@ -3399,6 +3399,7 @@ public:
 	unsigned short GetKind_ObjFunc(void);
 
 	/*!
+	 * \author H. Kline
    * \brief Get the kind of objective function. There are several options: Drag coefficient,
    *        Lift coefficient, efficiency, etc.
    * \note The objective function will determine the boundary condition of the adjoint problem.
