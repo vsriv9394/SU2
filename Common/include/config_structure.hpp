@@ -3417,6 +3417,15 @@ public:
   su2double GetWeight_ObjFunc(unsigned short val_obj);
 
   /*!
+   * \author H. Kline
+   * \brief Set the weight of objective function. There are several options: Drag coefficient,
+   *        Lift coefficient, efficiency, etc.
+   * \note The objective function will determine the boundary condition of the adjoint problem.
+   * \return Weight of objective function.
+   */
+  void SetWeight_ObjFunc(unsigned short val_obj, su2double val);
+
+  /*!
   * \author H. Kline
 	 * \brief Get the coefficients of the objective defined by the chain rule with primitive variables.
    * \note This objective is only applicable to gradient calculations. Objective value must be
