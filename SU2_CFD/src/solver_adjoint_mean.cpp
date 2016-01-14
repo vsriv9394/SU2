@@ -377,34 +377,36 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Area_Monitored = myArea_Monitored;
 #endif
 
-  if (grid_movement) {
-    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
-    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  }
-  else {
-    Velocity_Inf = config->GetVelocity_FreeStreamND();
-    RefVel2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-  }
+  if (config->GetnObj()>1){
+    if (grid_movement) {
+      Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+      RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+    }
+    else {
+      Velocity_Inf = config->GetVelocity_FreeStreamND();
+      RefVel2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+    }
 
-  /*--- Objective scaling: a factor must be applied to certain objectives ---*/
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-      obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+    /*--- Objective scaling: a factor must be applied to certain objectives ---*/
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+        obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
 
-      factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+        factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
 
-      ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
+        ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
 
-      if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
-          (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-          (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+        if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
+            (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
+            (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
 
-     if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-         (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+       if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
+           (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
 
-     obj_weight = obj_weight*factor;
-     config->SetWeight_ObjFunc(iMarker_Monitoring, obj_weight);
+       obj_weight = obj_weight*factor;
+       config->SetWeight_ObjFunc(iMarker_Monitoring, obj_weight);
+    }
   }
 
   /*--- MPI solution ---*/
@@ -2456,14 +2458,16 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   RefDensity  = config->GetDensity_FreeStreamND();
 
   factor = 1.0;
-//  factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
-//
-//  if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
-//      (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-//      (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
-//
-// if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-//     (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+  if (config->GetnObj()==1){
+    factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+
+    if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
+        (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
+        (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+
+   if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
+       (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+  }
   
   /*--- Initialize sensitivities to zero ---*/
   
