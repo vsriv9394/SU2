@@ -228,7 +228,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++)
       CSensitivity[iMarker][iVertex] = 0.0;
   }
-  
+
   /*--- Adjoint flow at the inifinity, initialization stuff ---*/
   PsiRho_Inf = 0.0; PsiE_Inf   = 0.0;
   Phi_Inf    = new su2double [nDim];
@@ -343,28 +343,29 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     if (config->GetKind_ObjFunc(iMarker_Monitoring)==OUTFLOW_GENERALIZED ||
         config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_TOTAL_PRESSURE ||
         config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_OUTLET_PRESSURE){
 
+      Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
       /*-- Find the marker index ---*/
+      iMarker = 0;
       for (jMarker= 0; jMarker < config->GetnMarker_All(); jMarker++) {
-        Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(jMarker);
-        if (Marker_Tag == Monitoring_Tag)
+        if (Marker_Tag == Monitoring_Tag){
           iMarker = jMarker;
-      }
-
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (geometry->node[iPoint]->GetDomain()) {
-          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Area += Normal[iDim]*Normal[iDim];
-          myArea_Monitored += sqrt (Area);
+          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            if (geometry->node[iPoint]->GetDomain()) {
+              Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+              Area = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++)
+                Area += Normal[iDim]*Normal[iDim];
+              myArea_Monitored += sqrt (Area);
+            }
+          }
+          break;
         }
       }
     }
@@ -396,7 +397,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
         factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
 
         ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
-
         if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
             (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
             (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
@@ -411,7 +411,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
-  
 }
 
 CAdjEulerSolver::~CAdjEulerSolver(void) {
