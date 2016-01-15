@@ -707,7 +707,6 @@ def write_config(filename,param_dict):
                 break
             
             if case("OPT_OBJECTIVE"):
-                #assert len(new_value.keys())==1 , 'only one OPT_OBJECTIVE is currently supported'
                 i_name = 0
                 for name,value in new_value.iteritems():
                     if i_name>0: output_file.write("; ")
