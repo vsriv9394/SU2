@@ -76,7 +76,7 @@ def function( func_name, config, state=None ):
     
     # initialize
     state = su2io.State(state)
-    multi_objective = (len(func_name.split(","))>1)
+    multi_objective = (type(func_name)==list)
     # redundancy check
     if multi_objective or not state['FUNCTIONS'].has_key(func_name):
 

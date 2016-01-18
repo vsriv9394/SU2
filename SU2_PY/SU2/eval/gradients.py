@@ -79,7 +79,7 @@ def gradient( func_name, method, config, state=None ):
     if func_name == 'ALL':
         raise Exception , "func_name = 'ALL' not yet supported"
     
-    multi_objective = (len(func_name.split(","))>1)
+    multi_objective = (type(func_name)==list)
     
     # redundancy check
     if (multi_objective or not state['GRADIENTS'].has_key(func_name)):
@@ -188,7 +188,7 @@ def adjoint( func_name, config, state=None ):
     # ----------------------------------------------------
     #  Initialize    
     # ----------------------------------------------------
-    multi_objective = (len(func_name.split(","))>1)
+    multi_objective = (type(func_name)==list)
     # initialize
     state = su2io.State(state)
     special_cases = su2io.get_specialCases(config)
@@ -271,7 +271,6 @@ def adjoint( func_name, config, state=None ):
         with redirect_output(log_adjoint):        
 
             # setup config
-            print "check",func_name, len(func_name.split(","))
             if multi_objective:
                 funcstring = ", ".join(func_name)
             else:
