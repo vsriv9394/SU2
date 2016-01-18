@@ -273,20 +273,31 @@ def obj_df(dvs,config,state=None):
     #  if objectives: print('Evaluate Objective Gradients')
     # evaluate each objective
     vals_out = []
-    for i_obj,this_obj in enumerate(objectives):
-        scale = def_objs[this_obj]['SCALE']
-        sign  = su2io.get_objectiveSign(this_obj)
-        
-        # Evaluate Objective Gradient
-#        sys.stdout.write('  %s... ' % this_obj.title())
-        grad = su2grad(this_obj,grad_method,config,state)
-#        sys.stdout.write('done\n')
-        
+    if (len(objectives)>1):
+        scale = 1.0
+        sign  = 1.0
+        grad = su2grad(objectives,grad_method,config,state)
         # scaling and sign
         for i_grd,dv_scl in enumerate(dv_scales):
             grad[i_grd] = grad[i_grd] * sign * scale / dv_scl
-        
+            
         vals_out.append(grad)
+                
+    else:    
+        for i_obj,this_obj in enumerate(objectives):
+            scale = def_objs[this_obj]['SCALE']
+            sign  = su2io.get_objectiveSign(this_obj)
+            
+            # Evaluate Objective Gradient
+    #        sys.stdout.write('  %s... ' % this_obj.title())
+            grad = su2grad(this_obj,grad_method,config,state)
+    #        sys.stdout.write('done\n')
+            
+            # scaling and sign
+            for i_grd,dv_scl in enumerate(dv_scales):
+                grad[i_grd] = grad[i_grd] * sign * scale / dv_scl
+            
+            vals_out.append(grad)
     
     #: for each objective
     

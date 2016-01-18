@@ -76,12 +76,12 @@ def function( func_name, config, state=None ):
     
     # initialize
     state = su2io.State(state)
-    
+    multi_objective = (len(func_name.split(","))>1)
     # redundancy check
-    if not state['FUNCTIONS'].has_key(func_name):
-        
+    if multi_objective or not state['FUNCTIONS'].has_key(func_name):
+
         # Aerodynamics
-        if func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
+        if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
             aerodynamics( config, state )
             
         # Stability
@@ -100,8 +100,10 @@ def function( func_name, config, state=None ):
     # prepare output
     if func_name == 'ALL':
         func_out = state['FUNCTIONS']
-    else:
+    elif not multi_objective:
         func_out = state['FUNCTIONS'][func_name]
+    else:
+        func_out = state['FUNCTIONS']['COMBO']
     
     return copy.deepcopy(func_out)
 
@@ -249,7 +251,7 @@ def aerodynamics( config, state=None ):
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
             
-    if config.OBJECTIVE_FUNCTION == 'OUTFLOW_GENERALIZED':    
+    if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:    
         import downstream_function
         state['FUNCTIONS']['OUTFLOW_GENERALIZED']=downstream_function.downstream_function(config,state)
 
