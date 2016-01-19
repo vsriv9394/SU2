@@ -1775,7 +1775,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement  = config->GetGrid_Movement();
-  
+
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge, normal, and neighbors---*/
@@ -1786,11 +1786,11 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
     
     /*--- Adjoint variables w/o reconstruction ---*/
-    
+
     numerics->SetAdjointVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
     
     /*--- Conservative variables w/o reconstruction ---*/
-    
+
     numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(),
                               solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
     
@@ -1821,12 +1821,12 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     }
     
     /*--- Compute residuals ---*/
-    
+
     numerics->ComputeResidual(Res_Conv_i, Res_Visc_i, Res_Conv_j, Res_Visc_j,
                               Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
     
     /*--- Update convective and artificial dissipation residuals ---*/
-    
+
     LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
     LinSysRes.SubtractBlock(jPoint, Res_Conv_j);
     LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
@@ -4574,7 +4574,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double obj_weight = 1.0;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   string Monitoring_Tag;
-  unsigned short jMarker, iMarker_Monitoring;
+  unsigned short jMarker=0, iMarker_Monitoring=0;
 
   Psi_domain = new su2double [nVar]; Psi_outlet = new su2double [nVar];
   Normal = new su2double[nDim];
@@ -4799,7 +4799,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Add terms for objective functions where additions are needed outside the energy term
        *     Terms which are added to the energy term are taken care of in the supersonic section above ---*/
-      switch (config->GetKind_ObjFunc()){
+      switch (config->GetKind_ObjFunc(iMarker_Monitoring)){
       case MASS_FLOW_RATE:
         Psi_outlet[0]+=obj_weight;
         break;
@@ -5300,7 +5300,17 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
+
+  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefDensity  = config->GetDensity_FreeStreamND();
+  su2double Gas_Constant    = config->GetGas_ConstantND();
+  su2double Mach_Motion     = config->GetMach_Motion();
   su2double dull_val, Area=0.0, *Normal = NULL, myArea_Monitored;
+  su2double RefVel2, Mach2Vel, obj_weight, factor;
+  su2double *Velocity_Inf;
+  string Marker_Tag, Monitoring_Tag;
+  unsigned short iMarker_Monitoring, jMarker, ObjFunc;
+  bool grid_movement  = config->GetGrid_Movement();
   bool restart = config->GetRestart();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -5539,32 +5549,73 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
-  myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==OUTFLOW_GENERALIZED || config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
-    config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
-    for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
-      if (config->GetMarker_All_Monitoring(iMarker) == YES){
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (geometry->node[iPoint]->GetDomain()) {
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Area += Normal[iDim]*Normal[iDim];
-            myArea_Monitored += sqrt (Area);
-          }
-        }
-      }
-    }
-  }
-#ifdef HAVE_MPI
-  Area_Monitored = 0.0;
-  SU2_MPI::Allreduce(&myArea_Monitored, &Area_Monitored, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-  Area_Monitored = myArea_Monitored;
-#endif
+   myArea_Monitored = 0.0;
+   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+     if (config->GetKind_ObjFunc(iMarker_Monitoring)==OUTFLOW_GENERALIZED ||
+         config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_TOTAL_PRESSURE ||
+         config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_OUTLET_PRESSURE){
+
+       Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+       /*-- Find the marker index ---*/
+       iMarker = 0;
+       for (jMarker= 0; jMarker < config->GetnMarker_All(); jMarker++) {
+         Marker_Tag = config->GetMarker_All_TagBound(jMarker);
+         if (Marker_Tag == Monitoring_Tag){
+           iMarker = jMarker;
+           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+             if (geometry->node[iPoint]->GetDomain()) {
+               Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+               Area = 0.0;
+               for (iDim = 0; iDim < nDim; iDim++)
+                 Area += Normal[iDim]*Normal[iDim];
+               myArea_Monitored += sqrt (Area);
+             }
+           }
+           break;
+         }
+       }
+     }
+   }
 
 
+ #ifdef HAVE_MPI
+   Area_Monitored = 0.0;
+   SU2_MPI::Allreduce(&myArea_Monitored, &Area_Monitored, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+ #else
+   Area_Monitored = myArea_Monitored;
+ #endif
+
+   if (config->GetnObj()>1){
+     if (grid_movement) {
+       Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+       RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+     }
+     else {
+       Velocity_Inf = config->GetVelocity_FreeStreamND();
+       RefVel2 = 0.0;
+       for (iDim = 0; iDim < nDim; iDim++)
+         RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+     }
+
+     /*--- Objective scaling: a factor must be applied to certain objectives ---*/
+     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+         obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+
+         factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+
+         ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
+         if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
+             (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
+             (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+
+        if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
+            (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+
+        obj_weight = obj_weight*factor;
+        config->SetWeight_ObjFunc(iMarker_Monitoring, obj_weight);
+     }
+   }
 
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
@@ -5943,14 +5994,17 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   
   RefDensity  = config->GetDensity_FreeStreamND();
   
-  factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+  factor = 1.0;
+  if (config->GetnObj()==1){
+    factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+    /*-- For multi-objective problems these scaling factors are applied before solution ---*/
+    if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
+        (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
+        (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
   
-  if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
-      (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-      (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
-
- if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-     (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+   if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
+       (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+  }
 
 
   /*--- Compute gradient of the grid velocity, if applicable ---*/
@@ -6480,7 +6534,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   SU2_MPI::Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
 #endif
-  
+
   delete [] USens;
   delete [] UnitNormal;
   delete [] normal_grad_vel;
@@ -6497,7 +6551,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     delete tau[iDim];
   delete [] tau;
   delete [] Velocity;
-  
+
 }
 
 void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -6918,9 +6972,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = config->GetGrid_Movement();
-  bool heat_flux_obj  = ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
-                         (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
-                         (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX));
+  bool heat_flux_obj;
   
   su2double Prandtl_Lam  = config->GetPrandtl_Lam();
   su2double Prandtl_Turb = config->GetPrandtl_Turb();
