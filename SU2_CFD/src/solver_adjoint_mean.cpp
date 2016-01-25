@@ -2632,7 +2632,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             }
 
             SoundSpeed = solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
-            if (Vn<SoundSpeed){
+            if (Vn<SoundSpeed and Vn>0){
               /* Characteristic-based
               Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed-Vn)/Gamma_Minus_One;
               if (config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE)
@@ -2642,6 +2642,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
               }
                */
               /*Pressure based*/
+              /*TODO: MDO compatible*/
               Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed*SoundSpeed-Vn*Vn)/(Vn*Gamma_Minus_One);
               if (config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE)
                 Sens_BPress[iMarker]+=1;
