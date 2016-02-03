@@ -1009,7 +1009,7 @@ void CAdjMeanFlowIteration::Preprocess(COutput *output,
       solver_container[val_iZone][iMesh][ADJFLOW_SOL]->SetForceProj_Vector(geometry_container[val_iZone][iMesh], solver_container[val_iZone][iMesh], config_container[val_iZone]);
       
       /*--- Set the internal boundary condition on nearfield surfaces ---*/
-      for (unsigned short iMarker=0; iMarger < config_container[val_iZone]->GetnMarker_Monitoring(); iMarker++){
+      for (unsigned short iMarker=0; iMarker < config_container[val_iZone]->GetnMarker_Monitoring(); iMarker++){
         if ((config_container[val_iZone]->GetKind_ObjFunc(iMarker) == EQUIVALENT_AREA) ||
                   (config_container[val_iZone]->GetKind_ObjFunc(iMarker) == NEARFIELD_PRESSURE))
           set_intboundjump=true;
