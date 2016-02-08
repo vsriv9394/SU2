@@ -7091,7 +7091,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   su2double Gamma = config->GetGamma();
   unsigned short nDim = geometry->GetnDim();
-  unsigned short iMarker_Monitoring;
+  unsigned short iMarker_Monitoring = 0;
   string Marker_Tag, Monitoring_Tag;
   
   /*--- Loop over the markers ---*/
