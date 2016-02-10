@@ -536,6 +536,8 @@ def read_config(filename):
         data_dict['OPT_BOUND_UPPER'] = 1e10
     if not data_dict.has_key('OPT_BOUND_LOWER'):
         data_dict['OPT_BOUND_LOWER'] = -1e10
+    if not data_dict.has_key('COMBINE_OBJECTIVE'):
+        data_dict['COMBINE_OBJECTIVE'] = False
     
     return data_dict
     

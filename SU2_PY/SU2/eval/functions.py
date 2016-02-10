@@ -77,6 +77,9 @@ def function( func_name, config, state=None ):
     # initialize
     state = su2io.State(state)
     multi_objective = (type(func_name)==list)
+    # If combine_objective is true, use the 'combo' output. 
+    if (config.COMBINE_OBJECTIVE and type(func_name)==list):
+        func_name = 'COMBO'
     # redundancy check
     if multi_objective or not state['FUNCTIONS'].has_key(func_name):
 
@@ -100,9 +103,11 @@ def function( func_name, config, state=None ):
     # prepare output
     if func_name == 'ALL':
         func_out = state['FUNCTIONS']
-    else:
+    elif multi_objective:
         for func in func_name:
             func_out = state['FUNCTIONS'][func]
+    else:
+        func_out = state['FUNCTIONS'][func_name]
         
     
     return copy.deepcopy(func_out)

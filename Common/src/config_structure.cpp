@@ -168,7 +168,7 @@ void CConfig::SetPointersNull(void) {
   Plunging_Omega_X = NULL;    Plunging_Omega_Y = NULL;    Plunging_Omega_Z = NULL;
   Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
   RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
-  MoveMotion_Origin = NULL;   Kind_ObjFunc = NULL;
+  MoveMotion_Origin = NULL;   Kind_ObjFunc = NULL;     Weight_ObjFunc =NULL;
 
   /*--- Variable initialization ---*/
   
@@ -748,9 +748,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MG_ADJFLOW\n DESCRIPTION: Multigrid with the adjoint problem. \n Defualt: YES \ingroup Config*/
   addBoolOption("MG_ADJFLOW", MG_AdjointFlow, true);
 
+  /*!\brief OBJECTIVE_WEIGHT  \n DESCRIPTION: Adjoint problem boundary condition weights. Applies scaling factor to objective(s) \ingroup Config*/
+  addDoubleListOption("OBJECTIVE_WEIGHT", nObjW, Weight_ObjFunc);
   /*!\brief OBJECTIVE_FUNCTION
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
   addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
+  /*!\brief COMBINE_OBJECTIVE
+   * \n DESCRIPTION: Flag specifying whether to internally combine a multi-objective function or treat separately */
+  addBoolOption("COMBINE_OBJECTIVE", ComboObjective, false);
+
 
   default_vec_5d[0]=0.0; default_vec_5d[1]=0.0; default_vec_5d[2]=0.0;
   default_vec_5d[3]=0.0;  default_vec_5d[4]=0.0;
@@ -1560,9 +1566,21 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nObj<1){
     Kind_ObjFunc = new unsigned short[1];
     Kind_ObjFunc[0]=DRAG_COEFFICIENT;
+    Weight_ObjFunc = new su2double[1];
+    Weight_ObjFunc[0]=1.0;
     nObj=1;
   }
-
+  /*-- Correct for case where Weight_ObjFunc has not been provided or has lenght < kind_objfunc---*/
+  if (nObjW<nObj){
+    if (Weight_ObjFunc!=NULL)
+      delete [] Weight_ObjFunc;
+    Weight_ObjFunc = new su2double[nObj];
+    for (unsigned short iObj=0; iObj<nObj; iObj++)
+      Weight_ObjFunc[iObj]=1.0;
+  }
+  /*-- --*/
+  if (not ComboObjective)
+    nObj = 1;
   /*--- Maker sure that nMarker = nObj ---*/
   if (nObj>0){
     if (nMarker_Monitoring!=nObj){
@@ -1585,7 +1603,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
       else{
         cout <<"WARNING: when using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length \n "<<
-            "For multiple surfaces per objective, either use one objective or list objective multiple times. \n"<<
+            "For multiple surfaces per objective, list objective multiple times. \n"<<
             "For multiple objectives per marker either use one marker overall or list marker multiple times."<<endl;
         exit(EXIT_FAILURE);
       }
@@ -1688,6 +1706,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
 	  else { Wrt_Dynamic = true; }
 
+  } else {
+    Wrt_Dynamic = false;
   }
 
   
@@ -3378,32 +3398,38 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	if (((val_software == SU2_CFD) && ( Adjoint )) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
-    switch (Kind_ObjFunc[0]) {
-      case DRAG_COEFFICIENT:        cout << "CD objective function." << endl; break;
-      case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
-      case MOMENT_X_COEFFICIENT:    cout << "CMx objective function." << endl; break;
-      case MOMENT_Y_COEFFICIENT:    cout << "CMy objective function." << endl; break;
-      case MOMENT_Z_COEFFICIENT:    cout << "CMz objective function." << endl; break;
-      case INVERSE_DESIGN_PRESSURE: cout << "Inverse design (Cp) objective function." << endl; break;
-      case INVERSE_DESIGN_HEATFLUX: cout << "Inverse design (Heat Flux) objective function." << endl; break;
-      case SIDEFORCE_COEFFICIENT:   cout << "Side force objective function." << endl; break;
-      case EFFICIENCY:              cout << "CL/CD objective function." << endl; break;
-      case EQUIVALENT_AREA:         cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
-      case NEARFIELD_PRESSURE:      cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
-      case FORCE_X_COEFFICIENT:     cout << "X-force objective function." << endl; break;
-      case FORCE_Y_COEFFICIENT:     cout << "Y-force objective function." << endl; break;
-      case FORCE_Z_COEFFICIENT:     cout << "Z-force objective function." << endl; break;
-      case THRUST_COEFFICIENT:      cout << "Thrust objective function." << endl; break;
-      case TORQUE_COEFFICIENT:      cout << "Torque efficiency objective function." << endl; break;
-      case TOTAL_HEATFLUX:          cout << "Total heat flux objective function." << endl; break;
-      case MAXIMUM_HEATFLUX:        cout << "Maximum heat flux objective function." << endl; break;
-      case FIGURE_OF_MERIT:         cout << "Rotor Figure of Merit objective function." << endl; break;
-      case FREE_SURFACE:            cout << "Free-Surface objective function." << endl; break;
-      case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
-      case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
-      case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
-      case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
-    }
+		if (nObj==1){
+      switch (Kind_ObjFunc[0]) {
+        case DRAG_COEFFICIENT:        cout << "CD objective function." << endl; break;
+        case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
+        case MOMENT_X_COEFFICIENT:    cout << "CMx objective function." << endl; break;
+        case MOMENT_Y_COEFFICIENT:    cout << "CMy objective function." << endl; break;
+        case MOMENT_Z_COEFFICIENT:    cout << "CMz objective function." << endl; break;
+        case INVERSE_DESIGN_PRESSURE: cout << "Inverse design (Cp) objective function." << endl; break;
+        case INVERSE_DESIGN_HEATFLUX: cout << "Inverse design (Heat Flux) objective function." << endl; break;
+        case SIDEFORCE_COEFFICIENT:   cout << "Side force objective function." << endl; break;
+        case EFFICIENCY:              cout << "CL/CD objective function." << endl; break;
+        case EQUIVALENT_AREA:         cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+        case NEARFIELD_PRESSURE:      cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+        case FORCE_X_COEFFICIENT:     cout << "X-force objective function." << endl; break;
+        case FORCE_Y_COEFFICIENT:     cout << "Y-force objective function." << endl; break;
+        case FORCE_Z_COEFFICIENT:     cout << "Z-force objective function." << endl; break;
+        case THRUST_COEFFICIENT:      cout << "Thrust objective function." << endl; break;
+        case TORQUE_COEFFICIENT:      cout << "Torque efficiency objective function." << endl; break;
+        case TOTAL_HEATFLUX:          cout << "Total heat flux objective function." << endl; break;
+        case MAXIMUM_HEATFLUX:        cout << "Maximum heat flux objective function." << endl; break;
+        case FIGURE_OF_MERIT:         cout << "Rotor Figure of Merit objective function." << endl; break;
+        case FREE_SURFACE:            cout << "Free-Surface objective function." << endl; break;
+        case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
+        case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
+        case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
+        case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
+      }
+		}
+		else{
+		  cout << "Weighted sum objective function." << endl;
+		}
+
 	}
 
 	if (val_software == SU2_CFD) {
@@ -3697,7 +3723,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != FEM_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
 
-      if (CFL_AdaptParam[0] == 1.0) cout << "No CFL adaptation." << endl;
+      if (!CFL_Adapt) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
         <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
 
@@ -4575,6 +4601,7 @@ CConfig::~CConfig(void) {
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
 
   if (Kind_ObjFunc != NULL)      delete[] Kind_ObjFunc;
+  if (Weight_ObjFunc != NULL)      delete[] Weight_ObjFunc;
 
   if (EA_IntLimit != NULL)    delete[] EA_IntLimit;
   if (Hold_GridFixed_Coord != NULL)    delete[] Hold_GridFixed_Coord ;
@@ -4710,31 +4737,36 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
     /*--- Remove filename extension (.dat) ---*/
     unsigned short lastindex = Filename.find_last_of(".");
     Filename = Filename.substr(0, lastindex);
-    switch (Kind_ObjFunc[0]) {
-      case DRAG_COEFFICIENT:        AdjExt = "_cd";       break;
-      case LIFT_COEFFICIENT:        AdjExt = "_cl";       break;
-      case SIDEFORCE_COEFFICIENT:   AdjExt = "_csf";      break;
-      case INVERSE_DESIGN_PRESSURE: AdjExt = "_invpress"; break;
-      case INVERSE_DESIGN_HEATFLUX: AdjExt = "_invheat";  break;
-      case MOMENT_X_COEFFICIENT:    AdjExt = "_cmx";      break;
-      case MOMENT_Y_COEFFICIENT:    AdjExt = "_cmy";      break;
-      case MOMENT_Z_COEFFICIENT:    AdjExt = "_cmz";      break;
-      case EFFICIENCY:              AdjExt = "_eff";      break;
-      case EQUIVALENT_AREA:         AdjExt = "_ea";       break;
-      case NEARFIELD_PRESSURE:      AdjExt = "_nfp";      break;
-      case FORCE_X_COEFFICIENT:     AdjExt = "_cfx";      break;
-      case FORCE_Y_COEFFICIENT:     AdjExt = "_cfy";      break;
-      case FORCE_Z_COEFFICIENT:     AdjExt = "_cfz";      break;
-      case THRUST_COEFFICIENT:      AdjExt = "_ct";       break;
-      case TORQUE_COEFFICIENT:      AdjExt = "_cq";       break;
-      case TOTAL_HEATFLUX:          AdjExt = "_totheat";  break;
-      case MAXIMUM_HEATFLUX:        AdjExt = "_maxheat";  break;
-      case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
-      case FREE_SURFACE:            AdjExt = "_fs";       break;
-      case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
-      case AVG_OUTLET_PRESSURE:      AdjExt = "_pe";       break;
-      case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
-      case OUTFLOW_GENERALIZED:       AdjExt = "_chn";       break;
+    if (nObj==1){
+      switch (Kind_ObjFunc[0]) {
+        case DRAG_COEFFICIENT:        AdjExt = "_cd";       break;
+        case LIFT_COEFFICIENT:        AdjExt = "_cl";       break;
+        case SIDEFORCE_COEFFICIENT:   AdjExt = "_csf";      break;
+        case INVERSE_DESIGN_PRESSURE: AdjExt = "_invpress"; break;
+        case INVERSE_DESIGN_HEATFLUX: AdjExt = "_invheat";  break;
+        case MOMENT_X_COEFFICIENT:    AdjExt = "_cmx";      break;
+        case MOMENT_Y_COEFFICIENT:    AdjExt = "_cmy";      break;
+        case MOMENT_Z_COEFFICIENT:    AdjExt = "_cmz";      break;
+        case EFFICIENCY:              AdjExt = "_eff";      break;
+        case EQUIVALENT_AREA:         AdjExt = "_ea";       break;
+        case NEARFIELD_PRESSURE:      AdjExt = "_nfp";      break;
+        case FORCE_X_COEFFICIENT:     AdjExt = "_cfx";      break;
+        case FORCE_Y_COEFFICIENT:     AdjExt = "_cfy";      break;
+        case FORCE_Z_COEFFICIENT:     AdjExt = "_cfz";      break;
+        case THRUST_COEFFICIENT:      AdjExt = "_ct";       break;
+        case TORQUE_COEFFICIENT:      AdjExt = "_cq";       break;
+        case TOTAL_HEATFLUX:          AdjExt = "_totheat";  break;
+        case MAXIMUM_HEATFLUX:        AdjExt = "_maxheat";  break;
+        case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
+        case FREE_SURFACE:            AdjExt = "_fs";       break;
+        case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
+        case AVG_OUTLET_PRESSURE:      AdjExt = "_pe";       break;
+        case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
+        case OUTFLOW_GENERALIZED:       AdjExt = "_chn";       break;
+      }
+    }
+    else{
+      AdjExt = "_combo";
     }
     Filename.append(AdjExt);
 

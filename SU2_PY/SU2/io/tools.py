@@ -218,7 +218,8 @@ def get_headerMap():
                  "D(CFx)"          : "D_FORCE_X"               ,
                  "D(CFy)"          : "D_FORCE_Y"               ,
                  "D(CFz)"          : "D_FORCE_Z"               ,
-                 "D(CL/CD)"        : "D_EFFICIENCY"}
+                 "D(CL/CD)"        : "D_EFFICIENCY"            ,
+                 "ComboObj"        : "COMBO"}
     
     return map_dict
 
@@ -255,7 +256,8 @@ optnames_aero = [ "LIFT"                    ,
                   "INVERSE_DESIGN_PRESSURE" ,
                   "INVERSE_DESIGN_HEATFLUX" ,
                   "TOTAL_HEATFLUX"          ,
-                  "MAXIMUM_HEATFLUX"        ]
+                  "MAXIMUM_HEATFLUX"        ,
+                  "COMBO"]
 #: optnames_aero
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
@@ -474,7 +476,8 @@ def get_adjointSuffix(objective_function=None):
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfr"       ,
                  "OUTFLOW_GENERALIZED"     : "chn"       ,
-                 "FREE_SURFACE"            : "fs"        }
+                 "FREE_SURFACE"            : "fs"        ,
+                 "COMBO"                   : "combo"}
     
     # if none or false, return map
     if not objective_function:
@@ -484,6 +487,9 @@ def get_adjointSuffix(objective_function=None):
         objective = ''.join(objective_function.split())
         objective = objective.split(",")
         nObj = len(objective)
+        print "nObj ",nObj
+        if (nObj>1 and config.COMBINE_OBJECTIVE):
+            return "combo"
         if name_map.has_key(objective[0]):
             return name_map[objective[0]]
     
