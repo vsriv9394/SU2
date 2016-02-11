@@ -509,8 +509,12 @@ int main(int argc, char *argv[]) {
         surface_movement->SetParabolic(geometry_container[ZONE_0], config_container[ZONE_0]);
       }
 
-      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CUSTOM and rank==MASTER_NODE)
-        cout <<"Custom design variable will be used in external script" << endl;
+      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CUSTOM and rank==MASTER_NODE){
+        cout << endl << "Design variable number "<< iDV <<"." << endl;
+        cout <<"Custom design variable will be used in external script."<<endl;
+        cout <<"Gradient information will be written to an output file by python tools" << endl;
+      }
+
 
       /*--- Design variable not implement ---*/
 
@@ -520,8 +524,10 @@ int main(int argc, char *argv[]) {
       }
 
       /*--- Continuous adjoint gradient computation ---*/
-      if (rank == MASTER_NODE)
-        cout << "Evaluate functional gradient using the continuous adjoint strategy." << endl;
+      if (rank == MASTER_NODE){
+        if (config_container[ZONE_0]->GetDesign_Variable(iDV)!=CUSTOM)
+          cout << "Evaluate functional gradient using the continuous adjoint strategy." << endl;
+      }
 
       /*--- Load the delta change in the design variable (finite difference step). ---*/
 
@@ -651,7 +657,8 @@ int main(int argc, char *argv[]) {
             cout << "Average total pressure gradient: "<< Gradient << "." << endl; break;
           case OUTFLOW_GENERALIZED :
              if (iDV == 0) Gradient_file << "Generalized outflow gradient cont. adj."<< endl;
-             cout << "Generalized outflow gradient: "<< Gradient << "." << endl; break;
+             if (config_container[ZONE_0]->GetDesign_Variable(iDV)!=CUSTOM)
+               cout << "Generalized outflow gradient: "<< Gradient << "." << endl; break;
 
         }
 
