@@ -190,6 +190,7 @@ def adjoint( func_name, config, state=None ):
     state = su2io.State(state)
     special_cases = su2io.get_specialCases(config)
     multi_objective = config.COMBINE_OBJECTIVE and type(func_name)==list
+    func_name_string = func_name
     if (multi_objective):
         ADJ_NAME = 'ADJOINT_COMBO'
         func_name_string = 'COMBO'

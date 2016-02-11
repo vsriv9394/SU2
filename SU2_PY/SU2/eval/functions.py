@@ -102,7 +102,6 @@ def function( func_name, config, state=None ):
     #: if not redundant
     
     # prepare output
-    print func_name
     if func_name == 'ALL':
         func_out = state['FUNCTIONS']
     elif multi_objective:

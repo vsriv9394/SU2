@@ -487,8 +487,7 @@ def get_adjointSuffix(objective_function=None):
         objective = ''.join(objective_function.split())
         objective = objective.split(",")
         nObj = len(objective)
-        print "nObj ",nObj
-        if (nObj>1 and config.COMBINE_OBJECTIVE):
+        if (nObj>1):
             return "combo"
         if name_map.has_key(objective[0]):
             return name_map[objective[0]]
