@@ -108,7 +108,7 @@ def continuous_adjoint( filename           ,
     objectives = objectives.split(',')
     n_obj = len(objectives)
     marker_monitoring = config['MARKER_MONITORING']
-    if (config['COMBINE_OBJECTIVE']):
+    if (config.COMBINE_OBJECTIVE):
         # Run all-at-once 
         if compute:
             info = SU2.run.adjoint(config)

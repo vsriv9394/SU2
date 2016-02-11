@@ -120,6 +120,11 @@ def projection( config, state={}, step = 1e-3 ):
     su2util.write_plot(grad_plotname,output_format,data_plot)
 
     # gradient output dictionary
+    print len(objective), type(objective)
+    objective = objective.split(',')
+    if (len(objective)>1 and konfig.COMBINE_OBJECTIVE):
+        objective = 'COMBO'
+        
     gradients = { objective : raw_gradients }
     
     # info out
