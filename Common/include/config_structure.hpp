@@ -125,6 +125,10 @@ private:
   unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
   unsigned short *Kind_ObjFunc;  /*!< \brief Kind of objective function. */
   su2double *Weight_ObjFunc;    /*!< \brief Weight applied to objective function. */
+<<<<<<< HEAD
+=======
+  unsigned short ComboObjective;        /*!< \brief boolean to determine whether to internally combine a list of objectives or treat only the first */
+>>>>>>> feature_MultiObj2
   unsigned short Kind_SensSmooth; /*!< \brief Kind of sensitivity smoothing technique. */
   unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
   unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). */

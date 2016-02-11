@@ -391,6 +391,9 @@ def read_config(filename):
             if case("ADAPT_CYCLES")           :
                 data_dict[this_param] = int(this_value)
                 break                
+            if case("COMBINE_OBJECTIVE")      :
+                data_dict[this_param] = int(this_value)
+                break
             
             # unitary design variable definition
             if case("DEFINITION_DV"):
@@ -536,7 +539,8 @@ def read_config(filename):
         data_dict['OPT_BOUND_UPPER'] = 1e10
     if not data_dict.has_key('OPT_BOUND_LOWER'):
         data_dict['OPT_BOUND_LOWER'] = -1e10
-    
+    if not data_dict.has_key('COMBINE_OBJECTIVE'):
+        data_dict['COMBINE_OBJECTIVE'] = 0
     return data_dict
     
 #: def read_config()

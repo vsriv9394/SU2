@@ -78,11 +78,18 @@ def gradient( func_name, method, config, state=None ):
     state = su2io.State(state)
     if func_name == 'ALL':
         raise Exception , "func_name = 'ALL' not yet supported"
-    
-    multi_objective = (type(func_name)==list)
-    
+    func_name_string = func_name
+    if (type(func_name)==list):
+        if (config.COMBINE_OBJECTIVE):
+            config.OBJECTIVE_FUNCTION = ', '.join(func_name)
+            func_name_string = 'COMBO'
+        else:
+            func_name = func_name[0]
+            config.OBJECTIVE_FUNCTION = func_name
+    else:
+        config.OBJECTIVE_FUNCTION = func_name
     # redundancy check
-    if (multi_objective or not state['GRADIENTS'].has_key(func_name)):
+    if not state['GRADIENTS'].has_key(func_name_string):
 
         # Adjoint Gradients
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
@@ -95,22 +102,22 @@ def gradient( func_name, method, config, state=None ):
                 config.OBJ_CHAIN_RULE_COEFF = str(chaingrad[0:5])
                 
             # Aerodynamics
-            if func_name in su2io.optnames_aero:
+            if func_name_string in su2io.optnames_aero:
                 grads = adjoint( func_name, config, state )
 
             elif func_name[0] in su2io.optnames_aero:
                 grads = adjoint( func_name, config, state )
                 
             # Stability
-            elif func_name in su2io.optnames_stab:
+            elif func_name_string in su2io.optnames_stab:
                 grads = stability( func_name, config, state )
 
             # Geometry (actually a finite difference)
-            elif func_name in su2io.optnames_geo:
+            elif func_name_string in su2io.optnames_geo:
                 grads = geometry( func_name, config, state )
 
             else:
-                raise Exception, 'unknown function name: %s' % func_name
+                raise Exception, 'unknown function name: %s' % func_name_string
 
         # Finite Difference Gradients
         elif method == 'FINDIFF':
@@ -122,18 +129,14 @@ def gradient( func_name, method, config, state=None ):
         else:
             raise Exception , 'unrecognized gradient method'
         
-        if ('CUSTOM' in config.DV_KIND and 'OUTFLOW_GENERALIZED' in func_name):
+        if ('CUSTOM' in config.DV_KIND and 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION):
             import downstream_function
             chaingrad = downstream_function.downstream_gradient(config,state)
-            if multi_objective:
-                func = 'COMBO'
-            else:
-                func = 'OUTFLOW_GENERALIZED'
-            n_dv = len(grads[func])
+            n_dv = len(grads[func_name_string])
             custom_dv=1
             for idv in range(n_dv):
                 if (config.DV_KIND[idv] == 'CUSTOM'):
-                    grads[func][idv] = chaingrad[4+custom_dv]
+                    grads[func_name_string][idv] = chaingrad[4+custom_dv]
                     custom_dv = custom_dv+1
         # store
         state['GRADIENTS'].update(grads)
@@ -141,10 +144,7 @@ def gradient( func_name, method, config, state=None ):
     # if not redundant
 
     # prepare output
-    if multi_objective:
-        grads_out = state['GRADIENTS']['COMBO']
-    else:
-        grads_out = state['GRADIENTS'][func_name]
+    grads_out = state['GRADIENTS'][func_name_string]
 
     return copy.deepcopy(grads_out)
 
@@ -192,10 +192,12 @@ def adjoint( func_name, config, state=None ):
     # initialize
     state = su2io.State(state)
     special_cases = su2io.get_specialCases(config)
-    if multi_objective:
-        ADJ_NAME = 'ADJOINT_COMBO'
-    else:
-        ADJ_NAME = 'ADJOINT_'+func_name
+    multi_objective = config.COMBINE_OBJECTIVE and type(func_name)==list
+    func_name_string = func_name
+    if (multi_objective):
+        func_name_string = 'COMBO'
+
+    ADJ_NAME = 'ADJOINT_'+func_name
 
     # console output
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
@@ -208,7 +210,7 @@ def adjoint( func_name, config, state=None ):
     # ----------------------------------------------------    
 
     # master redundancy check
-    if (not multi_objective) and state['GRADIENTS'].has_key(func_name[0]):
+    if state['GRADIENTS'].has_key(func_name_string):
         grads = state['GRADIENTS']
         return copy.deepcopy(grads)
 
@@ -272,12 +274,9 @@ def adjoint( func_name, config, state=None ):
 
             # setup config
             if multi_objective:
-                funcstring = ", ".join(func_name)
+                config['OBJECTIVE_FUNCTION'] = ", ".join(func_name)
             else:
-                funcstring = func_name
-            print func_name, funcstring
-            
-            config['OBJECTIVE_FUNCTION'] =funcstring
+                config['OBJECTIVE_FUNCTION'] = func_name
 
             # # RUN ADJOINT SOLUTION # #
             info = su2run.adjoint(config)
@@ -297,10 +296,7 @@ def adjoint( func_name, config, state=None ):
 
     # return output 
     grads = su2util.ordered_bunch()
-    if multi_objective:
-        grads['COMBO']= state['GRADIENTS'][funcstring]
-    else:
-        grads[func_name] = state['GRADIENTS'][func_name]
+    grads[func_name_string] = state['GRADIENTS'][func_name_string]
     return grads
 
 #: def adjoint()

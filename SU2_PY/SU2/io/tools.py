@@ -219,7 +219,8 @@ def get_headerMap():
                  "D(CFx)"          : "D_FORCE_X"               ,
                  "D(CFy)"          : "D_FORCE_Y"               ,
                  "D(CFz)"          : "D_FORCE_Z"               ,
-                 "D(CL/CD)"        : "D_EFFICIENCY"}
+                 "D(CL/CD)"        : "D_EFFICIENCY"            ,
+                 "ComboObj"        : "COMBO"}
     
     return map_dict
 
@@ -487,10 +488,9 @@ def get_adjointSuffix(objective_function=None):
         objective = ''.join(objective_function.split())
         objective = objective.split(",")
         nObj = len(objective)
-        if nObj >1:
-           return "combo" 
-        # return desired objective function suffix
-        elif name_map.has_key(objective[0]):
+        if (nObj>1):
+            return "combo"
+        if name_map.has_key(objective[0]):
             return name_map[objective[0]]
     
         # otherwise...
