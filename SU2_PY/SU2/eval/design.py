@@ -268,7 +268,7 @@ def obj_df(dvs,config,state=None):
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
     n_obj = len( objectives )
-    multi_objective = config['COMBINE_OBJECTIVE']
+    multi_objective = (config['COMBINE_OBJECTIVE']=="YES")
     
     dv_scales = config['DEFINITION_DV']['SCALE']
     

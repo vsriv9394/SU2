@@ -78,7 +78,7 @@ def function( func_name, config, state=None ):
     state = su2io.State(state)
     
     # If combine_objective is true, use the 'combo' output. 
-    if (config.COMBINE_OBJECTIVE and type(func_name)==list):
+    if ((config.COMBINE_OBJECTIVE=="YES") and (type(func_name)==list)):
         func_name = 'COMBO'
     multi_objective = (type(func_name)==list)
     # redundancy check

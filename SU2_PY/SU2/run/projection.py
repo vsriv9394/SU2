@@ -121,7 +121,7 @@ def projection( config, state={}, step = 1e-3 ):
 
     # gradient output dictionary
     objective = objective.split(',')
-    if (len(objective)>1 and konfig.COMBINE_OBJECTIVE):
+    if (len(objective)>1 and konfig.COMBINE_OBJECTIVE=="YES"):
         objective = ['COMBO']
 
     gradients = { objective[0] : raw_gradients }

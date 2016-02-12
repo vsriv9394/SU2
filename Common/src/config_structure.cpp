@@ -755,7 +755,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
   /*!\brief COMBINE_OBJECTIVE
    * \n DESCRIPTION: Flag specifying whether to internally combine a multi-objective function or treat separately */
-  addUnsignedShortOption("COMBINE_OBJECTIVE", ComboObjective, 0);
+  addBoolOption("COMBINE_OBJECTIVE", ComboObjective, false);
 
   default_vec_5d[0]=0.0; default_vec_5d[1]=0.0; default_vec_5d[2]=0.0;
   default_vec_5d[3]=0.0;  default_vec_5d[4]=0.0;

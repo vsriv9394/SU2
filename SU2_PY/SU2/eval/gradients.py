@@ -80,7 +80,7 @@ def gradient( func_name, method, config, state=None ):
         raise Exception , "func_name = 'ALL' not yet supported"
     func_name_string = func_name
     if (type(func_name)==list):
-        if (config.COMBINE_OBJECTIVE):
+        if (config.COMBINE_OBJECTIVE=="YES"):
             config.OBJECTIVE_FUNCTION = ', '.join(func_name)
             func_name_string = 'COMBO'
         else:
@@ -192,7 +192,7 @@ def adjoint( func_name, config, state=None ):
     # initialize
     state = su2io.State(state)
     special_cases = su2io.get_specialCases(config)
-    multi_objective = config.COMBINE_OBJECTIVE and type(func_name)==list
+    multi_objective = ((config.COMBINE_OBJECTIVE=="YES") and (type(func_name)==list))
     func_name_string = func_name
     if (multi_objective):
         func_name_string = 'COMBO'
