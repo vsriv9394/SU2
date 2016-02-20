@@ -197,7 +197,7 @@ def adjoint( func_name, config, state=None ):
     if (multi_objective):
         func_name_string = 'COMBO'
 
-    ADJ_NAME = 'ADJOINT_'+func_name
+    ADJ_NAME = 'ADJOINT_'+func_name_string
 
     # console output
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
