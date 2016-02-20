@@ -3525,6 +3525,12 @@ public:
 	su2double GetCoeff_ObjChainRule(unsigned short iVar);
 
 	/*!
+	 * \author H. Kline
+	 * \brief Get the flag indicating whether to comput a combined objective.
+	 */
+	bool GetComboObj(void);
+
+	/*!
 	 * \brief Get the kind of sensitivity smoothing technique.
 	 * \return Kind of sensitivity smoothing technique.
 	 */
