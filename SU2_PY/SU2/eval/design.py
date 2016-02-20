@@ -269,15 +269,20 @@ def obj_df(dvs,config,state=None):
     objectives = def_objs.keys()
     n_obj = len( objectives )
     multi_objective = (config['COMBINE_OBJECTIVE']=="YES")
-    
+     
     dv_scales = config['DEFINITION_DV']['SCALE']
     
     #  if objectives: print('Evaluate Objective Gradients')
     # evaluate each objective
     vals_out = []
     if (multi_objective and n_obj>1):
-        scale = 1.0
-        sign = 1.0
+        scale = [1.0]*n_obj
+        for i_obj,this_obj in enumerate(objectives):
+            sign = su2io.get_objectiveSign(this_obj)
+            scale[i_obj] = def_objs[this_obj]['SCALE']*sign
+            
+        config['OBJECTIVE_WEIGHT']=','.join(map(str,scale))
+        
         grad= su2grad(objectives,grad_method,config,state)
         vals_out.append(grad)
     else:
