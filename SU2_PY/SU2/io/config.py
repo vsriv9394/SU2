@@ -450,7 +450,8 @@ def read_config(filename):
                 this_value = ''.join(this_value.split())
                 #split by + 
                 this_def={}
-                this_value = this_value.split("+")
+                this_value = this_value.split(";")
+                
                 for  this_obj in this_value:       
                     # split by scale
                     this_obj = this_obj.split("*")
