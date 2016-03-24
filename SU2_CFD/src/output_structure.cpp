@@ -4188,7 +4188,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Total_CFEA = 0.0, Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0, Total_CFEM = 0.0;
     su2double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
     OneD_FluxAvgPress = 0.0, OneD_FluxAvgDensity = 0.0, OneD_FluxAvgVelocity = 0.0, OneD_FluxAvgEntalpy = 0.0,
-    Total_ComboObj;
+    Total_ComboObj = 0.0;
     
     /*--- Initialize variables to store information from all zone for turboperformance (direct solution) ---*/
     su2double *TotalStaticEfficiency = NULL,
@@ -5414,6 +5414,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (output_1d) ConvHist_file[0] << oneD_outputs;
             if (output_massflow && !output_1d) ConvHist_file[0] << massflow_outputs;
             if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
+            if (output_comboObj) ConvHist_file[0] << combo_obj;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }

@@ -151,6 +151,9 @@ class Config(ordered_bunch):
         """
         
         dv_new = copy.deepcopy(dv_new)
+        # Type correction for use with pyopt
+        if type(dv_new)==dict:
+            dv_new = list(dv_new[dv_new.keys()[0]])
         dv_old = copy.deepcopy(dv_old)
         
         # handle unpacking cases
@@ -457,7 +460,7 @@ def read_config(filename):
                     this_obj = this_obj.split("*")
                     this_name  = this_obj[0]
                     this_scale = 1.0
-                    if len(this_value) > 1:
+                    if len(this_obj) > 1:
                         this_scale = float( this_obj[1] )
                     this_def.update({ this_name : {'SCALE':this_scale} })
                 # save to output dictionary

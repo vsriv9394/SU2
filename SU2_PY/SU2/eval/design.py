@@ -228,19 +228,16 @@ def obj_f(dvs,config,state=None):
 #    if objectives: print('Evaluate Objectives')
     # evaluate each objective
     vals_out = []
+    func = 0.0
     for i_obj,this_obj in enumerate(objectives):
         scale = def_objs[this_obj]['SCALE']
         sign  = su2io.get_objectiveSign(this_obj)
         
         # Evaluate Objective Function
-#        sys.stdout.write('  %s... ' % this_obj.title())
-        func = su2func(this_obj,config,state)
-#        sys.stdout.write('done: %.6f\n' % func)
-        
         # scaling and sign
-        func = func * sign * scale
+        func += su2func(this_obj,config,state) * sign * scale
         
-        vals_out.append(func)
+    vals_out.append(func)
     #: for each objective
     
     return vals_out
@@ -287,8 +284,12 @@ def obj_df(dvs,config,state=None):
         vals_out.append(grad)
     else:
         for i_obj,this_obj in enumerate(objectives):
+            marker_monitored = config['MARKER_MONITORING']
             scale = def_objs[this_obj]['SCALE']
             sign  = su2io.get_objectiveSign(this_obj)
+            if n_obj>1:
+                config['MARKER_MONITORING'] = marker_monitored[i_obj]
+
             
             # Evaluate Objective Gradient
     #        sys.stdout.write('  %s... ' % this_obj.title())

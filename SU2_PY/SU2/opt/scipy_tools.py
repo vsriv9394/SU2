@@ -98,7 +98,7 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     obj = project.config['OPT_OBJECTIVE']
     obj_scale = []
     for this_obj in obj.keys():
-        obj_scale = obj_scale + [obj[obj.keys()[0]]['SCALE']]
+        obj_scale = obj_scale + [obj[this_obj]['SCALE']]
     
     accu = accu*obj_scale[0]
 

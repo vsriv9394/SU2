@@ -2454,10 +2454,9 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 
     if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
         (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-        (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+        (ObjFunc == MASS_FLOW_RATE) || (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0;
 
-   if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-       (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+   if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ) factor = 1.0/Area_Monitored;
   }
   
   /*--- Initialize sensitivities to zero ---*/
@@ -4663,7 +4662,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Psi_outlet[iVar] = 0.0;
         }
 
-        if (Vn >= SoundSpeed) {
+        if (Vn > SoundSpeed) {
           /*--- Objective-dependent additions to energy term ---*/
           Vn_Exit = Vn; /* Vn_Exit comes from Reiman conditions in subsonic case*/
           Vn_rel = Vn_Exit-ProjGridVel;
@@ -4686,7 +4685,8 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             for (iDim = 0; iDim < nDim; iDim++) {
               Velocity2 += Velocity[iDim]*Velocity[iDim];
             }
-            Psi_outlet[nDim+1]+=obj_weight*(a1*Velocity2/(2.0*Vn_Exit));
+            if (Vn_Exit!=0.0)
+              Psi_outlet[nDim+1]+=obj_weight*(a1*Velocity2/(2.0*Vn_Exit));
             break;
           case AVG_OUTLET_PRESSURE:
             /*Area averaged static pressure*/
@@ -4743,10 +4743,12 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           }
            */
           /*Constant-pressure version*/
-          a1 = SoundSpeed*SoundSpeed/Gamma_Minus_One/Vn;
-          Psi_outlet[0] += Psi_outlet[nVar-1]*(Velocity2*0.5+Vn_rel*a1);
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Psi_outlet[iDim+1] += -Psi_outlet[nVar-1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
+          if (Vn!=0.0){
+            a1 = SoundSpeed*SoundSpeed/Gamma_Minus_One/Vn;
+            Psi_outlet[0] += Psi_outlet[nVar-1]*(Velocity2*0.5+Vn_rel*a1);
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Psi_outlet[iDim+1] += -Psi_outlet[nVar-1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
+            }
           }
         }
 
@@ -6001,10 +6003,9 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     /*-- For multi-objective problems these scaling factors are applied before solution ---*/
     if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
         (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-        (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+        (ObjFunc == MASS_FLOW_RATE) || (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0;
   
-   if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-       (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+   if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ) factor = 1.0/Area_Monitored;
   }
 
 
