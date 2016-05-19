@@ -111,6 +111,9 @@ def CFD(config):
     
         the_Command = 'SU2_CFD ' + tempname
 
+    if not konfig.get('OUTPUT_LOG',"") in ["NONE", ""] :
+        the_Command = "%s > %s" % (the_Command, konfig.get('OUTPUT_LOG',""));
+
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     

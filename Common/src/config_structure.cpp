@@ -1376,7 +1376,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	addPythonOption("ADAP_INI_SENSOR_FILE");
 	addPythonOption("ADAP_INI_MESH_FILE");
 	addPythonOption("OUTPUT_LOG");
+	addPythonOption("ADAP_BACK");
+	addPythonOption("ADAP_BACK_NAME");
 
+	addPythonOption("ADAP_HMAX");
+	addPythonOption("ADAP_HMIN");
+	addPythonOption("ADAP_HGRAD");
+	
   /* END_CONFIG_OPTIONS */
 
 }

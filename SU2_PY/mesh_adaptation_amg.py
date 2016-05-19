@@ -178,6 +178,47 @@ def Parse_Adap_Options (config, config_adap):
 		config_adap.adap_subite[i]  = int(config_adap.adap_subite[i])
 		config_adap.NbrIteGlo += config_adap.adap_subite[i];
 	
+	if 'ADAP_BACK' in config:
+		print " config['ADAP_BACK'] = %s\n" % config['ADAP_BACK'];
+		if config['ADAP_BACK']=="YES":
+			config_adap.ADAP_BACK = 1;
+			
+			if not 'ADAP_BACK_NAME' in config :
+				print " ## ERROR : a back mesh name must be provided.\n ADAP_BACK option is ignored.\n";
+				config_adap.ADAP_BACK = 0;
+			else :
+				config_adap.ADAP_BACK_NAME = config['ADAP_BACK_NAME'];
+				
+				#if not os.path.isfile(config_adap.ADAP_BACK_NAME):
+				#	print " ## ERROR : Back mesh %s NOT FOUND!\n ADAP_BACK option is ignored.\n" %	config_adap.ADAP_BACK_NAME;
+				#	config_adap.ADAP_BACK = 0;
+		else:
+			config_adap.ADAP_BACK = 0;
+	else:
+		config_adap.ADAP_BACK = 0;
+		
+	
+	if (config_adap.ADAP_BACK):
+		print "  -- Info : Use %s as a back mesh." % config_adap.ADAP_BACK_NAME;
+	else:
+		print "DONT GET BACK MESH";
+	
+	if 'ADAP_HIN' in config:
+		config_adap.HMIN = float(config['ADAP_HMIN']);
+	else:
+		config_adap.HMIN = 0;
+	
+	if 'ADAP_HMAX' in config :
+		config_adap.HMAX = float(config['ADAP_HMAX']);
+	else:
+		config_adap.HMAX = 1e300;
+		
+	if 'ADAP_HGRAD' in config:
+		config_adap.HGRAD = float(config['ADAP_HGRAD']);
+	else :
+		config_adap.HGRAD = 3.0;
+	
+	
 	# --- Print summary
 	
 	#print "Mesh adaptation summary: \n"
@@ -195,7 +236,13 @@ def Call_AMG (config_adap, config):
 	outNam = "current.new.meshb";
 	itpNam = "current_restart.itp.solb";
 	
+	rootDir    = config_adap.rootDir;
+	
 	cpx = config_adap.adap_complex[ite_cpx];
+	
+	hmin  = config_adap.HMIN;
+	hmax  = config_adap.HMAX;
+	hgrad = config_adap.HGRAD;
 	
 	jobNam = "AMG.%d.%.0f.job" % (ite_glo,cpx);
 	
@@ -204,8 +251,14 @@ def Call_AMG (config_adap, config):
 		
 	if os.path.isfile(itpNam):
 		os.remove(itpNam);
+		
+	if (config_adap.ADAP_BACK):
+		back = " -back %s/%s " % (rootDir, config_adap.ADAP_BACK_NAME);
+	else:
+		back = "";
+		
 	
-	amg_cmd = "amg -in current.meshb -sol current_sensor.solb -p 2 -c %f -hgrad 1.5 -out current.new.meshb -itp current_restart.solb > %s" % (cpx,jobNam)
+	amg_cmd = "amg -in current.meshb -sol current_sensor.solb -p 2 -c %f -hgrad %.2f -hmin %le -hmax %le -out current.new.meshb -itp current_restart.solb %s > %s" % (cpx, hgrad, hmin, hmax, back, jobNam)
 	
 	print " Running AMG \n Log: %s\n" % (jobNam);
 	
