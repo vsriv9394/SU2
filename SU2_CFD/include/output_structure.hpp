@@ -267,6 +267,25 @@ public:
 	void MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone);
   
   /*!
+	 * \brief Write a native Inria restart file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+	 */
+	void SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+	
+	
+	
+	/*!
+	 * \brief Write a native Inria restart file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+	 */
+	void WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
+
+  /*!
 	 * \brief Write a native SU2 restart file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.

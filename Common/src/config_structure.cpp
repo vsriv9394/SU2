@@ -1368,6 +1368,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Activate ParMETIS mode for testing */
   addBoolOption("PARMETIS", ParMETIS, false);
   
+	/* AMG MESH ADAPTATION : PYTHON OPTIONS */
+	addPythonOption("ADAP_COMPLEXITIES");
+	addPythonOption("ADAP_SUBITE");
+	addPythonOption("ADAP_RESTART");
+	addPythonOption("ADAP_INI_RESTART_FILE");
+	addPythonOption("ADAP_INI_SENSOR_FILE");
+	addPythonOption("ADAP_INI_MESH_FILE");
+	addPythonOption("OUTPUT_LOG");
+
   /* END_CONFIG_OPTIONS */
 
 }
@@ -3267,6 +3276,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
           case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
           case CUSTOM:                cout << "Custom DV <-> "; break;
+					case BSPLINECOEF:           cout << "BSPLINE DV <-> "; break;
         }
         
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
@@ -3300,6 +3310,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             (Design_Variable[iDV] ==  FFD_ROTATION) ||
             (Design_Variable[iDV] ==  FFD_CONTROL_SURFACE) ) nParamDV = 7;
         if (Design_Variable[iDV] ==  CUSTOM) nParamDV = 1;
+				if (Design_Variable[iDV] ==  BSPLINECOEF) nParamDV = 1;
 
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
 
@@ -3379,6 +3390,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case FORCE_Y_COEFFICIENT:     cout << "Y-force objective function." << endl; break;
       case FORCE_Z_COEFFICIENT:     cout << "Z-force objective function." << endl; break;
       case THRUST_COEFFICIENT:      cout << "Thrust objective function." << endl; break;
+			case THRUST_NOZZLE:           cout << "Nozzle thrust objective function." << endl; break;
       case TORQUE_COEFFICIENT:      cout << "Torque efficiency objective function." << endl; break;
       case TOTAL_HEATFLUX:          cout << "Total heat flux objective function." << endl; break;
       case MAXIMUM_HEATFLUX:        cout << "Maximum heat flux objective function." << endl; break;
@@ -4690,6 +4702,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
       case OUTFLOW_GENERALIZED:     AdjExt = "_chn";       break;
+			case THRUST_NOZZLE:           AdjExt = "_nt";       break;
     }
     Filename.append(AdjExt);
 
