@@ -918,6 +918,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
 
+  /*!\brief WRT_INRIA_MESH
+   *  \n DESCRIPTION: Output Inria mesh file  \ingroup Config*/
+  addBoolOption("WRT_INRIA_MESH", Wrt_InriaMesh, false);
+
+  /*!\brief MESH_DECOMPSITION
+   *  \n DESCRIPTION: Output Inria mesh file  \ingroup Config*/
+  addBoolOption("MESH_DECOMPOSITION", Mesh_Decomposition, false);
+
 
   /*!\par CONFIG_CATEGORY: Dynamic mesh definition \ingroup Config*/
   /*--- Options related to dynamic meshes ---*/

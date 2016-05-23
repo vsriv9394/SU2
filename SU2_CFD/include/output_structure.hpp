@@ -30,6 +30,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #pragma once
 
 #include "../../Common/include/mpi_structure.hpp"
@@ -274,8 +275,13 @@ public:
 	 */
 	void SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 	
-	
-	
+	/*!
+	 * \brief Write an Inria mesh.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 */
+	void SetInriaMesh(CConfig *config, CGeometry *geometry);
+	 
 	/*!
 	 * \brief Write a native Inria restart file.
 	 * \param[in] config - Definition of the particular problem.

@@ -8618,7 +8618,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
       /*--- Now we do the computation of the wall distance again using the general datatype.---*/
 
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++) {
         dist += (coord[iDim] - Coord_bound[iVertex_nearestWall][iDim])*
             (coord[iDim] - Coord_bound[iVertex_nearestWall][iDim]);
       }

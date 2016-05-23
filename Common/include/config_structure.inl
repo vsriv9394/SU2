@@ -1044,6 +1044,10 @@ inline bool CConfig::GetWrt_Limiters(void) { return Wrt_Limiters; }
 
 inline bool CConfig::GetWrt_SharpEdges(void) { return Wrt_SharpEdges; }
 
+inline bool CConfig::GetWrt_InriaMesh(void) { return Wrt_InriaMesh; }
+
+inline bool CConfig::GetMesh_Decomposition(void) { return Mesh_Decomposition; }
+
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }

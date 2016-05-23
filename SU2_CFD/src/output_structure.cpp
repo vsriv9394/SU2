@@ -6448,6 +6448,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
                               unsigned long iExtIter, unsigned short val_nZone) {
   
   int rank = MASTER_NODE;
+
   
 #ifdef HAVE_MPI
   int size;
@@ -6533,12 +6534,23 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
      executed by the master proc alone (as if in serial). ---*/
     
     if (rank == MASTER_NODE) {
+	
+			if ( config[iZone]->GetWrt_InriaMesh() ) {
+	      if (rank == MASTER_NODE) cout << "Writing Inria mesh." << endl;
+				SetInriaMesh(config[iZone], geometry[iZone][MESH_0]);
+			}
       
       /*--- Write a native restart file ---*/
       
       if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
       SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
       
+			if (rank == MASTER_NODE) cout << "Writing Inria native restart file." << endl;
+      SetInriaRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
+			WriteInriaOutputs(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
+
+
+
       if (Wrt_Vol) {
         
         switch (FileFormat) {
