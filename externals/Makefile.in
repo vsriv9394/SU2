@@ -84,8 +84,9 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @BUILD_TECIO_TRUE@am__append_1 = tecio
-@BUILD_METIS_TRUE@am__append_2 = metis
-@BUILD_METIS_TRUE@@BUILD_PARMETIS_TRUE@am__append_3 = parmetis
+@BUILD_INRIA_TRUE@am__append_2 = inria
+@BUILD_METIS_TRUE@am__append_3 = metis
+@BUILD_METIS_TRUE@@BUILD_PARMETIS_TRUE@am__append_4 = parmetis
 subdir = externals
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -131,7 +132,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = tecio metis parmetis
+DIST_SUBDIRS = tecio inria metis parmetis
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -294,7 +295,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 
 # Build any requested libraries from the provided source
-SUBDIRS = $(am__append_1) $(am__append_2) $(am__append_3)
+SUBDIRS = $(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_4)
 all: all-recursive
 
 .SUFFIXES:
