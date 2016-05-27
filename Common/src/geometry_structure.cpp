@@ -6176,6 +6176,11 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
 	
 	else {
   
+		
+		/*--- Get triangles ---*/
+		element_count=0; local_element_count=0; 
+    
+
 		GmfGotoKwd(InpMsh, GmfTetrahedra);
   
 		/*--- Get tetrahedra ---*/
@@ -6186,48 +6191,37 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
 			for (int i=0; i<4; i++)
 				vnodes_tetra[i] = bufInt[i]-1;
   
-	    /*--- Decide whether we need to store this element, i.e., check if
-	     any of the nodes making up this element have a global index value
-	     that falls within the range of our linear partitioning. ---*/
-  
-	    for (int i=0; i<4; i++) {
-  
-	      local_index = vnodes_tetra[i]-starting_node[rank];
-  
-	      if ((local_index >= 0) && (local_index < (long)nPoint)) {
-  
-	        /*--- This node is within our linear partition. Mark this
-	         entire element to be added to our list for this rank, and
-	         add the neighboring nodes to this nodes' adjacency list. ---*/
-  
-	        elem_read = true;
-  
+			/*--- Decide whether we need to store this element, i.e., check if
+			 any of the nodes making up this element have a global index value
+			 that falls within the range of our linear partitioning. ---*/
+			
+			for (int i = 0; i < 4; i++) {
+			  
+			  local_index = vnodes_tetra[i]-starting_node[rank];
+			  
+			  if ((local_index >= 0) && (local_index < (long)nPoint)) {
+			    
+			    /*--- This node is within our linear partition. Mark this
+			     entire element to be added to our list for this rank, and
+			     add the neighboring nodes to this nodes' adjacency list. ---*/
+			    
+			    ElemIn[element_count] = true;
+    	
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
-	        /*--- Build adjacency assuming the VTK connectivity ---*/
-  
-	        for (int j=0; j<4; j++) {
-	          if (i != j) adj_nodes[local_index].push_back(vnodes_tetra[j]);
-	        }
+  	  		/*--- Build adjacency assuming the VTK connectivity ---*/
+  	  		for (int j=0; j<4; j++) {
+  	  		  if (i != j) adj_nodes[local_index].push_back(vnodes_tetra[j]);
+  	  		}
 #endif
-#endif	    
-  
-	      }
-	    }
-  
-	    /*--- If any of the nodes were within the linear partition, the
-	     element is added to our element data structure. ---*/
-  
-	    if (elem_read) {
-	      Global_to_Local_Elem[element_count] = local_element_count;
-	      elem[local_element_count] = new CTetrahedron(vnodes_tetra[0],
-	                                                 vnodes_tetra[1],
-	                                                 vnodes_tetra[2],
-	                                                 vnodes_tetra[3]);
-	      local_element_count++;
-	      nelem_tetra++;
-	    }
-	    element_count++;
+#endif
+  			}
+			}
+
+			MI = ElemIn.find(element_count);
+			if (MI != ElemIn.end()) local_element_count++;
+			
+			element_count++;
 		}
   
 	}
@@ -6352,58 +6346,37 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
 		}
 	}
 	else {
+		
+		element_count=0; local_element_count=0; 
 
 		GmfGotoKwd(InpMsh, GmfTetrahedra);
 
 		/*--- Get tetrahedra ---*/
 		for (iTet=1; iTet<=NbrTet; iTet++) {
-
+			
+			/*--- If this element was marked as required, check type and store. ---*/
+      
+      map<unsigned long, bool>::const_iterator MI = ElemIn.find(element_count);
+			
 			GmfGetLin(InpMsh, GmfTetrahedra, &bufInt[0], &bufInt[1], &bufInt[2], &bufInt[3], &ref);
 
-			for (int i=0; i<4; i++)
-				vnodes_tetra[i] = bufInt[i]-1;
-
-	    /*--- Decide whether we need to store this element, i.e., check if
-	     any of the nodes making up this element have a global index value
-	     that falls within the range of our linear partitioning. ---*/
-
-	    for (int i=0; i<4; i++) {
-
-	      local_index = vnodes_tetra[i]-starting_node[rank];
-
-	      if ((local_index >= 0) && (local_index < (long)nPoint)) {
-
-	        /*--- This node is within our linear partition. Mark this
-	         entire element to be added to our list for this rank, and
-	         add the neighboring nodes to this nodes' adjacency list. ---*/
-
-	        elem_read = true;
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-	        /*--- Build adjacency assuming the VTK connectivity ---*/
-
-	        for (int j=0; j<4; j++) {
-	          if (i != j) adj_nodes[local_index].push_back(vnodes_tetra[j]);
-	        }
-#endif
-#endif	    
-
-	      }
-	    }
-
-	    /*--- If any of the nodes were within the linear partition, the
-	     element is added to our element data structure. ---*/
-
-	    if (elem_read) {
-	      Global_to_Local_Elem[element_count] = local_element_count;
-	      elem[local_element_count] = new CTetrahedron(vnodes_tetra[0],
-	                                                 vnodes_tetra[1],
-	                                                 vnodes_tetra[2],
-	                                                 vnodes_tetra[3]);
-	      local_element_count++;
-	      nelem_tetra++;
-	    }
+			if (MI != ElemIn.end()) {
+      	
+				for (int i=0; i<4; i++)
+					vnodes_tetra[i] = bufInt[i]-1;
+      	
+				/*--- If any of the nodes were within the linear partition, the
+         element is added to our element data structure. ---*/
+        
+        Global_to_Local_Elem[element_count] = local_element_count;
+        elem[local_element_count] = new CTetrahedron(vnodes_tetra[0],
+                                                     vnodes_tetra[1],
+                                                     vnodes_tetra[2],
+                                                     vnodes_tetra[3]);
+        local_element_count++;
+        nelem_tetra++;
+			}
+	  
 	    element_count++;
 		}
 

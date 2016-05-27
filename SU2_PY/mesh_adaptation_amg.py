@@ -350,7 +350,7 @@ def mesh_adaptation( filename             ,
 		sys.exit(1)
 	
 	# --- Warning before deleting old files?	
-	warn = 0;
+	warn = 1;
 		
 	# ---------------------------------------------
 	# --- Parse mesh adaptation options
