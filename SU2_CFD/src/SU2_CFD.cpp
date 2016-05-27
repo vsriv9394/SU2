@@ -145,9 +145,17 @@ int main(int argc, char *argv[]) {
     /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
     
+			
+			printf("RANK %d HERE0\n", rank);
+
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
+		
+		printf("RANK %d HERE1\n", rank);
+
     geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     
+
+		printf("RANK %d HERE\n", rank);
     /*--- Deallocate the memory of geometry_aux ---*/
     
     delete geometry_aux;

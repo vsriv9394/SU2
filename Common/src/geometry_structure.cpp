@@ -1496,7 +1496,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
     boundary_file.close();
 
   }
-  
+	  
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
@@ -1746,7 +1746,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long **Buffer_Receive_Pyramid_presence       = new unsigned long*[size];
   
 #endif
-  
+
   /*--- Basic dimensionalization ---*/
   
   nDomain = size;
@@ -1791,7 +1791,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
    and sorting out their ghost points/elements. ---*/
   
 #ifdef HAVE_MPI
-  
+
   int comm_counter=0;
   for (iDomain=0; iDomain < (unsigned long)size; iDomain++) {
     if (iDomain != (unsigned long)rank) {
@@ -1823,12 +1823,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
-  
+
   /*--- This loop gets the array sizes of points, elements, etc. for each
    rank to send to each other rank. ---*/
   
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
-    
+	
     /*--- Interior dimensionalization. Loop over the original grid to
      perform the dimensionalizaton of the domain variables ---*/
     
@@ -1856,6 +1856,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       /*--- Check if the element belongs to the domain ---*/
       
       ElemIn[iElem] = false;
+
       for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
         iPoint = geometry->elem[iElem]->GetNode(iNode);
         if (local_colour_values[iPoint] == iDomain) {
@@ -1865,14 +1866,17 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- If this element is needed by iDomain, get information
        about the number of points and element type. ---*/
-      
+
       if (ElemIn[iElem]) {
-        
+ 
         for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+	
           iPoint = geometry->elem[iElem]->GetNode(iNode);
           
           /*--- If we haven't already found this point... ---*/
           
+					
+
           map<unsigned long, bool>::const_iterator MI = PointIn.find(iPoint);
           if (MI == PointIn.end()) {
             
@@ -1909,14 +1913,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           case PRISM:         Buffer_Send_nElemPrism++;         break;
           case PYRAMID:       Buffer_Send_nElemPyramid++;       break;
         }
-        
+
         /*--- Increment the total number of elements for iDomain ---*/
         
         Buffer_Send_nElemTotal++;
         
       }
     }
-    
+
     /*--- Store the counts on a partition by partition basis. ---*/
     
     nDim_s[iDomain]               = geometry->GetnDim();
@@ -2350,6 +2354,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         
       }
     }
+
+
     
     /*--- Send the buffers with the geometrical information ---*/
     
@@ -2503,6 +2509,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         Buffer_Receive_Pyramid_presence_loc[i]=Local_to_global_Pyramid[ElemPyramid_Counter+i];
       }
     }
+		
     
     /*--- Increment the counters for the send buffers (iDomain loop) ---*/
     
@@ -2953,7 +2960,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
    for the elements on this rank. ---*/
   
   nElem = iElem; iElem = 0;
+	
   elem = new CPrimalGrid*[nElem];
+
+
   unsigned long iElemTria = 0;
   unsigned long iElemRect = 0;
   unsigned long iElemTetr = 0;
@@ -5901,7 +5911,7 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
   unsigned short nMarker_Max = config->GetnMarker_Max();
   unsigned long VTK_Type, iMarker, iChar;
   unsigned long iCount = 0;
-  unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0;
+  unsigned long iElem_Bound = 0, iPoint = 0,  ielem = 0;
   unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
   unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_prism[6],
   vnodes_pyramid[5], dummyLong, GlobalIndex;
@@ -5918,13 +5928,20 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
   
   /*--- Initialize some additional counters for the parallel partitioning ---*/
   
+  //unsigned long total_pt_accounted = 0;
+  //unsigned long rem_points = 0;
+  //unsigned long element_count = 0;
+  //unsigned long boundary_marker_count = 0;
+  //unsigned long node_count = 0;
+  //unsigned long loc_element_count = 0;
+  bool elem_read = false;
+
   unsigned long total_pt_accounted = 0;
   unsigned long rem_points = 0;
   unsigned long element_count = 0;
   unsigned long boundary_marker_count = 0;
   unsigned long node_count = 0;
-  unsigned long loc_element_count = 0;
-  bool elem_read = false;
+  unsigned long local_element_count = 0;
 
 	 /*--- Inria declarations ---*/
 	
@@ -5936,7 +5953,7 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
 	double bufDbl[3];		
 	int bufInt[8];
 	char bufChar[1024];
-	long *Count_markers;
+	long *Count_markers=NULL;
 	long *Edg=NULL, *Tri=NULL, *Qua=NULL; 
 	
   /*--- Initialize counters for local/global points & elements ---*/
@@ -5993,10 +6010,7 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
 	NbrEdg = GmfStatKwd(InpMsh, GmfEdges);	
 	NbrTet = GmfStatKwd(InpMsh, GmfTetrahedra);	
 	
-	if (rank == MASTER_NODE) {
-    cout << Global_nPointDomain << " points and no ghost points." << endl;
-  }
-	
+
 	/*--- Set some important point information for parallel simulations. ---*/
 	
 	nPoint = NbrVer;
@@ -6004,6 +6018,10 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
 	nPointDomain = nPoint;
 	Global_nPointDomain = nPoint;
   Global_nPoint = nPoint;
+
+	if (rank == MASTER_NODE) {
+    cout << Global_nPointDomain << " points and no ghost points." << endl;
+  }
 	
   if (rank == MASTER_NODE && size > SINGLE_NODE) {
     cout << nPoint << " points before parallel partitioning." << endl;
@@ -6030,7 +6048,7 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
   
   /*--- Store the local number of nodes and the beginning/end index ---*/
   
-  unsigned long local_node = npoint_procs[rank];
+  nPoint = npoint_procs[rank];
   starting_node[0] = 0;
   ending_node[0]   = starting_node[0] + npoint_procs[0];
   for (unsigned long i = 1; i < (unsigned long)size; i++) {
@@ -6042,13 +6060,13 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
   and if so, then store it on the local processor. We only create enough
   space in the node container for the local nodes at this point. ---*/
  
- node = new CPoint*[local_node];
- iPoint = 0;
- 
+ node = new CPoint*[nPoint];
+  
 	/*--- Read vertices ---*/
 	
 	GmfGotoKwd(InpMsh, GmfVertices);
-	
+		
+	iPoint = 0; 
 	for (iVer=1; iVer<=NbrVer; ++iVer) {
 		
 		if ( dim == 2 ) 
@@ -6056,31 +6074,47 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
 		else 
 			GmfGetLin(InpMsh, GmfVertices, &bufDbl[0], &bufDbl[1], &bufDbl[2], &ref);
 		
+		
 		if ( (iVer-1 < starting_node[rank]) || (iVer-1 >= ending_node[rank]) ) 
 			continue;
 		
 		LocalIndex = GlobalIndex = iVer-1;
 		
 		if ( dim == 2 ) {
-			node[iPoint] = new CPoint(bufDbl[0], bufDbl[1], iVer-1, config);
-	    iPoint++;
+			node[iPoint] = new CPoint(bufDbl[0], bufDbl[1], GlobalIndex, config);
+	    iPoint++;	
 		}
 		else {
-			node[iPoint] = new CPoint(bufDbl[0], bufDbl[1], bufDbl[2], iVer-1, config);
+			node[iPoint] = new CPoint(bufDbl[0], bufDbl[1], bufDbl[2], GlobalIndex, config);
 			iPoint++;
 		}
 		
 	}
 	
+//#ifdef HAVE_MPI
+//#ifdef HAVE_PARMETIS
+//  
+//  /*--- Initialize the vector for the adjacency information (ParMETIS). ---*/
+//  vector< vector<unsigned long> > adj_nodes(nPoint, vector<unsigned long>(0));
+//
+//#endif
+//#endif
+  
+
+  /*--- Read the elements in the file with two loops. The first finds
+   elements that live in the local partition and builds the adjacency
+   for ParMETIS (if parallel). Once we know how many elements we have
+   on the local partition, we allocate memory and store those elements. ---*/
+
+  map<unsigned long,bool> ElemIn;
+  map<unsigned long, bool>::const_iterator MI;
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
-  
-  /*--- Initialize the vector for the adjacency information (ParMETIS). ---*/
-  vector< vector<unsigned long> > adj_nodes(local_node, vector<unsigned long>(0));
+  /*--- Initialize a vector for the adjacency information (ParMETIS). ---*/
+  vector< vector<unsigned long> > adj_nodes(nPoint, vector<unsigned long>(0));
+#endif
+#endif
 
-#endif
-#endif
-  
 	if ( dim == 2 ) {
 		nElem = Global_nElem = NbrTri;
 	}
@@ -6088,217 +6122,294 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
 		nElem = Global_nElem = NbrTet;
 	}
 	
-	/*--- Allocate space for elements ---*/
-  
-  elem = new CPrimalGrid*[nElem];
-	for (unsigned long iElem = 0; iElem < nElem; iElem++) elem[iElem] = NULL;
-	
-	/*--- Set up the global to local element mapping. ---*/
-  //Global_to_local_elem  = new long[nElem];
-  //for (i = 0; i<nElem; i++) {
-  //  Global_to_local_elem[i]=-1;
-  //}
-  
-	Global_to_Local_Elem.clear();
-
-  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    cout << "Distributing elements across all ranks." << endl;
-	
 	if ( dim == 2 ) {
-		
+  	
 		GmfGotoKwd(InpMsh, GmfTriangles);
-		
+  
 		/*--- Get triangles ---*/
-		element_count=0; loc_element_count=0; ielem_div=0;
-		
+		element_count=0; local_element_count=0; 
+  
 		for (iTri=1; iTri<=NbrTri; iTri++) {
-			
-			elem_read = false;
-			
+  
 			/*--- Decide whether we need to store this element, i.e., check if
 			 any of the nodes making up this element have a global index value
 			 that falls within the range of our linear partitioning. ---*/
-			
+  
 			GmfGetLin(InpMsh, GmfTriangles, &bufInt[0], &bufInt[1], &bufInt[2], &ref);
-			
+  
 			for (int i=0; i<3; i++)
 				vnodes_triangle[i] = bufInt[i]-1;
-			
+  
 			for (int i=0; i<3; i++) {
-				
+  
 			  local_index = vnodes_triangle[i]-starting_node[rank];
-			
-			  if ((local_index >= 0) && (local_index < (long)local_node)) {
-			
+  
+			  if ((local_index >= 0) && (local_index < (long)nPoint)) {
+  
 			    /*--- This node is within our linear partition. Mark this 
 			     entire element to be added to our list for this rank, and 
 			     add the neighboring nodes to this nodes' adjacency list. ---*/
-			
-			    elem_read = true;
-					
+  
+					ElemIn[element_count] = true;
+  
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
-			    /*--- Build adjacency assuming the VTK connectivity ---*/
-					
-			    for (int j=0; j<3; j++) {
-			      if (i != j) adj_nodes[local_index].push_back(vnodes_triangle[j]);
-			    }
+         /*--- Build adjacency assuming the VTK connectivity ---*/
+         for (int j=0; j<3; j++) {
+           if (i != j) adj_nodes[local_index].push_back(vnodes_triangle[j]);
+         }
 #endif
-#endif			
-			
+#endif	
+  
 			  }
+			
 			}
 			
-			/*--- If any of the nodes were within the linear partition, the
-			 element is added to our element data structure. ---*/
+			MI = ElemIn.find(element_count);
+      if (MI != ElemIn.end()) local_element_count++;  
 			
-			if (elem_read) {
-			  Global_to_Local_Elem[element_count] = loc_element_count;
-			  elem[loc_element_count] = new CTriangle(vnodes_triangle[0],
-			                                          vnodes_triangle[1],
-			                                          vnodes_triangle[2], 2);
-			  loc_element_count++;
-			  nelem_triangle++;
-			}
-			ielem_div++;
-      element_count++;
-		}
-		
+			element_count++;
+			
+		} // for iTri
+	
 	}
+	
 	else {
-		
+  
 		GmfGotoKwd(InpMsh, GmfTetrahedra);
-		
+  
 		/*--- Get tetrahedra ---*/
 		for (iTet=1; iTet<=NbrTet; iTet++) {
-		  
+  
 			GmfGetLin(InpMsh, GmfTetrahedra, &bufInt[0], &bufInt[1], &bufInt[2], &bufInt[3], &ref);
-			
+  
 			for (int i=0; i<4; i++)
 				vnodes_tetra[i] = bufInt[i]-1;
-			
+  
 	    /*--- Decide whether we need to store this element, i.e., check if
 	     any of the nodes making up this element have a global index value
 	     that falls within the range of our linear partitioning. ---*/
-	    
+  
 	    for (int i=0; i<4; i++) {
-	    
+  
 	      local_index = vnodes_tetra[i]-starting_node[rank];
-	    
-	      if ((local_index >= 0) && (local_index < (long)local_node)) {
-	    
+  
+	      if ((local_index >= 0) && (local_index < (long)nPoint)) {
+  
 	        /*--- This node is within our linear partition. Mark this
 	         entire element to be added to our list for this rank, and
 	         add the neighboring nodes to this nodes' adjacency list. ---*/
-	    
+  
 	        elem_read = true;
-	    
+  
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
 	        /*--- Build adjacency assuming the VTK connectivity ---*/
-	    
+  
 	        for (int j=0; j<4; j++) {
 	          if (i != j) adj_nodes[local_index].push_back(vnodes_tetra[j]);
 	        }
 #endif
 #endif	    
-	    	
+  
 	      }
 	    }
-	    
+  
 	    /*--- If any of the nodes were within the linear partition, the
 	     element is added to our element data structure. ---*/
-	    
+  
 	    if (elem_read) {
-	      Global_to_Local_Elem[element_count] = loc_element_count;
-	      elem[loc_element_count] = new CTetrahedron(vnodes_tetra[0],
+	      Global_to_Local_Elem[element_count] = local_element_count;
+	      elem[local_element_count] = new CTetrahedron(vnodes_tetra[0],
 	                                                 vnodes_tetra[1],
 	                                                 vnodes_tetra[2],
 	                                                 vnodes_tetra[3]);
-	      loc_element_count++;
+	      local_element_count++;
 	      nelem_tetra++;
 	    }
-	    ielem_div++;
-      element_count++;
+	    element_count++;
 		}
-		
+  
 	}
-	  
-  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-  cout << "Calling the partitioning functions." << endl;
-    
-  /*--- Store the number of local elements on each rank after determining
+  
+	/*--- Store the number of local elements on each rank after determining
    which elements must be kept in the loop above. ---*/
   
-  //no_of_local_elements = loc_element_count;
-		nElem = loc_element_count;
-  
+  nElem = local_element_count;
+
+	  /*--- Begin dealing with the partitioning by adjusting the adjacency
+	   information and clear out memory where possible. ---*/
+
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+    cout << "Calling the partitioning functions." << endl;
+
   /*--- Post process the adjacency information in order to get it into the
    proper format before sending the data to ParMETIS. We need to remove
    repeats and adjust the size of the array for each local node. ---*/
 
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Building the graph adjacency structure." << endl;
-  
+
   unsigned long loc_adjc_size=0;
   vector<unsigned long> adjac_vec;
   unsigned long adj_elem_size;
   vector<unsigned long>::iterator it;
-  
+
   xadj = new idx_t [npoint_procs[rank]+1];
   xadj[0]=0;
   vector<unsigned long> temp_adjacency;
   unsigned long local_count=0;
-  
+
   /*--- Here, we transfer the adjacency information from a multi-dim vector
    on a node-by-node basis into a single vector container. First, we sort
    the entries and remove the duplicates we find for each node, then we
    copy it into the single vect and clear memory from the multi-dim vec. ---*/
-  
-  for (unsigned long i = 0; i < local_node; i++) {
-    
+
+  for (unsigned long i = 0; i < nPoint; i++) {
+
     for (j = 0; j<adj_nodes[i].size(); j++) {
       temp_adjacency.push_back(adj_nodes[i][j]);
     }
-    
+
     sort(temp_adjacency.begin(), temp_adjacency.end());
     it = unique(temp_adjacency.begin(), temp_adjacency.end());
     loc_adjc_size = it - temp_adjacency.begin();
-    
+
     temp_adjacency.resize(loc_adjc_size);
     xadj[local_count+1]=xadj[local_count]+loc_adjc_size;
     local_count++;
-    
+
     for (j = 0; j<loc_adjc_size; j++) {
       adjac_vec.push_back(temp_adjacency[j]);
     }
-    
+
     temp_adjacency.clear();
     adj_nodes[i].clear();
-    
+
   }
-  
+
   /*--- Now that we know the size, create the final adjacency array. This
    is the array that we will feed to ParMETIS for partitioning. ---*/
-  
+
   adj_elem_size = xadj[npoint_procs[rank]];
   adjacency = new idx_t [adj_elem_size];
   copy(adjac_vec.begin(), adjac_vec.end(), adjacency);
 
   xadj_size = npoint_procs[rank]+1;
   adjacency_size = adj_elem_size;
-  
+
   /*--- Free temporary memory used to build the adjacency. ---*/
-  
+
   adjac_vec.clear();
   adj_nodes.clear();
-  
+
 #endif
 #endif
-  
+	
+	/*--- Allocate space for elements ---*/
+	
+	elem = new CPrimalGrid*[nElem];
+	
+	/*--- Set up the global to local element mapping. ---*/
+	Global_to_Local_Elem.clear();
+	
+	if ( dim == 2 ) {
+
+		GmfGotoKwd(InpMsh, GmfTriangles);
+
+		/*--- Get triangles ---*/
+		element_count=0; local_element_count=0; 
+
+		for (iTri=1; iTri<=NbrTri; iTri++) {
+			
+			/*--- If this element was marked as required, check type and store. ---*/
+      
+      map<unsigned long, bool>::const_iterator MI = ElemIn.find(element_count);
+			
+			GmfGetLin(InpMsh, GmfTriangles, &bufInt[0], &bufInt[1], &bufInt[2], &ref);
+			
+			if (MI != ElemIn.end()) {
+				
+      	
+				for (int i=0; i<3; i++)
+					vnodes_triangle[i] = bufInt[i]-1;
+      	
+				/*--- If any of the nodes were within the linear partition, the
+      	 element is added to our element data structure. ---*/
+      	
+      	Global_to_Local_Elem[element_count] = local_element_count;
+      	elem[local_element_count] = new CTriangle(vnodes_triangle[0],
+      	                                          vnodes_triangle[1],
+      	                                          vnodes_triangle[2], 2);
+      	local_element_count++;
+      	nelem_triangle++;
+			}
+					
+			element_count++;
+		}
+	}
+	else {
+
+		GmfGotoKwd(InpMsh, GmfTetrahedra);
+
+		/*--- Get tetrahedra ---*/
+		for (iTet=1; iTet<=NbrTet; iTet++) {
+
+			GmfGetLin(InpMsh, GmfTetrahedra, &bufInt[0], &bufInt[1], &bufInt[2], &bufInt[3], &ref);
+
+			for (int i=0; i<4; i++)
+				vnodes_tetra[i] = bufInt[i]-1;
+
+	    /*--- Decide whether we need to store this element, i.e., check if
+	     any of the nodes making up this element have a global index value
+	     that falls within the range of our linear partitioning. ---*/
+
+	    for (int i=0; i<4; i++) {
+
+	      local_index = vnodes_tetra[i]-starting_node[rank];
+
+	      if ((local_index >= 0) && (local_index < (long)nPoint)) {
+
+	        /*--- This node is within our linear partition. Mark this
+	         entire element to be added to our list for this rank, and
+	         add the neighboring nodes to this nodes' adjacency list. ---*/
+
+	        elem_read = true;
+
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+	        /*--- Build adjacency assuming the VTK connectivity ---*/
+
+	        for (int j=0; j<4; j++) {
+	          if (i != j) adj_nodes[local_index].push_back(vnodes_tetra[j]);
+	        }
+#endif
+#endif	    
+
+	      }
+	    }
+
+	    /*--- If any of the nodes were within the linear partition, the
+	     element is added to our element data structure. ---*/
+
+	    if (elem_read) {
+	      Global_to_Local_Elem[element_count] = local_element_count;
+	      elem[local_element_count] = new CTetrahedron(vnodes_tetra[0],
+	                                                 vnodes_tetra[1],
+	                                                 vnodes_tetra[2],
+	                                                 vnodes_tetra[3]);
+	      local_element_count++;
+	      nelem_tetra++;
+	    }
+	    element_count++;
+		}
+
+	}
+
+
 	/*--- Read boundary elements ---*/
 
   if (rank == MASTER_NODE) {
@@ -6483,10 +6594,7 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
     config->SetPeriodicCenter(iPeriodic, center);
     config->SetPeriodicRotation(iPeriodic, rotation);
     config->SetPeriodicTranslate(iPeriodic, translate);
-    
-		
-		
-	
+
 	} //--- End boundary
 	
 	if ( !GmfCloseMesh(InpMsh) ) {
@@ -6501,24 +6609,20 @@ void CPhysicalGeometry::Read_Inria_Format_Parallel(CConfig *config, string val_m
 		#endif
   }
 
+	if ( rank == 1 )
+		printf("RANK 1 avant free\n");
+
 	if (Edg)
 		delete [] Edg;
 	if (Tri)
 		delete [] Tri;
 	if (Qua)
 		delete [] Qua;
+		
+		
 	if (Count_markers)
 		delete [] Count_markers;
-	  
-  if (rank == MASTER_NODE) {
-    if (Global_nelem_triangle > 0)  cout << Global_nelem_triangle << " triangles."      << endl;
-    if (Global_nelem_quad > 0)      cout << Global_nelem_quad     << " quadrilaterals." << endl;
-    if (Global_nelem_tetra > 0)     cout << Global_nelem_tetra    << " tetrahedra."     << endl;
-    if (Global_nelem_hexa > 0)      cout << Global_nelem_hexa     << " hexahedra."      << endl;
-    if (Global_nelem_prism > 0)     cout << Global_nelem_prism    << " prisms."         << endl;
-    if (Global_nelem_pyramid > 0)   cout << Global_nelem_pyramid  << " pyramids."       << endl;
-  }
- 
+
 }
 
 
