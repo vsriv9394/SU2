@@ -1391,6 +1391,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	addPythonOption("ADAP_HMIN");
 	addPythonOption("ADAP_HGRAD");
 	
+	addPythonOption("ADAP_PATH");
+	
   /* END_CONFIG_OPTIONS */
 
 }

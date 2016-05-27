@@ -88,7 +88,7 @@ def amg_Inisol (config_adap, config):
 	
 	if config['ADAP_RESTART'] == 'NO':
 		config_ini = copy.deepcopy(config);
-
+				
 		state = SU2.io.State()
 		state.find_files(config_ini)
 
@@ -179,6 +179,14 @@ def Parse_Adap_Options (config, config_adap):
 		config_adap.adap_subite[i]  = int(config_adap.adap_subite[i])
 		config_adap.NbrIteGlo += config_adap.adap_subite[i];
 	
+	if 'ADAP_PATH' in config:
+		path = "%s/" % config['ADAP_PATH'];
+		os.environ['SU2_RUN'] = "%s:%s" % (os.environ['SU2_RUN'], path);
+		os.environ['PATH'] = "%s:%s" % (os.environ['PATH'], path);
+		config_adap.ADAP_PATH = path;
+	else:
+		config_adap.ADAP_PATH = "";
+	
 	if 'ADAP_BACK' in config:
 		print " config['ADAP_BACK'] = %s\n" % config['ADAP_BACK'];
 		if config['ADAP_BACK']=="YES":
@@ -197,8 +205,7 @@ def Parse_Adap_Options (config, config_adap):
 			config_adap.ADAP_BACK = 0;
 	else:
 		config_adap.ADAP_BACK = 0;
-		
-	
+			
 	if (config_adap.ADAP_BACK):
 		print "  -- Info : Use %s as a back mesh." % config_adap.ADAP_BACK_NAME;
 	else:
@@ -247,6 +254,11 @@ def Call_AMG (config_adap, config):
 	
 	jobNam = "AMG.%d.%.0f.job" % (ite_glo,cpx);
 	
+	if config_adap.ADAP_PATH != "":
+		path = config_adap.ADAP_PATH;
+	else:
+		path = "";
+	
 	if os.path.isfile(outNam):
 		os.remove(outNam);
 		
@@ -257,9 +269,8 @@ def Call_AMG (config_adap, config):
 		back = " -back %s/%s " % (rootDir, config_adap.ADAP_BACK_NAME);
 	else:
 		back = "";
-		
 	
-	amg_cmd = "amg -in current.meshb -sol current_sensor.solb -p 2 -c %f -hgrad %.2f -hmin %le -hmax %le -out current.new.meshb -itp current_restart.solb %s > %s" % (cpx, hgrad, hmin, hmax, back, jobNam)
+	amg_cmd = "%samg -in current.meshb -sol current_sensor.solb -p 2 -c %f -hgrad %.2f -hmin %le -hmax %le -out current.new.meshb -itp current_restart.solb %s > %s" % (path, cpx, hgrad, hmin, hmax, back, jobNam)
 	
 	print " Running AMG \n Log: %s\n" % (jobNam);
 	

@@ -46,6 +46,7 @@ SU2_RUN = os.environ['SU2_RUN']
 sys.path.append( SU2_RUN )
 
 # SU2 suite run command template
+
 base_Command = os.path.join(SU2_RUN,'%s')
 
 # check for slurm
@@ -65,6 +66,8 @@ elif not which('mpiexec') is None:
     mpi_Command = 'mpiexec -n %i %s'
 else:
     mpi_Command = ''
+
+mpi_Command = 'mpirun -n %i %s'
     
 from .. import EvaluationFailure, DivergenceFailure
 return_code_map = {
@@ -114,6 +117,10 @@ def CFD(config):
     if not konfig.get('OUTPUT_LOG',"") in ["NONE", ""] :
         the_Command = "%s > %s" % (the_Command, konfig.get('OUTPUT_LOG',""));
 
+    if not konfig.get('ADAP_PATH',"") in ["NONE", ""] :
+        #the_Command = "%s/%s" % (konfig.get('ADAP_PATH',""), the_Command);
+				sys.path.append( konfig.get('ADAP_PATH',"") )
+		
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
