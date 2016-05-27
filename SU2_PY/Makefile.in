@@ -295,6 +295,7 @@ bin_SCRIPTS = \
     set_ffd_design_var.py \
     compute_polar.py \
     discrete_adjoint.py \
+	mesh_adaptation_amg.py \
     direct_differentiation.py
 
 mypkgdir = $(prefix)/bin

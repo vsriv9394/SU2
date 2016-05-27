@@ -102,6 +102,7 @@ def amg_Inisol (config_adap, config):
 
 		config_ini.RESTART_FLOW_FILENAME = 'initial_sol.solb';
 		config_ini.MESH_FORMAT = 'INRIA';
+		config_ini.RESTART_SOL = 'NO';
 
 		#config_ini.EXT_ITER = 1;
 		
