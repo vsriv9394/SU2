@@ -270,7 +270,12 @@ def Call_AMG (config_adap, config):
 	else:
 		back = "";
 	
-	amg_cmd = "%samg -in current.meshb -sol current_sensor.solb -p 2 -c %f -hgrad %.2f -hmin %le -hmax %le -out current.new.meshb -itp current_restart.solb %s > %s" % (path, cpx, hgrad, hmin, hmax, back, jobNam)
+	adapsrc = "%s/adap.source" % rootDir;
+	if not os.path.exists(adapsrc):
+		adapsrc = "./adap.source";
+		open(adapsrc, 'a').close();
+	
+	amg_cmd = "%samg -in current.meshb -sol current_sensor.solb -p 2 -c %f -hgrad %.2f -hmin %le -hmax %le -out current.new.meshb -itp current_restart.solb %s -source %s > %s" % (path, cpx, hgrad, hmin, hmax, back, adapsrc, jobNam)
 	
 	print " Running AMG \n Log: %s\n" % (jobNam);
 	
