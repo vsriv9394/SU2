@@ -275,7 +275,7 @@ def Call_AMG (config_adap, config):
 		adapsrc = "./adap.source";
 		open(adapsrc, 'a').close();
 	
-	amg_cmd = "%samg -in current.meshb -sol current_sensor.solb -p 2 -c %f -hgrad %.2f -hmin %le -hmax %le -out current.new.meshb -itp current_restart.solb %s -source %s > %s" % (path, cpx, hgrad, hmin, hmax, back, adapsrc, jobNam)
+	amg_cmd = "%samg -in current.meshb -sol current_sensor.solb -p 2 -c %f -hgrad %.2f -hmin %le -hmax %le -out current.new.meshb -itp current_restart.solb %s -src %s > %s" % (path, cpx, hgrad, hmin, hmax, back, adapsrc, jobNam)
 	
 	print " Running AMG \n Log: %s\n" % (jobNam);
 	
@@ -473,6 +473,11 @@ def mesh_adaptation( filename             ,
 			shutil.copyfile ("current.new_sensor.solb", "ite.%d.%.0f.solb"%(ite_glo, Cpx));
 			shutil.copyfile ("current.new_restart.solb", "ite.%d.%.0f_restart.solb"%(ite_glo, Cpx));
 			
+			
+			historyNam = "history.dat"
+			if os.path.exists(historyNam):
+				shutil.copyfile (historyNam, "ite.%d.%.0f_history.dat"%(ite_glo, Cpx));
+				
 			#--- Rename files for the next iteration
 			shutil.move("current.new.meshb"       , "current.meshb");
 			shutil.move("current.new_restart.solb", "current_restart.solb");
