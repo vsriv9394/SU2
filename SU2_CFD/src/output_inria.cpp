@@ -131,7 +131,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
   //ofstream restart_file;
   string filename;
   
-	unsigned long OutSol,i, npoin = geometry->GetGlobal_nPointDomain();
+	unsigned long OutMach, OutPres, i, npoin = geometry->GetGlobal_nPointDomain();
 	int VarTyp[GmfMaxTyp];
 	double bufDbl[GmfMaxTyp];
 	char OutNam[1024], BasNam[1024];
@@ -182,39 +182,44 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 	
 	/*--- Get output name *.solb ---*/
 	
-	sprintf(OutNam, "mach.solb");
+
 	
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
     filename= config->GetMultizone_FileName(filename, val_iZone);
 	
   /*--- Open the restart file and write the solution. ---*/
+	sprintf(OutNam, "mach.solb");
+	OutMach = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
 	
-	OutSol = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
-	
-	if ( !OutSol ) {
+	if ( !OutMach ) {
 	  printf("\n\n   !!! Error !!!\n" );
     printf("Unable to open %s", OutNam);
     printf("Now exiting...\n\n");
     exit(EXIT_FAILURE);
 	}
 	
-  /*--- Write the restart file ---*/
-
-
-
-	//for (iVar = 0; iVar < nVar_Total; iVar++) {
-	//	VarTyp[iVar] = GmfSca;
-	//}
+	sprintf(OutNam, "pres.solb");
+	OutPres = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
+	
+	if ( !OutPres ) {
+	  printf("\n\n   !!! Error !!!\n" );
+    printf("Unable to open %s", OutNam);
+    printf("Now exiting...\n\n");
+    exit(EXIT_FAILURE);
+	}
+	
+	
+  /*--- Write MACH ---*/
 	
 	npoin = geometry->GetGlobal_nPointDomain();
 		
 	NbrVar = 1;
 	VarTyp[0]  = GmfSca;
 	
-	if ( !GmfSetKwd(OutSol, GmfSolAtVertices, npoin, NbrVar, VarTyp) ) {
+	if ( !GmfSetKwd(OutPres, GmfSolAtVertices, npoin, NbrVar, VarTyp) ) {
 	  printf("\n\n   !!! Error !!!\n" );
-    printf("Unable to write %s", OutNam);
+    printf("Unable to write Mach");
     printf("Now exiting...\n\n");
     exit(EXIT_FAILURE);
 	}
@@ -223,22 +228,49 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 		
     /*--- Loop over the variables and write the values to file ---*/
     for (iVar = 0; iVar < nVar_Total; iVar++) {
-	
-			if ( iVar == TagBc[bcMach] ) {
-				bufDbl[0] = SU2_TYPE::GetValue(Data[iVar][iPoint]);
-				GmfSetLin(OutSol, GmfSolAtVertices, bufDbl);
-			}
+			iVar = TagBc[bcMach];
+			bufDbl[0] = SU2_TYPE::GetValue(Data[iVar][iPoint]);
+			GmfSetLin(OutMach, GmfSolAtVertices, bufDbl);
     }
 		
-
 	}
-  
-	if ( !GmfCloseMesh(OutSol) ) {
+	
+	
+  /*--- Write PRES ---*/
+	
+	npoin = geometry->GetGlobal_nPointDomain();
+		
+	NbrVar = 1;
+	VarTyp[0]  = GmfSca;
+	
+	if ( !GmfSetKwd(OutPres, GmfSolAtVertices, npoin, NbrVar, VarTyp) ) {
 	  printf("\n\n   !!! Error !!!\n" );
-    printf("Cannot close solution file %s.", OutNam);
+    printf("Unable to write pressure");
+    printf("Now exiting...\n\n");
+    exit(EXIT_FAILURE);
+	}
+	
+  for (iPoint = 0; iPoint < npoin; iPoint++) {
+		iVar = TagBc[bcPres];
+		bufDbl[0] = SU2_TYPE::GetValue(Data[iVar][iPoint]);
+		GmfSetLin(OutPres, GmfSolAtVertices, bufDbl);
+	}
+		
+	/*--- Close files ---*/
+  
+	if ( !GmfCloseMesh(OutMach) ) {
+	  printf("\n\n   !!! Error !!!\n" );
+    printf("Cannot close solution file");
     printf("Now exiting...\n\n");
     exit(EXIT_FAILURE);
 	}  
+	
+	if ( !GmfCloseMesh(OutPres) ) {
+	  printf("\n\n   !!! Error !!!\n" );
+    printf("Cannot close solution file");
+    printf("Now exiting...\n\n");
+    exit(EXIT_FAILURE);
+	}
 	
 	delete [] TagBc;
 	
