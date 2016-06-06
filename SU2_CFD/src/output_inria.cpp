@@ -206,7 +206,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 	NbrVar = 1;
 	VarTyp[0]  = GmfSca;
 	
-	if ( !GmfSetKwd(OutPres, GmfSolAtVertices, npoin, NbrVar, VarTyp) ) {
+	if ( !GmfSetKwd(OutMach, GmfSolAtVertices, npoin, NbrVar, VarTyp) ) {
 	  printf("\n\n   !!! Error !!!\n" );
     printf("Unable to write Mach");
     printf("Now exiting...\n\n");
