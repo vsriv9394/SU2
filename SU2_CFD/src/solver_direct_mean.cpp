@@ -349,7 +349,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
   }
   
-	printf("CHECK HERE?\n");
 
   /*--- Non-dimensional coefficients ---*/
   
@@ -435,7 +434,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Mach_Inf        = config->GetMach();
 
 	
-	printf("CHECK HERE0?\n");
   
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   
@@ -575,7 +573,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     VelocityOutIs[iMarker]= 0.0;
   }
   
-	printf("CHECK HERE01?\n");
   
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
   
@@ -784,7 +781,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       
     }
 
-	printf("CHECK HERE02?\n");
     
     /*--- Warning message about non-physical points ---*/
     
@@ -816,7 +812,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Set_MPI_Solution(geometry, config);
 
 	
-	printf("CHECK HERE 1?\n");
   
 }
 

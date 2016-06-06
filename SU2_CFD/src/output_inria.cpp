@@ -197,18 +197,7 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
     printf("Unable to open %s", OutNam);
     printf("Now exiting...\n\n");
     exit(EXIT_FAILURE);
-	}
-	
-	sprintf(OutNam, "pres.solb");
-	OutPres = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
-	
-	if ( !OutPres ) {
-	  printf("\n\n   !!! Error !!!\n" );
-    printf("Unable to open %s", OutNam);
-    printf("Now exiting...\n\n");
-    exit(EXIT_FAILURE);
-	}
-	
+	}	
 	
   /*--- Write MACH ---*/
 	
@@ -235,8 +224,24 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 		
 	}
 	
+	if ( !GmfCloseMesh(OutMach) ) {
+	  printf("\n\n   !!! Error !!!\n" );
+    printf("Cannot close solution file");
+    printf("Now exiting...\n\n");
+    exit(EXIT_FAILURE);
+	}
 	
   /*--- Write PRES ---*/
+
+	sprintf(OutNam, "pres.solb");
+	OutPres = GmfOpenMesh(OutNam,GmfWrite,GmfDouble,nDim);
+	
+	if ( !OutPres ) {
+	  printf("\n\n   !!! Error !!!\n" );
+    printf("Unable to open %s", OutNam);
+    printf("Now exiting...\n\n");
+    exit(EXIT_FAILURE);
+	}
 	
 	npoin = geometry->GetGlobal_nPointDomain();
 		
@@ -258,12 +263,6 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 		
 	/*--- Close files ---*/
   
-	if ( !GmfCloseMesh(OutMach) ) {
-	  printf("\n\n   !!! Error !!!\n" );
-    printf("Cannot close solution file");
-    printf("Now exiting...\n\n");
-    exit(EXIT_FAILURE);
-	}  
 	
 	if ( !GmfCloseMesh(OutPres) ) {
 	  printf("\n\n   !!! Error !!!\n" );
