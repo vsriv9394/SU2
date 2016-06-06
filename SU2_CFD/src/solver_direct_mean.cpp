@@ -278,7 +278,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
   /*--- Jacobians and vector structures for implicit computations ---*/
-  
+	
+
+
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
     
     Jacobian_i = new su2double* [nVar];
@@ -303,6 +305,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     if (rank == MASTER_NODE) cout << "Explicit scheme. No Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
   }
   
+	
+
   /*--- Define some auxiliary vectors for computing flow variable
    gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
    c vector := transpose(WA)*(Wb) ---*/
@@ -345,6 +349,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
   }
   
+	printf("CHECK HERE?\n");
+
   /*--- Non-dimensional coefficients ---*/
   
   ForceInviscid     = new su2double[nDim];
@@ -427,6 +433,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Energy_Inf      = config->GetEnergy_FreeStreamND();
   Temperature_Inf = config->GetTemperature_FreeStreamND();
   Mach_Inf        = config->GetMach();
+
+	
+	printf("CHECK HERE0?\n");
   
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   
@@ -455,6 +464,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
   
+
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Inflow_MassFlow[iMarker]     = 0.0;
     Inflow_Mach[iMarker]         = Mach_Inf;
@@ -565,6 +575,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     VelocityOutIs[iMarker]= 0.0;
   }
   
+	printf("CHECK HERE01?\n");
   
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
   
@@ -722,6 +733,21 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 //    
 //    delete [] Global2Local;
     
+		unsigned short val_format = config->GetMesh_FileFormat();
+		
+		switch (val_format) {
+	    case SU2:
+			Load_SU2_SolutionFlow(geometry, config, filename);
+			break;
+			
+			case INRIA:
+			Load_Inria_SolutionFlow(geometry, config, filename);
+			break;
+			
+			default:
+	      if (rank == MASTER_NODE) cout << "Unrecognized mesh format specified!" << endl;
+		}
+
   }
   
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
@@ -757,6 +783,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       }
       
     }
+
+	printf("CHECK HERE02?\n");
     
     /*--- Warning message about non-physical points ---*/
     
@@ -786,6 +814,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Perform the MPI communication of the solution ---*/
   
   Set_MPI_Solution(geometry, config);
+
+	
+	printf("CHECK HERE 1?\n");
   
 }
 
@@ -2981,7 +3012,7 @@ void CEulerSolver::Load_Inria_SolutionFlow(CGeometry *geometry, CConfig *config,
 	
 	strcpy(InpNam, filename.c_str());
 	
-	sprintf(InpNam, "solution_flow.solb");
+	//sprintf(InpNam, "solution_flow.solb");
 	
   InpSol = GmfOpenMesh(InpNam,GmfRead,&FilVer,&dim);
 	
