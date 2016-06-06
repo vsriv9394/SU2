@@ -214,14 +214,9 @@ void COutput::WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **
 	}
 	
   for (iPoint = 0; iPoint < npoin; iPoint++) {
-		
-    /*--- Loop over the variables and write the values to file ---*/
-    for (iVar = 0; iVar < nVar_Total; iVar++) {
-			iVar = TagBc[bcMach];
-			bufDbl[0] = SU2_TYPE::GetValue(Data[iVar][iPoint]);
-			GmfSetLin(OutMach, GmfSolAtVertices, bufDbl);
-    }
-		
+		iVar = TagBc[bcMach];
+		bufDbl[0] = SU2_TYPE::GetValue(Data[iVar][iPoint]);
+		GmfSetLin(OutMach, GmfSolAtVertices, bufDbl);
 	}
 	
 	if ( !GmfCloseMesh(OutMach) ) {
