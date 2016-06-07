@@ -636,6 +636,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
   /*!\brief RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -8.0 \ingroup Config*/
   addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -8.0);
+  /*!\brief RESIDUAL_MAXVAL\n DESCRIPTION: Max value of the residual (log10 of the residual)\n DEFAULT: -8.0 \ingroup Config*/
+  addDoubleOption("RESIDUAL_MAXVAL", MaxLogResidual, 1000.0);
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
   addDoubleOption("RESIDUAL_REDUCTION_FSI", OrderMagResidualFSI, 3.0);
   /* DESCRIPTION: Min value of the residual (log10 of the residual) */
@@ -3769,6 +3771,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (!ContinuousAdjoint && !DiscreteAdjoint) {
         cout << "Reduce the density residual " << OrderMagResidual << " orders of magnitude."<< endl;
         cout << "The minimum bound for the density residual is 10^(" << MinLogResidual<< ")."<< endl;
+				cout << "The maximum bound for the density residual is 10^(" << MaxLogResidual<< ")."<< endl;
         cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
       }
 

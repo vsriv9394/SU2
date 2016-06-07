@@ -67,6 +67,7 @@ private:
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
+	su2double MaxLogResidual; /*!< \brief Maximum value of the log residual. */
 	su2double OrderMagResidualFSI; /*!< \brief Order of magnitude reduction. */
 	su2double MinLogResidualFSI; /*!< \brief Minimum value of the log residual. */
 	su2double Res_FEM_UTOL; 		/*!< \brief UTOL criteria for structural FEM. */
@@ -4448,6 +4449,13 @@ public:
 	 * \return Value of the minimum residual value (log10 scale).
 	 */
 	su2double GetMinLogResidual(void);
+
+	/*!
+	 * \brief Value of the maximum residual value (log10 scale).
+	 * \return Value of the maximum residual value (log10 scale).
+	 */
+	su2double GetMaxLogResidual(void);
+
 
 	/*!
 	 * \brief Value of the order of magnitude reduction of the residual for FSI applications.

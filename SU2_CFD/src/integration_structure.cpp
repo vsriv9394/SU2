@@ -546,7 +546,19 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 #endif
     
     /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-    
+
+    if (monitor > config->GetMaxLogResidual()) {
+      if (rank == MASTER_NODE)
+      cout << "\n !!! Error: Residual has reached the maximum value set in the .cfg file. Exit.\n" << endl;
+			cout << "           Res = " << monitor << endl;
+#ifndef HAVE_MPI
+      exit(EXIT_DIVERGENCE);
+#else
+      MPI_Abort(MPI_COMM_WORLD,1);
+#endif
+    }
+
+
     if (monitor != monitor) {
       if (rank == MASTER_NODE)
       cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;

@@ -952,6 +952,8 @@ inline su2double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
 
 inline su2double CConfig::GetMinLogResidual(void) { return MinLogResidual; }
 
+inline su2double CConfig::GetMaxLogResidual(void) { return MaxLogResidual; }
+
 inline su2double CConfig::GetDamp_Engine_Inflow(void) { return Damp_Engine_Inflow; }
 
 inline su2double CConfig::GetDamp_Engine_Bleed(void) { return Damp_Engine_Bleed; }
