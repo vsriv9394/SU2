@@ -113,6 +113,8 @@ CSolver::~CSolver(void) {
   if (Res_Visc_i != NULL) delete [] Res_Visc_i;
   if (Res_Visc_j != NULL) delete [] Res_Visc_j;
 
+	if (Relax_Factor_Loc != NULL ) delete [] Relax_Factor_Loc;
+	if (CFL_Loc != NULL ) delete [] CFL_Loc;
 
   if (Jacobian_i != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)

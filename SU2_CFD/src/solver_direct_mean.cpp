@@ -254,7 +254,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Secondary   = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar]   = 0.0;
   Secondary_i = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_i[iVar] = 0.0;
   Secondary_j = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_j[iVar] = 0.0;
-  
+
+	/*--- Local relaxation vectors ---*/
+  Relax_Factor_Loc = new su2double[nPoint];
+	CFL_Loc          = new su2double[nPoint];
+
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
   
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
@@ -3868,6 +3872,45 @@ void CEulerSolver::ComputeConsExtrapolation(CConfig *config) {
   
 }
 
+
+void CEulerSolver::Compute_Local_Relaxation(CConfig *config,CGeometry *geometry, CSolver **solver_container) {
+	
+	unsigned long  iPoint, iPoint_glo;
+	unsigned short FinestMesh = config->GetFinestMesh();
+	
+	su2double *Residual;
+	
+	printf("npoint = %ld\n", geometry->GetnPoint());
+	
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+		
+		iPoint_glo = geometry->node[iPoint]->GetGlobalIndex();
+		
+		//printf("iPoint(glo) %d : %lf %lf  \n",iPoint, node[iPoint]->GetCoord(0),  node[iPoint]->GetCoord(1));
+		solver_container[FLOW_SOL]->Relax_Factor_Loc[iPoint_glo] = (su2double)iPoint_glo;
+		
+		Residual = LinSysRes.GetBlock(iPoint);
+    
+		
+    //if (!adjoint) {
+    //  for (iVar = 0; iVar < nVar; iVar++) {
+    //    Res = Residual[iVar] + Res_TruncError[iVar];
+    //    node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
+    //    AddRes_RMS(iVar, Res*Res);
+    //    AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+    //  }
+    //}
+
+
+		
+		if ( iPoint < 10 )
+			printf("Point %ld (glo %ld): rel = %lf, res = %le\n", iPoint, iPoint_glo, solver_container[FLOW_SOL]->Relax_Factor_Loc[iPoint_glo], Residual[0]);
+			
+		if ( iPoint > 10 ) exit(1);
+	}
+	
+}
+
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                    CConfig *config, unsigned short iMesh) {
   
@@ -4863,6 +4906,8 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   bool adjoint = config->GetContinuous_Adjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
+
+	unsigned long iPoint_glo;
   
   /*--- Set maximum residual to zero ---*/
   
@@ -4941,11 +4986,35 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_Flow()*LinSysSol[iPoint*nVar+iVar]);
-      }
-    }
+	
+		Compute_Local_Relaxation(config,geometry,solver_container);
+		
+	
+		if ( config->GetLocal_Relax_Factor() ) {
+									
+			for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+	      for (iVar = 0; iVar < nVar; iVar++) {
+					
+					
+					iPoint_glo = geometry->node[iPoint]->GetGlobalIndex();
+					
+					printf("iPoint loc = %ld, iPoint glo = %ld, rel = %lf\n", iPoint, geometry->node[iPoint]->GetGlobalIndex(), Relax_Factor_Loc[iPoint_glo]);
+					//printf("iPoint(loc) %d : %lf %lf  \n",iPoint, node[iPoint]->GetCoord(0),  node[iPoint]->GetCoord(1));
+					
+						if ( iPoint > 10 ) exit(1);
+					//su2double relax_fac = Relax_Factor_Loc[geometry->Local_to_Global_Point[iPoint]];
+					su2double relax_fac = config->GetRelaxation_Factor_Flow();
+	        node[iPoint]->AddSolution(iVar, relax_fac*LinSysSol[iPoint*nVar+iVar]);
+	      }
+	    }
+		}
+		else {
+			for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+	      for (iVar = 0; iVar < nVar; iVar++) {
+	        node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_Flow()*LinSysSol[iPoint*nVar+iVar]);
+	      }
+	    }
+		}
   }
   
   /*--- MPI solution ---*/

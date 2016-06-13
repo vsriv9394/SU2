@@ -5704,6 +5704,87 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
 }
 
 
+
+void COutput::SetLocalCFL_Number(CSolver ****solver_container, CConfig **config, CGeometry ***geometry, unsigned short val_iZone) {
+  
+  su2double CFLFactor = 1.0, power = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, Div = 1.0, Diff = 0.0, MGFactor[100];
+  unsigned short iMesh;
+  
+  unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
+  unsigned long ExtIter = config[val_iZone]->GetExtIter();
+	
+	unsigned long iPoint;
+	
+  RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+  switch( config[val_iZone]->GetKind_Solver()){
+    case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
+      RhoRes_New = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
+      break;
+  }
+
+  if (RhoRes_New < EPS) RhoRes_New = EPS;
+  if (RhoRes_Old < EPS) RhoRes_Old = RhoRes_New;
+  
+  Div = RhoRes_Old/RhoRes_New;
+  Diff = RhoRes_New-RhoRes_Old;
+  
+  /*--- Compute MG factor ---*/
+  
+  for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    if (iMesh == MESH_0) MGFactor[iMesh] = 1.0;
+    else MGFactor[iMesh] = MGFactor[iMesh-1] * config[val_iZone]->GetCFL(iMesh)/config[val_iZone]->GetCFL(iMesh-1);
+  }
+  
+  if (Div < 1.0) power = config[val_iZone]->GetCFL_AdaptParam(0);
+  else power = config[val_iZone]->GetCFL_AdaptParam(1);
+  
+  /*--- Detect a stall in the residual ---*/
+  
+  if ((fabs(Diff) <= RhoRes_New*1E-8) && (ExtIter != 0)) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
+  
+  CFLMin = config[val_iZone]->GetCFL_AdaptParam(2);
+  CFLMax = config[val_iZone]->GetCFL_AdaptParam(3);
+  
+  CFLFactor = pow(Div, power);
+  
+  for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    CFL = config[val_iZone]->GetCFL(iMesh);
+    CFL *= CFLFactor;
+    
+    if ((iMesh == MESH_0) && (CFL <= CFLMin)) {
+      for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+        config[val_iZone]->SetCFL(iMesh, 1.001*CFLMin*MGFactor[iMesh]);
+      }
+      break;
+    }
+    if ((iMesh == MESH_0) && (CFL >= CFLMax)) {
+      for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
+        config[val_iZone]->SetCFL(iMesh, 0.999*CFLMax*MGFactor[iMesh]);
+      break;
+    }
+    
+    config[val_iZone]->SetCFL(iMesh, CFL);
+    
+  }
+  
+  RhoRes_Old = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+  switch( config[val_iZone]->GetKind_Solver()){
+      case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
+        RhoRes_Old = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
+        break;
+    }
+
+	
+	su2double * Relax_Factor_Loc = solver_container[val_iZone][FinestMesh][FLOW_SOL]->Relax_Factor_Loc;
+	
+	for (iPoint = 0; iPoint < geometry[val_iZone][FinestMesh]->GetnPoint(); iPoint++) {
+		solver_container[val_iZone][FinestMesh][FLOW_SOL]->Relax_Factor_Loc[iPoint] = 1;
+	}
+  
+}
+
+
+
 void COutput::SetForces_Breakdown(CGeometry ***geometry,
                                   CSolver ****solver_container,
                                   CConfig **config,

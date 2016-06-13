@@ -109,11 +109,14 @@ protected:
   
 	su2double **Smatrix,	/*!< \brief Auxiliary structure for computing gradients by least-squares */
 	**cvector;			 /*!< \brief Auxiliary structure for computing gradients by least-squares */
-
+	
     unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
 public:
   
+	su2double *Relax_Factor_Loc;  /*!< \brief Auxiliary vector for storing local relaxation flow factors */
+	su2double *CFL_Loc;  /*!< \brief Auxiliary vector for storing local CFL values */
+
   CSysVector LinSysSol;		/*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector LinSysRes;		/*!< \brief vector to store iterative residual of implicit linear system. */
   CSysVector LinSysAux;		/*!< \brief vector to store iterative residual of implicit linear system. */
@@ -127,6 +130,8 @@ public:
   CVariable** node;	/*!< \brief Vector which the define the variables for each problem. */
   CVariable* node_infty; /*!< \brief CVariable storing the free stream conditions. */
   
+	
+
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -3260,6 +3265,8 @@ public:
 	void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
+	void Compute_Local_Relaxation(CConfig *config,CGeometry *geometry, CSolver **solver_container);
+	
 	/*!
 	 * \brief Source term integration.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -5720,6 +5727,9 @@ public:
 	 */
 	void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
+
+	
+	
     
 	/*!
 	 * \brief Source term integration.

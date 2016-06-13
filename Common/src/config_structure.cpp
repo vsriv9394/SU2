@@ -528,6 +528,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("MAX_DELTA_TIME", Max_DeltaTime, 1000000);
   /* DESCRIPTION: Activate The adaptive CFL number. */
   addBoolOption("CFL_ADAPT", CFL_Adapt, false);
+  /* DESCRIPTION: Activate The adaptive CFL number. */
+  addBoolOption("CFL_ADAPT_LOCAL", Local_CFL_Adapt, false);
+  /* DESCRIPTION: Activate The adaptive CFL number. */
+  addBoolOption("RELAXATION_LOCAL", Local_Relax_Factor, false);
+
   /* !\brief CFL_ADAPT_PARAM
    * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max) )
    * Factor down generally >1.0, factor up generally < 1.0 to cause the CFL to increase when residual is decreasing,

@@ -390,10 +390,18 @@ int main(int argc, char *argv[]) {
 
     
     /*--- Evaluate the new CFL number (adaptive). ---*/
-    
-    if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
+
+
+		if ( config_container[ZONE_0]->GetLocal_Relax_Factor() ) {
+			//output->SetLocalCFL_Number(solver_container, config_container, geometry_container, ZONE_0);
+		}
+    else if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
       output->SetCFL_Number(solver_container, config_container, ZONE_0);
     }
+
+
+		
+		
     
     /*--- Check whether the current simulation has reached the specified
      convergence criteria, and set StopCalc to true, if so. ---*/

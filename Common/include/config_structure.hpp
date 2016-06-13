@@ -488,6 +488,8 @@ private:
 	unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
 	unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
+	bool Local_CFL_Adapt; /*!< \brief Local adaptive CFL number. */
+	bool Local_Relax_Factor; /*!< \brief Local flow relaxation factor. */
 	su2double RefAreaCoeff,		/*!< \brief Reference area for coefficient computation. */
 	RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
 	RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
@@ -1205,6 +1207,12 @@ public:
    * \return Value of CFL adapation
    */
   bool GetCFL_Adapt(void);
+
+  /*!
+   * \brief Get the values of the CFL adapation.
+   * \return Value of CFL adapation
+   */
+  bool GetLocal_Relax_Factor(void);
   
   /*!
 	 * \brief Get the value of the limits for the sections.
@@ -2809,7 +2817,7 @@ public:
 	 * \return relaxation coefficient of the linear solver for the implicit formulation.
 	 */
 	su2double GetRelaxation_Factor_Flow(void);
-  
+
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
    * \return relaxation coefficient of the linear solver for the implicit formulation.
