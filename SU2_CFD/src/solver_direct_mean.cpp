@@ -3900,8 +3900,6 @@ void CEulerSolver::Compute_Local_Relaxation(CConfig *config,CGeometry *geometry,
     //    AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
     //  }
     //}
-
-
 		
 		if ( iPoint < 10 )
 			printf("Point %ld (glo %ld): rel = %lf, res = %le\n", iPoint, iPoint_glo, solver_container[FLOW_SOL]->Relax_Factor_Loc[iPoint_glo], Residual[0]);
@@ -4903,6 +4901,11 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned short iVar, jVar;
   unsigned long iPoint, total_index, IterLinSol = 0;
   su2double Delta, *local_Res_TruncError, Vol;
+
+	su2double cofMax = 0.05;
+	su2double eps    = 1e-6;
+	su2double relax_fac = 1;
+	su2double rho=0, dltRho=0;
   
   bool adjoint = config->GetContinuous_Adjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
@@ -4929,8 +4932,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     Vol = geometry->node[iPoint]->GetVolume();
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
-    
-    
+
     if (node[iPoint]->GetDelta_Time() != 0.0) {
       Delta = Vol / node[iPoint]->GetDelta_Time();
       if (roe_turkel) {
@@ -4943,6 +4945,10 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
       else {
         Jacobian.AddVal2Diag(iPoint, Delta);
       }
+
+			
+			
+
     }
     else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
@@ -4986,24 +4992,32 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
-	
-		Compute_Local_Relaxation(config,geometry,solver_container);
 		
-	
+		//Compute_Local_Relaxation(config,geometry,solver_container);
+		
 		if ( config->GetLocal_Relax_Factor() ) {
 									
 			for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+				
+				//--- Compute relaxation factor on density
+				dltRho    = LinSysSol[iPoint*nVar+0];
+				rho       = node[iPoint]->GetSolution(0);
+				
+				relax_fac = 1;
+				if ( fabs(dltRho) > (cofMax*rho) ) {
+					relax_fac = cofMax*rho/max(fabs(dltRho),1e-30);
+				}
+				
+				//printf("Point %ld : rho = %lf, dltRho = %lf, relax_fac = %lf\n", iPoint, rho, dltRho, relax_fac);
+				
 	      for (iVar = 0; iVar < nVar; iVar++) {
 					
 					
 					iPoint_glo = geometry->node[iPoint]->GetGlobalIndex();
 					
-					printf("iPoint loc = %ld, iPoint glo = %ld, rel = %lf\n", iPoint, geometry->node[iPoint]->GetGlobalIndex(), Relax_Factor_Loc[iPoint_glo]);
+					//printf("iPoint loc = %ld, iPoint glo = %ld, rel=%lf, rel = %lf\n", iPoint, iPoint_glo, relax_fac, Relax_Factor_Loc[iPoint_glo]);
 					//printf("iPoint(loc) %d : %lf %lf  \n",iPoint, node[iPoint]->GetCoord(0),  node[iPoint]->GetCoord(1));
 					
-						if ( iPoint > 10 ) exit(1);
-					//su2double relax_fac = Relax_Factor_Loc[geometry->Local_to_Global_Point[iPoint]];
-					su2double relax_fac = config->GetRelaxation_Factor_Flow();
 	        node[iPoint]->AddSolution(iVar, relax_fac*LinSysSol[iPoint*nVar+iVar]);
 	      }
 	    }
