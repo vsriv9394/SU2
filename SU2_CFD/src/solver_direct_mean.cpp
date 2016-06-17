@@ -257,6 +257,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 	/*--- Local relaxation vectors ---*/
   Relax_Factor_Loc = new su2double[nPoint];
+	memset(Relax_Factor_Loc,1.0,sizeof(su2double)*nPoint);
+	
 	CFL_Loc          = new su2double[nPoint];
 
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
@@ -4995,32 +4997,64 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 		
 		//Compute_Local_Relaxation(config,geometry,solver_container);
 		
-		if ( config->GetLocal_Relax_Factor() ) {
-									
+		unsigned long ExtIter =  config->GetExtIter();
+		
+		if ( config->GetLocal_Relax_Factor()  ) {
+			
+			unsigned long cptRel=0;
+			
 			for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+				
+				//--- Vertex' global index
+				iPoint_glo = geometry->node[iPoint]->GetGlobalIndex();
 				
 				//--- Compute relaxation factor on density
 				dltRho    = LinSysSol[iPoint*nVar+0];
 				rho       = node[iPoint]->GetSolution(0);
 				
-				relax_fac = 1;
-				if ( fabs(dltRho) > (cofMax*rho) ) {
-					relax_fac = cofMax*rho/max(fabs(dltRho),1e-30);
+				
+				if ( ExtIter < config->GetLimiterIter() ) {
+					if ( fabs(dltRho) > (cofMax*rho) ) {
+						relax_fac = cofMax*rho/max(fabs(dltRho),1e-30);
+						Relax_Factor_Loc[iPoint] = relax_fac;
+						++cptRel;
+					}
+					else {
+						relax_fac = 1;
+						Relax_Factor_Loc[iPoint] = 1;
+					}
 				}
+				else {
+					Relax_Factor_Loc[iPoint] = 0.4;
+				}
+				
+
+				//
+				//if ( ExtIter >= config->GetLimiterIter() ) {
+				//	relax_fac = 0.1;
+				//}
 				
 				//printf("Point %ld : rho = %lf, dltRho = %lf, relax_fac = %lf\n", iPoint, rho, dltRho, relax_fac);
 				
+				//if ( ExtIter == config->GetLimiterIter()-1 &&  Relax_Factor_Loc[iPoint] < 0.5 ) {
+				////if ( iPoint_glo == 10790  ){
+				//	printf("point %ld , glo = %ld relax = %lf\n", iPoint, iPoint_glo, Relax_Factor_Loc[iPoint]);
+				//	exit(1);
+				//}
+				
 	      for (iVar = 0; iVar < nVar; iVar++) {
 					
-					
-					iPoint_glo = geometry->node[iPoint]->GetGlobalIndex();
-					
+										
 					//printf("iPoint loc = %ld, iPoint glo = %ld, rel=%lf, rel = %lf\n", iPoint, iPoint_glo, relax_fac, Relax_Factor_Loc[iPoint_glo]);
 					//printf("iPoint(loc) %d : %lf %lf  \n",iPoint, node[iPoint]->GetCoord(0),  node[iPoint]->GetCoord(1));
 					
-	        node[iPoint]->AddSolution(iVar, relax_fac*LinSysSol[iPoint*nVar+iVar]);
+					//node[iPoint]->AddSolution(iVar,relax_fac*LinSysSol[iPoint*nVar+iVar]);
+					
+	        node[iPoint]->AddSolution(iVar, Relax_Factor_Loc[iPoint]*LinSysSol[iPoint*nVar+iVar]);
 	      }
 	    }
+		
+			//printf("ITE %ld : %ld relaxed points\n", ExtIter, cptRel);
 		}
 		else {
 			for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
