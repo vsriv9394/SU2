@@ -672,6 +672,9 @@ inline su2double CSolver::GetRes_RMS(unsigned short val_var) { return Residual_R
 
 inline void CSolver::SetRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point) { Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point; }
 
+inline void CSolver::SetCFLLoc_Max(su2double val) { CFLLoc_Max = val; }
+inline void CSolver::SetCFLLoc_Min(su2double val) { CFLLoc_Min = val; }
+
 inline void CSolver::AddRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point, su2double* val_coord) {
   if (val_residual > Residual_Max[val_var]) {
   Residual_Max[val_var] = val_residual;
@@ -683,6 +686,9 @@ inline void CSolver::AddRes_Max(unsigned short val_var, su2double val_residual, 
 
 inline su2double CSolver::GetRes_Max(unsigned short val_var) { return Residual_Max[val_var]; }
 
+inline su2double CSolver::GetCFLLoc_Max() { return CFLLoc_Max; }
+inline su2double CSolver::GetCFLLoc_Min() { return CFLLoc_Min; }
+                          
 inline su2double CSolver::GetRes_FEM(unsigned short val_var) { return 0.0; }
 
 inline unsigned long CSolver::GetPoint_Max(unsigned short val_var) { return Point_Max[val_var]; }

@@ -499,6 +499,8 @@ private:
   *RefOriginMoment_Y,      /*!< \brief Y Origin for moment computation. */
   *RefOriginMoment_Z,      /*!< \brief Z Origin for moment computation. */
   *CFL_AdaptParam,      /*!< \brief Information about the CFL ramp. */
+  *CFL_LocalAdaptParam,      /*!< \brief Information about the CFL ramp. */	
+	*Hard_Limiting_Param,      /*!< \brief Information about the hard limiting. */	
   *CFL,
 	DomainVolume;		/*!< \brief Volume of the computational grid. */
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
@@ -1201,7 +1203,26 @@ public:
    * \return Value of CFL adapation
    */
   su2double GetCFL_AdaptParam(unsigned short val_index);
+
+  /*!
+   * \brief Get the values of the CFL adapation.
+   * \return Value of CFL adapation
+   */
+  su2double GetHard_Limiting_Param(unsigned short val_index);
   
+
+  /*!
+   * \brief Get the values of the CFL adapation.
+   * \return Value of CFL adapation
+   */
+  su2double GetCFL_LocalAdaptParam(unsigned short val_index);
+
+	/*!
+   * \brief Get the values of the CFL adapation.
+   * \return Value of CFL adapation
+   */
+  bool GetLocal_CFL_Adapt(void);
+
   /*!
    * \brief Get the values of the CFL adapation.
    * \return Value of CFL adapation

@@ -260,6 +260,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 	memset(Relax_Factor_Loc,1.0,sizeof(su2double)*nPoint);
 	
 	CFL_Loc          = new su2double[nPoint];
+	for (iPoint=0; iPoint<nPoint; iPoint++)
+		CFL_Loc[iPoint] = 1.0;
+	//memset(CFL_Loc,10.0,sizeof(su2double)*nPoint);
 
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
   
@@ -3449,12 +3452,25 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   
   /*--- Each element uses their own speed, steady state simulation ---*/
   
+
+	su2double CFL = 1;
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
     Vol = geometry->node[iPoint]->GetVolume();
     
     if (Vol != 0.0) {
-      Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
+		
+			if ( config->GetLocal_Relax_Factor()  ) {
+				CFL = CFL_Loc[iPoint];
+			}
+			else {
+				CFL = config->GetCFL(iMesh);
+			}
+			
+			//if ( iPoint <= 10 )
+			//	printf("ITE %ld : POINT %ld : CFL = %lf\n", config->GetExtIter(), iPoint, CFL);
+			
+      Local_Delta_Time = CFL*Vol / node[iPoint]->GetMax_Lambda_Inv();
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
       Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
@@ -3874,42 +3890,42 @@ void CEulerSolver::ComputeConsExtrapolation(CConfig *config) {
   
 }
 
-
-void CEulerSolver::Compute_Local_Relaxation(CConfig *config,CGeometry *geometry, CSolver **solver_container) {
-	
-	unsigned long  iPoint, iPoint_glo;
-	unsigned short FinestMesh = config->GetFinestMesh();
-	
-	su2double *Residual;
-	
-	printf("npoint = %ld\n", geometry->GetnPoint());
-	
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		
-		iPoint_glo = geometry->node[iPoint]->GetGlobalIndex();
-		
-		//printf("iPoint(glo) %d : %lf %lf  \n",iPoint, node[iPoint]->GetCoord(0),  node[iPoint]->GetCoord(1));
-		solver_container[FLOW_SOL]->Relax_Factor_Loc[iPoint_glo] = (su2double)iPoint_glo;
-		
-		Residual = LinSysRes.GetBlock(iPoint);
-    
-		
-    //if (!adjoint) {
-    //  for (iVar = 0; iVar < nVar; iVar++) {
-    //    Res = Residual[iVar] + Res_TruncError[iVar];
-    //    node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
-    //    AddRes_RMS(iVar, Res*Res);
-    //    AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
-    //  }
-    //}
-		
-		if ( iPoint < 10 )
-			printf("Point %ld (glo %ld): rel = %lf, res = %le\n", iPoint, iPoint_glo, solver_container[FLOW_SOL]->Relax_Factor_Loc[iPoint_glo], Residual[0]);
-			
-		if ( iPoint > 10 ) exit(1);
-	}
-	
-}
+//
+//void CEulerSolver::Compute_Local_Relaxation(CConfig *config,CGeometry *geometry, CSolver **solver_container) {
+//	
+//	unsigned long  iPoint, iPoint_glo;
+//	unsigned short FinestMesh = config->GetFinestMesh();
+//	
+//	su2double *Residual;
+//	
+//	printf("npoint = %ld\n", geometry->GetnPoint());
+//	
+//	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+//		
+//		iPoint_glo = geometry->node[iPoint]->GetGlobalIndex();
+//		
+//		//printf("iPoint(glo) %d : %lf %lf  \n",iPoint, node[iPoint]->GetCoord(0),  node[iPoint]->GetCoord(1));
+//		solver_container[FLOW_SOL]->Relax_Factor_Loc[iPoint_glo] = (su2double)iPoint_glo;
+//		
+//		Residual = LinSysRes.GetBlock(iPoint);
+//    
+//		
+//    //if (!adjoint) {
+//    //  for (iVar = 0; iVar < nVar; iVar++) {
+//    //    Res = Residual[iVar] + Res_TruncError[iVar];
+//    //    node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
+//    //    AddRes_RMS(iVar, Res*Res);
+//    //    AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+//    //  }
+//    //}
+//		
+//		if ( iPoint < 10 )
+//			printf("Point %ld (glo %ld): rel = %lf, res = %le\n", iPoint, iPoint_glo, solver_container[FLOW_SOL]->Relax_Factor_Loc[iPoint_glo], Residual[0]);
+//			
+//		if ( iPoint > 10 ) exit(1);
+//	}
+//	
+//}
 
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                    CConfig *config, unsigned short iMesh) {
@@ -4904,15 +4920,31 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned long iPoint, total_index, IterLinSol = 0;
   su2double Delta, *local_Res_TruncError, Vol;
 
-	su2double cofMax = 0.05;
-	su2double eps    = 1e-6;
+	su2double cofMax = config->GetHard_Limiting_Param(0);
+	su2double eps    = config->GetHard_Limiting_Param(1);
 	su2double relax_fac = 1;
 	su2double rho=0, dltRho=0;
+	
+	//printf("COFMAX = %le EPS = %lf\n", cofMax, eps);
+	
+	su2double LocCFLMin, LocCFLMax, LocCFLUp, LocCFLDown;
+	
+	LocCFLMin  = config->GetCFL_LocalAdaptParam(2);
+	LocCFLMax  = config->GetCFL_LocalAdaptParam(3);
+	LocCFLUp   = config->GetCFL_LocalAdaptParam(1);
+	LocCFLDown = config->GetCFL_LocalAdaptParam(0);
+	
+	//printf("UP %lf DOWN %lf MIN %lf MAX %lf\n", LocCFLUp, LocCFLDown, LocCFLMin, LocCFLMax);
   
   bool adjoint = config->GetContinuous_Adjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
 
 	unsigned long iPoint_glo;
+	
+	//if ( config->GetLocal_CFL_Adapt() ) {
+	//	printf("LOCAL CFL ADAPT\n");
+	//	exit(1);		
+	//}
   
   /*--- Set maximum residual to zero ---*/
   
@@ -4947,10 +4979,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
       else {
         Jacobian.AddVal2Diag(iPoint, Delta);
       }
-
 			
-			
-
     }
     else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
@@ -4987,7 +5016,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   CSysSolve system;
   IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
-  /*--- The the number of iterations of the linear solver ---*/
+  /*--- The number of iterations of the linear solver ---*/
   
   SetIterLinSolver(IterLinSol);
   
@@ -4995,12 +5024,12 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   if (!adjoint) {
 		
-		//Compute_Local_Relaxation(config,geometry,solver_container);
-		
 		unsigned long ExtIter =  config->GetExtIter();
 		
 		if ( config->GetLocal_Relax_Factor()  ) {
 			
+			su2double CFL_min, CFL_max;
+			CFL_min = CFL_max = CFL_Loc[0];
 			unsigned long cptRel=0;
 			
 			for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -5010,8 +5039,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 				
 				//--- Compute relaxation factor on density
 				dltRho    = LinSysSol[iPoint*nVar+0];
-				rho       = node[iPoint]->GetSolution(0);
-				
+				rho       = node[iPoint]->GetSolution(0);		
 				
 				if ( ExtIter < config->GetLimiterIter() ) {
 					if ( fabs(dltRho) > (cofMax*rho) ) {
@@ -5023,13 +5051,34 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 						relax_fac = 1;
 						Relax_Factor_Loc[iPoint] = 1;
 					}
+				
+					//--- Update local CFL
+					
+					if ( config->GetLocal_CFL_Adapt()  ) {
+						
+						if ( relax_fac < 0.1 ) {
+							CFL_Loc[iPoint] *= LocCFLDown;
+						}
+						else if ( relax_fac == 1 ) {
+							CFL_Loc[iPoint] *= LocCFLUp;
+							CFL_Loc[iPoint] = min(CFL_Loc[iPoint],LocCFLMax);
+							CFL_Loc[iPoint] = max(CFL_Loc[iPoint],LocCFLMin);
+						}
+						
+						CFL_min = min(CFL_min, CFL_Loc[iPoint]);
+						CFL_max = max(CFL_max, CFL_Loc[iPoint]);
+						
+						solver_container[FLOW_SOL]->SetCFLLoc_Min (CFL_min);
+						solver_container[FLOW_SOL]->SetCFLLoc_Max (CFL_max);
+					}
+					
 				}
 				else {
-					Relax_Factor_Loc[iPoint] = 0.4;
+					Relax_Factor_Loc[iPoint] = 0.1;
 				}
 				
-
-				//
+				
+				
 				//if ( ExtIter >= config->GetLimiterIter() ) {
 				//	relax_fac = 0.1;
 				//}
@@ -5054,6 +5103,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 	      }
 	    }
 		
+			//printf("ITE %ld : CFL min = %lf , CFL max = %lf\n", ExtIter, CFL_min, CFL_max);
 			//printf("ITE %ld : %ld relaxed points\n", ExtIter, cptRel);
 		}
 		else {

@@ -85,6 +85,9 @@ protected:
 	*Residual,						/*!< \brief Auxiliary nVar vector. */
 	*Residual_i,					/*!< \brief Auxiliary nVar vector for storing the residual at point i. */
 	*Residual_j;					/*!< \brief Auxiliary nVar vector for storing the residual at point j. */
+	
+	su2double CFLLoc_Max, CFLLoc_Min;
+	
   unsigned long *Point_Max; /*!< \brief Vector with the maximal residual for each variable. */
   su2double **Point_Max_Coord; /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
 	su2double *Solution,		/*!< \brief Auxiliary nVar vector. */
@@ -332,7 +335,12 @@ public:
 	 * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
 	 */
 	void SetRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point);
-    
+	
+	void SetCFLLoc_Max(su2double val);
+  void SetCFLLoc_Min(su2double val);
+  
+	
+
 	/*!
 	 * \brief Adds the maximal residual, this is useful for the convergence history.
 	 * \param[in] val_var - Index of the variable.
@@ -348,6 +356,9 @@ public:
 	 * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
 	 */
 	su2double GetRes_Max(unsigned short val_var);
+
+	su2double GetCFLLoc_Max();
+	su2double GetCFLLoc_Min();
 
 	/*!
 	 * \brief Get the residual for FEM structural analysis.

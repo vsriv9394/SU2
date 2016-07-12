@@ -383,6 +383,7 @@ int main(int argc, char *argv[]) {
 	/*--- Update the convergence history file (serial and parallel computations). ---*/
 
 	if (!fsi){
+
 		output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
 				config_container, integration_container, false, UsedTime, ZONE_0);
 
@@ -497,7 +498,14 @@ int main(int argc, char *argv[]) {
     
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
     
+		if ( StopCalc || ExtIter == config_container[ZONE_0]->GetnExtIter()-1 ) {
+			output->ComputeNozzleThrust(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                 	geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+		}
+
     if (StopCalc) break;
+
+
     
     ExtIter++;
     

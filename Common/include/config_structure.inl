@@ -33,6 +33,12 @@
 
 inline su2double CConfig::GetCFL_AdaptParam(unsigned short val_index) { return CFL_AdaptParam[val_index]; }
 
+inline su2double CConfig::GetHard_Limiting_Param(unsigned short val_index) { return Hard_Limiting_Param[val_index]; }
+
+inline su2double CConfig::GetCFL_LocalAdaptParam(unsigned short val_index) { return CFL_LocalAdaptParam[val_index]; }
+
+inline bool CConfig::GetLocal_CFL_Adapt(void) { return Local_CFL_Adapt; }
+
 inline bool CConfig::GetCFL_Adapt(void) { return CFL_Adapt; }
 
 inline bool CConfig::GetLocal_Relax_Factor(void) { return Local_Relax_Factor; }

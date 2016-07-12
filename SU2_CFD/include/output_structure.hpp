@@ -178,6 +178,18 @@ public:
 	void SetForceSections(CSolver *solver_container, CGeometry *geometry, CConfig *config,
                          unsigned long iExtIter);
   
+
+  /*!
+	 * \brief Writes forces at different sections.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iExtIter - Current external (time) iteration.
+	 */
+	void ComputeNozzleThrust(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+
+
+
   /*!
 	 * \brief Writes one dimensional output.
 	 * \param[in] solver_container - Container vector with all the solutions.

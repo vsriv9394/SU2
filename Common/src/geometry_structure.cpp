@@ -529,6 +529,197 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[
   
 }
 
+struct Row
+{
+  std::vector<su2double> val;
+};
+
+bool sort_Row (Row i,Row j) {
+	 return (i.val[0]<j.val[0]); 
+}
+
+su2double CGeometry::ComputeThrustNozzle(su2double XCoord, su2double *Sol, unsigned long nVar, CConfig *config) {
+	
+	unsigned long iEdge, iPoint, jPoint, i, iVar;
+	short flag=0;
+	su2double xi, xj, alp=0, len=0, crd[2], Thrust, sol;
+	su2double rho, rhoU, U, U0=1, P0=1, P, dy;
+	
+	su2double yMax=0.305;
+	
+
+	/* Reference pressure and velocity */
+	U0 = config->GetModVel_FreeStream();
+	P0 = config->GetPressure_FreeStream();
+	
+	if ( nDim != 2 ) {
+		printf("\n\n   !!! Error !!!\n" );
+		printf("ComputeThrustNozzle is only for 2D.\n\n");    
+		printf("Now exiting...\n\n");
+    exit(EXIT_FAILURE);
+	}
+	
+	std::vector<Row> rowVec;
+	
+	unsigned long cptEdg=0;
+	/* Get edges that intersect the line and interpolate solution at the intersection */
+	for (iEdge=0; iEdge<nEdge; iEdge++) {
+
+		Row row;
+		
+		/* Check if nodes are not both above ymax */
+		
+		flag = 0;
+		for (i=0; i<2; i++){
+			iPoint = edge[iEdge]->GetNode(i);
+			if ( node[iPoint]->GetCoord(1) <= yMax ) {
+				flag = 1;
+				break;
+			}
+		}
+		
+		if ( flag == 0 )
+			continue;
+		
+		
+		/* Check if nodes are on the line */
+		flag = 0;
+		for (i=0; i<2; i++){
+			iPoint = edge[iEdge]->GetNode(i);
+			//iPoint_glo = node[iPoint]->GetGlobalIndex();
+			
+			if ( fabs(node[iPoint]->GetCoord(0)-XCoord) < 1e-20 ){
+				row.val.push_back(node[iPoint]->GetCoord(1));
+				for (iVar=0; iVar<nVar; iVar++)
+					row.val.push_back(Sol[iPoint*nVar+iVar]);
+			}
+		}
+		
+		
+		/* If at least one node is on the line, continue */
+		if ( flag == 1 ) 
+			continue;
+		
+		//if ( node[iPoint]->GetGlobalIndex() == 123) {
+		//	printf("POINT %ld , rho = %lf, P = %lf, U = %lf\n", iPoint, Sol[iPoint*nVar+0],Sol[iPoint*nVar+1],Sol[iPoint*nVar+2]);
+		//}
+				
+		iPoint = edge[iEdge]->GetNode(0); jPoint = edge[iEdge]->GetNode(1);
+		
+		xi = node[iPoint]->GetCoord(0);
+		xj = node[jPoint]->GetCoord(0);
+		
+		flag = (xi<XCoord?-1:1)*(xj<XCoord?-1:1);
+		
+		if ( flag == 1 ) continue;
+		
+		cptEdg++;
+		
+		if ( xi < xj )
+			alp = (XCoord-xi)/(xj-xi);
+		else 
+			alp = 1.-(XCoord-xj)/(xi-xj);
+			
+		for (i=0; i<2; i++)
+			crd[i] = alp*node[jPoint]->GetCoord(i)+(1.-alp)*node[iPoint]->GetCoord(i);
+		
+		
+		
+		row.val.push_back(crd[1]);
+		
+		for (iVar=0; iVar<nVar; iVar++) {
+			sol = alp*Sol[jPoint*nVar+iVar]+(1.-alp)*Sol[iPoint*nVar+iVar];
+			row.val.push_back(sol);
+		}
+				
+		rowVec.push_back(row);
+	}
+
+	/* Sort new points according to their y-coordinate */
+	sort(rowVec.begin(), rowVec.end(), sort_Row);
+	
+	////#################################################
+	//
+	//FILE *tmpHdl = fopen("itf2.mesh", "wb");
+	//fprintf(tmpHdl, "MeshVersionFormatted 2\nDimension 2\n\n Vertices\n%ld\n", 2*cptEdg+rowVec.size());
+	//
+	///* Get edges that intersect the line and interpolate solution at the intersection */
+	//for (iEdge=0; iEdge<nEdge; iEdge++) {
+  //
+	//	Row row;
+	//	
+	//	/* Check if nodes are on the line */
+	//	flag = 0;
+	//	for (i=0; i<2; i++){
+	//		iPoint = edge[iEdge]->GetNode(i);
+	//		iPoint_glo = node[iPoint]->GetGlobalIndex();
+	//		if ( fabs(node[iPoint]->GetCoord(0)-XCoord) < 1e-20 ){
+	//			row.val.push_back(node[iPoint]->GetCoord(1));
+	//			for (iVar=0; iVar<nVar; iVar++)
+	//				row.val.push_back(Sol[iPoint_glo*nVar+iVar]);
+	//		}
+	//	}
+	//	
+	//	/* If at least one node is on the line, continue */
+	//	if ( flag == 1 ) 
+	//		continue;
+	//	
+	//	iPoint = edge[iEdge]->GetNode(0); jPoint = edge[iEdge]->GetNode(1);
+	//	
+	//	xi = node[iPoint]->GetCoord(0);
+	//	xj = node[jPoint]->GetCoord(0);
+	//	
+	//	flag = (xi<XCoord?-1:1)*(xj<XCoord?-1:1);
+	//	
+	//	if ( flag == 1 ) continue;
+	//	
+	//	fprintf(tmpHdl,"%lf %lf %ld\n", node[iPoint]->GetCoord(0), node[iPoint]->GetCoord(1), node[iPoint]->GetGlobalIndex());
+	//	fprintf(tmpHdl,"%lf %lf %ld\n", node[jPoint]->GetCoord(0), node[jPoint]->GetCoord(1), node[jPoint]->GetGlobalIndex());
+	//	
+	//	
+	//}
+	//for (i=1; i<rowVec.size(); i++) 
+	//	fprintf(tmpHdl,"%lf %lf 0\n", XCoord, rowVec[i].val[0]);
+	//
+	//fprintf(tmpHdl, "\nEdges\n%ld\n", cptEdg);
+	//for (i=1;i<=cptEdg;i++)
+	//	fprintf(tmpHdl, "%ld %ld 1\n", 2*(i-1)+1, 2*(i-1)+2);
+	//
+	//
+	//fclose(tmpHdl);
+	//exit(1);
+	////#################################################		
+	
+	/* Compute thrust  
+  Thrust = 2PI * Int_{0}^{R} (rho U ( U - U0) + P - Po ) r dr
+	*/
+	Thrust = 0;
+	for (i=1; i<rowVec.size(); i++) {
+		
+
+		if ( rowVec[i].val[0] > 0.305 )
+			break;
+			
+		dy = rowVec[i].val[0] - rowVec[i-1].val[0];
+		
+		rho = rowVec[i].val[1];
+		U   = rowVec[i].val[2];
+		P   = rowVec[i].val[3];
+		
+		//printf("dy=%lf, rho=%lf, U=%lf, U0=%lf, P=%lf, P0=%lf\n", SU2_TYPE::GetValue(dy),SU2_TYPE::GetValue(rho),SU2_TYPE::GetValue(U),SU2_TYPE::GetValue(U0),SU2_TYPE::GetValue(P),SU2_TYPE::GetValue(P0));
+		
+		Thrust += dy*(rho*U*(U-U0)+P-P0);
+	}
+	
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+	  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+	//printf("RANK %d, THRUST= %lf\n", rank, Thrust);
+	
+	return Thrust;
+}
+
 void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Normal,
                                        su2double MinXCoord, su2double MaxXCoord, su2double *FlowVariable,
                                        vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,

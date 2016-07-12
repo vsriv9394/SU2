@@ -5033,7 +5033,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout << "There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
             
             cout << "-------------------------------------------------------------------------" << endl;
-
+						
+						
+						if ( config[val_iZone]->GetLocal_Relax_Factor()  ) {
+							cout << endl << "------------------------ Local Relaxation Summary -----------------------" << endl;
+							cout <<"Local CFL : Max = " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetCFLLoc_Max() << " Min = " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetCFLLoc_Max() << endl;
+							cout << "-------------------------------------------------------------------------" << endl;
+						}
+						
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
             
@@ -7169,6 +7176,61 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   solver_container->SetOneD_FluxAvgEntalpy(EnthalpyRef);
   
 }
+
+
+void COutput::ComputeNozzleThrust(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
+
+	su2double Thrust=111, xLoc=0.67;
+	su2double *Sol;
+	unsigned long iPoint, iPoint_glo, idx=0, iVar, NbrVar=3; 
+	
+ 	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+	  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+	
+	
+	bool grid_movement = config->GetGrid_Movement();
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+	
+	if (geometry->GetnDim() != 2) {
+		cout << "Error: Nozzle thrust computation only implemented in 2D. \n";
+    exit(EXIT_FAILURE);
+	}
+	
+	/* Store rho, U, P in Sol */
+	Sol = new su2double[NbrVar*geometry->GetGlobal_nPointDomain()]; 
+	
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+			
+		idx = iPoint*NbrVar;
+		Sol[idx+0] = solver_container->node[iPoint]->GetSolution(0);       // Rho
+		Sol[idx+1] = solver_container->node[iPoint]->GetSolution(1)/solver_container->node[iPoint]->GetSolution(0);   // U
+		Sol[idx+2] = solver_container->node[iPoint]->GetPressure();        // P
+  
+		//if ( iPoint < 10 )
+		//	printf("Point %ld : %lf %lf %lf\n", iPoint, Sol[idx+0] , Sol[idx+1] , Sol[idx+2] );
+		
+}
+	
+	
+	//Thrust = geometry->ComputeThrustNozzle(xLoc, Sol, NbrVar, config);
+	
+	//FILE *hdl = fopen("thrust.dat", "a");
+	////solver_container->SetNozzleThrust(Thrust);
+	//fprintf(hdl, "%lf\n", Thrust);
+	//fclose(hdl);
+	
+	//printf("rank = %d : %lf\n", rank, Thrust);
+	
+	
+	delete [] Sol;
+	
+}
+
+
 
 void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
   

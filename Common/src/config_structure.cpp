@@ -163,6 +163,8 @@ void CConfig::SetPointersNull(void) {
   Velocity_FreeStream = NULL;
   RefOriginMoment = NULL;
   CFL_AdaptParam = NULL;            CFL=NULL;
+	Hard_Limiting_Param = NULL;
+	CFL_LocalAdaptParam = NULL;
   PlaneTag = NULL;
   Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
   Section_Location = NULL;
@@ -533,12 +535,28 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Activate The adaptive CFL number. */
   addBoolOption("RELAXATION_LOCAL", Local_Relax_Factor, false);
 
+
+
+
+  /* !\brief CFL_ADAPT_PARAM
+   * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max) )
+   * Factor down generally >1.0, factor up generally < 1.0 to cause the CFL to increase when residual is decreasing,
+   * and decrease when the residual is increasing or stalled. \ingroup Config*/
+  default_vec_4d[0] = 0.0; default_vec_4d[1] = 0.0; default_vec_4d[2] = 1.0; default_vec_4d[3] = 100.0;
+  addDoubleArrayOption("CFL_ADAPT_LOCAL_PARAM", 4, CFL_LocalAdaptParam, default_vec_4d);
+	
   /* !\brief CFL_ADAPT_PARAM
    * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max) )
    * Factor down generally >1.0, factor up generally < 1.0 to cause the CFL to increase when residual is decreasing,
    * and decrease when the residual is increasing or stalled. \ingroup Config*/
   default_vec_4d[0] = 0.0; default_vec_4d[1] = 0.0; default_vec_4d[2] = 1.0; default_vec_4d[3] = 100.0;
   addDoubleArrayOption("CFL_ADAPT_PARAM", 4, CFL_AdaptParam, default_vec_4d);
+
+  default_vec_2d[0] = 0.25; default_vec_2d[1] = 1e-5;
+  /* DESCRIPTION: Definition of the airfoil section */
+  addDoubleArrayOption("HARD_LIMITING_PARAM", 2, Hard_Limiting_Param, default_vec_2d);
+
+	
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
@@ -1394,7 +1412,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
   case_file.open(case_filename, ios::in);
 
   if (case_file.fail()) {
-    if (rank == MASTER_NODE) cout << endl << "The configuration file (.cfg) is missing!!" << endl << endl;
+    if (rank == MASTER_NODE) cout << endl << "SU2 DARPA : The configuration file (.cfg) is missing!!" << endl << endl;
     exit(EXIT_FAILURE);
   }
 
@@ -3690,9 +3708,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver != FEM_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
 
-      if (!CFL_Adapt) cout << "No CFL adaptation." << endl;
-      else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
+      //if (!CFL_Adapt) cout << "No CFL adaptation." << endl;
+      //else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
+      //  <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
+
+
+      if (Local_CFL_Adapt) {
+				cout << "Local CFL adaptation. Factor down: "<< CFL_LocalAdaptParam[0] <<", factor up: "<< CFL_LocalAdaptParam[1]
+		  	 <<",\n                lower limit: "<< CFL_LocalAdaptParam[2] <<", upper limit: " << CFL_LocalAdaptParam[3] <<"."<< endl;
+				if (CFL_Adapt) 
+					cout << "WARNING : CFL_ADAP option was ignored." << endl;
+			}
+      else if (CFL_Adapt) cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
         <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
+			else 
+				cout << "No CFL adaptation." << endl;
+			
 
       if (nMGLevels !=0) {
         cout << "Multigrid Level:                  ";
@@ -4588,7 +4619,9 @@ CConfig::~CConfig(void) {
   if (Kappa_AdjFlow != NULL)          delete[] Kappa_AdjFlow;
   if (PlaneTag != NULL)               delete[] PlaneTag;
   if (CFL_AdaptParam != NULL)         delete[] CFL_AdaptParam;
+  if (Hard_Limiting_Param != NULL)    delete[] Hard_Limiting_Param;
   if (CFL!=NULL)                      delete[] CFL;
+  if (CFL_LocalAdaptParam != NULL)    delete[] CFL_LocalAdaptParam;
 
   /*--- String markers ---*/
   if (Marker_Euler != NULL )              delete[] Marker_Euler;
