@@ -13239,24 +13239,37 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
   bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
   
+	printf ("BEFORE LOOP POINT\n");
+
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
+		printf ("POINT %ld\n", iPoint);
+
     /*--- Retrieve the value of the kinetic energy (if need it) ---*/
     
     if (turb_model != NONE) {
+			printf ("HERE\n");
+			printf ("solver_container[TURB_SOL]->node[iPoint] = %p\n", solver_container[TURB_SOL]->node[iPoint]);
       eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
+			printf("AFTER GET MUT\n");
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+			
     }
     
+		printf("BEFORE SET NON\n");
+
     /*--- Initialize the non-physical points vector ---*/
     
     node[iPoint]->SetNon_Physical(false);
     
+printf("AFTER SET NON\n");
+
     /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
      FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
      Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
     
     if (compressible) {
+			printf ("YES\n");
       RightSol = node[iPoint]->SetPrimVar_Compressible(eddy_visc, turb_ke, FluidModel);
       node[iPoint]->SetSecondaryVar_Compressible(FluidModel);
     }
@@ -13277,6 +13290,8 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
     
   }
   
+printf ("AFTER LOOP POINT\n");
+
   return ErrorCounter;
 }
 
