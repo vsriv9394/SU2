@@ -13284,8 +13284,6 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
     
   }
-  
-printf ("AFTER LOOP POINT\n");
 
   return ErrorCounter;
 }
