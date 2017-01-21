@@ -1023,6 +1023,7 @@ enum ENUM_INPUT {
 static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
 ("SU2", SU2)
 ("CGNS", CGNS)
+//("INRIA", SU2); //HACKVIC
 ("INRIA", INRIA);
 
 const int CGNS_STRING_SIZE = 33;/*!< \brief Length of strings used in the CGNS format. */

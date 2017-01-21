@@ -89,6 +89,7 @@ int main(int argc, char *argv[]) {
   
   nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+
   delete config;
   /*--- Definition and of the containers for all possible zones. ---*/
   
