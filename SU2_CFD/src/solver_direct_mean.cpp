@@ -3429,7 +3429,6 @@ void CNSSolver::Load_Inria_SolutionFlow(CGeometry *geometry, CConfig *config, st
 	 at any halo/periodic nodes. The initial solution can be arbitrary,
 	 because a send/recv is performed immediately in the solver. ---*/
 	
-	printf("nPointDomain %ld nPoint %ld ", nPointDomain, nPoint);
 	
 	for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
 	  node[iPoint] = new CNSVariable(Solution, nDim, nVar, config);
