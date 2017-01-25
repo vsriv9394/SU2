@@ -42,12 +42,12 @@ from ..util import which
 #  Setup
 # ------------------------------------------------------------
 
-SU2_RUN = os.environ['SU2_RUN'] 
-sys.path.append( SU2_RUN )
+#SU2_RUN = os.environ['SU2_RUN'] 
+sys.path.append( os.environ['SU2_RUN']  )
 
 # SU2 suite run command template
 
-base_Command = os.path.join(SU2_RUN,'%s')
+base_Command = os.path.join( os.environ['SU2_RUN'] ,'%s')
 
 # check for slurm
 slurm_job = os.environ.has_key('SLURM_JOBID')

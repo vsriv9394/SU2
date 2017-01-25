@@ -116,6 +116,9 @@ def Parse_Adap_Options (config, config_adap):
 		config_adap.adap_subite[i]  = int(config_adap.adap_subite[i])
 		config_adap.NbrIteGlo += config_adap.adap_subite[i];
 	
+	if not ('SU2_RUN' in os.environ ):
+		os.environ['SU2_RUN'] = "";
+	
 	if 'ADAP_PATH' in config:
 		path = "%s/" % config['ADAP_PATH'];
 		os.environ['SU2_RUN'] = "%s:%s" % (os.environ['SU2_RUN'], path);
@@ -247,9 +250,11 @@ def Call_AMG (config_adap, config):
 			sys.stdout.write("  ## ERROR mesh adaptation: no surface IDs were provided.\n");
 			sys.exit(1);
 		
-		surf_ids = "-adap-domn-ids  0  -adap-surf-ids %d" % int(adap_ref[0]);
+		surf_ids = "%d" % int(adap_ref[0]);
 		for i in range(1,len(adap_ref)):
 			surf_ids =  "%s,%d" % (surf_ids,int(adap_ref[i]))
+		
+		surf_ids = "-adap-domn-ids  0  -adap-surf-ids %s" % (surf_ids)
 		
 		source = ""
 	else :
