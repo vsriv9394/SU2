@@ -9895,6 +9895,8 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     V_inlet[nDim+1] = Pressure;
     V_inlet[nDim+2] = Density;
     V_inlet[nDim+3] = Energy + Pressure/Density;
+
+		
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
