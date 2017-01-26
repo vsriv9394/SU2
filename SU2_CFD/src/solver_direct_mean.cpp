@@ -9920,6 +9920,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_inlet);
       
+			
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                   geometry->node[iPoint]->GetGridVel());
@@ -9927,7 +9928,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       /*--- Compute the residual using an upwind scheme ---*/
       
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      //LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
       
@@ -9970,7 +9971,9 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       }
       
     }
-  }
+    
+    
+	}
   
   /*--- Free locally allocated memory ---*/
   
