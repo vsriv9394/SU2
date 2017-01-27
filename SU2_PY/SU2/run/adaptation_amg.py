@@ -166,6 +166,8 @@ def Parse_Adap_Options (config, config_adap):
 	else :
 		config_adap.HGRAD = 3.0;
 		
+	config_adap.adap_ref = '';
+	config_adap.RANS = 'NO';
 	if config.PHYSICAL_PROBLEM == "NAVIER_STOKES":
 		config_adap.RANS = 'YES';
 		
@@ -242,7 +244,9 @@ def Call_AMG (config_adap, config):
 	-itp current_restart.solb %s  -nordg " \
 	% (path, adapsrc, cpx, hgrad, hmin, hmax, back)
 	
-	if (config_adap.RANS):
+	surf_ids = ""
+	
+	if ( config_adap.RANS == 'YES' ):
 		# Freeze the boundary layer and adap rest of the domain	
 		adap_ref = config_adap.adap_ref;
 		

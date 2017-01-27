@@ -7572,6 +7572,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   
+
+
   su2double *GridVel;
   su2double Area, UnitNormal[3] = {0.0,0.0,0.0};
   su2double Density, Pressure, Energy,  Velocity[3] = {0.0,0.0,0.0};
@@ -9899,6 +9901,9 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 		
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+		
+
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     

@@ -3304,7 +3304,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Add residuals and Jacobians ---*/
       
-      //LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, Residual);
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
     }
