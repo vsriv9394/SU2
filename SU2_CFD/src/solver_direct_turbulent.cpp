@@ -668,10 +668,35 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     switch (config->GetKind_Turb_Model()) {
         
       case SA:
+
+
+				if ( config->GetLocal_Relax_Factor()  ) {
+					
+					for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+				    //for (iVar = 0; iVar < nVar; iVar++) {
+				    //  node[iPoint]->AddSolution(iVar, Relax_Factor_Loc[iPoint]*LinSysSol[iPoint*nVar+iVar]);
+				    //}
+					
+						//su2double relax = min(config->GetRelaxation_Factor_Turb(), Relax_Factor_Loc[iPoint]);
+						
+						su2double relax = config->GetRelaxation_Factor_Turb();
+						
+						node[iPoint]->AddClippedSolution(0, relax*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
+				
+				  }
+
+				}
+				else {
+					for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+				    //node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+						node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
+				  }
+				}
         
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
-        }
+        //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        //  node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
+        //}
         
         break;
         

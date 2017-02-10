@@ -4919,7 +4919,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned short iVar, jVar;
   unsigned long iPoint, total_index, IterLinSol = 0;
   su2double Delta, *local_Res_TruncError, Vol;
-
+	
 	su2double cofMax = config->GetHard_Limiting_Param(0);
 	su2double eps    = config->GetHard_Limiting_Param(1);
 	su2double relax_fac = 1;
@@ -4954,6 +4954,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   }
   
   /*--- Build implicit system ---*/
+
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
@@ -5003,6 +5004,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   /*--- Initialize residual and solution at the ghost points ---*/
   
+
   for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar + iVar;
@@ -5012,25 +5014,31 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   }
   
   /*--- Solve or smooth the linear system ---*/
-  
+
+
   CSysSolve system;
   IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
   /*--- The number of iterations of the linear solver ---*/
-  
+
   SetIterLinSolver(IterLinSol);
   
+
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
 		
 		unsigned long ExtIter =  config->GetExtIter();
 		
+		
 		if ( config->GetLocal_Relax_Factor()  ) {
+
+			
 			
 			su2double CFL_min, CFL_max;
 			CFL_min = CFL_max = CFL_Loc[0];
 			unsigned long cptRel=0;
+			
 			
 			for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 				
@@ -5042,6 +5050,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 				rho       = node[iPoint]->GetSolution(0);		
 				
 				if ( ExtIter < config->GetLimiterIter() ) {
+					
 					if ( fabs(dltRho) > (cofMax*rho) ) {
 						relax_fac = cofMax*rho/max(fabs(dltRho),1e-30);
 						Relax_Factor_Loc[iPoint] = relax_fac;
@@ -5093,7 +5102,6 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 				
 	      for (iVar = 0; iVar < nVar; iVar++) {
 					
-										
 					//printf("iPoint loc = %ld, iPoint glo = %ld, rel=%lf, rel = %lf\n", iPoint, iPoint_glo, relax_fac, Relax_Factor_Loc[iPoint_glo]);
 					//printf("iPoint(loc) %d : %lf %lf  \n",iPoint, node[iPoint]->GetCoord(0),  node[iPoint]->GetCoord(1));
 					
@@ -12269,6 +12277,15 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     Secondary_j = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_j[iVar] = 0.0;
   }
   
+	/*--- Local relaxation vectors ---*/
+  Relax_Factor_Loc = new su2double[nPoint];
+	memset(Relax_Factor_Loc,1.0,sizeof(su2double)*nPoint);
+	
+	CFL_Loc          = new su2double[nPoint];
+	for (iPoint=0; iPoint<nPoint; iPoint++)
+		CFL_Loc[iPoint] = 1.0;
+
+
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
   
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
@@ -12310,7 +12327,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
-    
   }
   
   else {
