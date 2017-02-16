@@ -320,6 +320,9 @@ def Call_SU2 (config_adap, config):
 	config_cur.RESTART_FLOW_FILENAME  = outNam;
 	config_cur.MESH_FORMAT            = 'INRIA';
 
+	config_cur.SURFACE_FLOW_FILENAME = "surface_flow.%d.%.0f" % (ite_glo,cpx);
+	config_cur.VOLUME_FLOW_FILENAME  = "flow.%d.%.0f" % (ite_glo,cpx);
+	
 	#config_cur.EXT_ITER = 1;
 	
 	print " Running SU2 \n Log: %s\n" % (jobNam) ;
