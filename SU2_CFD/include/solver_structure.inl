@@ -234,6 +234,8 @@ inline su2double CSolver::GetTotal_CLift() { return 0; }
 
 inline su2double CSolver::GetTotal_CDrag() { return 0; }
 
+inline su2double CSolver::GetThrust_Nozzle() { return 0; }
+
 inline su2double CSolver::GetTotal_CMx() { return 0; }
 
 inline su2double CSolver::GetTotal_CMy() { return 0; }
@@ -313,6 +315,8 @@ inline su2double CSolver::GetTotal_CHeat() { return 0; }
 inline void CSolver::SetTotal_CLift(su2double val_Total_CLift) { }
 
 inline void CSolver::SetTotal_CDrag(su2double val_Total_CDrag) { }
+
+inline void CSolver::SetThrust_Nozzle(su2double val_Thrust_Nozzle) { }
 
 inline su2double CSolver::GetCPressure(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
@@ -832,6 +836,8 @@ inline su2double CEulerSolver::GetTotal_CLift() { return Total_CLift; }
 
 inline su2double CEulerSolver::GetTotal_CDrag() { return Total_CDrag; }
 
+inline su2double CEulerSolver::GetThrust_Nozzle() { return Thrust_Nozzle; }
+
 inline su2double CEulerSolver::GetTotal_CMx() { return Total_CMx; }
 
 inline su2double CEulerSolver::GetTotal_CMy() { return Total_CMy; }
@@ -885,6 +891,8 @@ inline void CEulerSolver::SetTotal_CNearFieldOF(su2double cnearfieldpress) { Tot
 inline void CEulerSolver::SetTotal_CLift(su2double val_Total_CLift) { Total_CLift = val_Total_CLift; }
 
 inline void CEulerSolver::SetTotal_CDrag(su2double val_Total_CDrag) { Total_CDrag = val_Total_CDrag; }
+
+inline void CEulerSolver::SetThrust_Nozzle(su2double val_Thrust_Nozzle) { Thrust_Nozzle = val_Thrust_Nozzle; }
 
 inline su2double CEulerSolver::GetAllBound_CLift_Inv() { return AllBound_CLift_Inv; }
 

@@ -1556,7 +1556,17 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
       config_container[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE)
     output->OneDimensionalOutput(solver_container[val_iZone][MESH_0][FLOW_SOL],
                                  geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
-  
+
+
+	/*--- Compute thrust ---*/
+  if ( config_container[val_iZone]->GetKind_ObjFunc() == THRUST_NOZZLE ) {
+	
+		printf("COMPUTE NOZZLE THRUST\n");
+		output->SetNozzleThrust(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                 geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+	}
+															
+
   RegisterOutput(solver_container, geometry_container, config_container, val_iZone);
   
   /*--- Stop the recording ---*/

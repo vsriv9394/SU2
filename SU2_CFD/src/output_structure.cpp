@@ -7101,6 +7101,114 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
 }
 
+void COutput::SetNozzleThrust(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
+	
+  unsigned short iMarker, icommas, Boundary, iDim;
+  unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
+  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff;
+  bool *PointInDomain;
+  string text_line, surfCp_filename;
+  ifstream Surface_file;
+  char buffer[50], cstr[200];
+
+	su2double RefMach, RefDensity, RefPressure, RefAreaCoeff, *Velocity_Inf, Gas_Constant, Mach2Vel, Mach_Motion, \
+	 Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin, RefLengthMoment, Alpha, Beta, CDrag_Inv, CLift_Inv, CMy_Inv;
+
+	su2double vel[3], velMod, rho, pres;
+
+	su2double AreaTot = 0.0, Thrust = 0.0;
+	
+	bool grid_movement = config->GetGrid_Movement();
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+
+
+  nPointLocal = geometry->GetnPoint();
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  nPointGlobal = nPointLocal;
+#endif
+
+	
+	/*--- Compute some reference quantities and necessary values ---*/
+  RefDensity = solver_container->GetDensity_Inf();
+  RefPressure = solver_container->GetPressure_Inf();
+  RefAreaCoeff = config->GetRefAreaCoeff();
+  Velocity_Inf = solver_container->GetVelocity_Inf();
+  Gamma = config->GetGamma();
+  Origin = config->GetRefOriginMoment(0);
+  RefLengthMoment  = config->GetRefLengthMoment();
+  Alpha            = config->GetAoA()*PI_NUMBER/180.0;
+  Beta             = config->GetAoS()*PI_NUMBER/180.0;
+  
+	RefMach = config->GetMach();
+
+  if (grid_movement) {
+    Gas_Constant = config->GetGas_ConstantND();
+    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+    Mach_Motion = config->GetMach_Motion();
+    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+  }
+  else {
+    RefVel2 = 0.0;
+    for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+  }
+	RefVel2 = sqrt(RefVel2);
+
+  //factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
+	
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    Boundary   = config->GetMarker_All_KindBC(iMarker);
+
+    if ( Boundary == THRUST_BOUNDARY ) {
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+	
+#ifndef HAVE_MPI
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+#else
+        iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+#endif
+
+				Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+				Area = 0.0;
+        for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+          Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt(Area);
+				
+				rho  = solver_container->node[iPoint]->GetDensity();
+				pres = solver_container->node[iPoint]->GetPressure();
+				
+				velMod = 0.0;
+				for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+          vel[iDim] = solver_container->node[iPoint]->GetVelocity(iDim);
+					velMod += vel[iDim]*vel[iDim];
+				}
+				velMod = sqrt(velMod);
+				
+				Thrust +=  Area*(rho*velMod*(velMod-RefVel2)+pres-RefPressure);
+				
+				//printf("rho = %lf, velMod = %lf, RefVel2 = %lf, pres = %lf, RefPRessure = %lf\n", \
+				//SU2_TYPE::GetValue(rho), SU2_TYPE::GetValue(velMod), SU2_TYPE::GetValue(RefVel2), \
+				// SU2_TYPE::GetValue(pres), SU2_TYPE::GetValue(RefPressure));
+				
+				AreaTot += Area;
+      }
+			
+    }
+  }
+
+	printf("THRUST = %lf\n", SU2_TYPE::GetValue(Thrust));
+	
+	solver_container->SetThrust_Nozzle(Thrust);
+
+	
+}
+
+
 void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
   
   short iSection, nSection;

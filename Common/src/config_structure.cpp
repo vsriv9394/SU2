@@ -125,7 +125,7 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_KindBC=NULL;       Marker_All_KindBC=NULL;
   /*--- Marker Pointers ---*/
 
-  Marker_Euler = NULL;            Marker_FarField = NULL;           Marker_Custom = NULL;
+  Marker_Euler = NULL;            Marker_FarField = NULL;           Marker_Custom = NULL;  Marker_Thrust = NULL;
   Marker_SymWall = NULL;          Marker_Pressure = NULL;           Marker_PerBound = NULL;
   Marker_PerDonor = NULL;         Marker_NearFieldBound = NULL;     Marker_InterfaceBound = NULL;
   Marker_Dirichlet = NULL;        Marker_Inlet = NULL;
@@ -424,6 +424,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
   /* DESCRIPTION: Custom boundary marker(s) */
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
+
+  /*!\brief MARKER_THRUST\n DESCRIPTION: Marker(s) of the surfaces used for Thrust computation  \ingroup Config*/
+  addStringListOption("MARKER_THRUST", nMarker_Thrust, Marker_Thrust);
+
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
@@ -2607,7 +2611,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 void CConfig::SetMarkers(unsigned short val_software) {
 
-  unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
+  unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom, iMarker_Thrust,
   iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
   iMarker_Inlet, iMarker_Riemann, iMarker_NRBC, iMarker_Outlet, iMarker_Isothermal,
@@ -2633,7 +2637,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_NRBC + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
-  nMarker_FlowLoad + nMarker_Custom +
+  nMarker_FlowLoad + nMarker_Custom + nMarker_Thrust +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
   
@@ -2844,6 +2848,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
+	for (iMarker_Thrust = 0; iMarker_Thrust < nMarker_Thrust; iMarker_Thrust++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Thrust[iMarker_Thrust];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = THRUST_BOUNDARY;
+    iMarker_CfgFile++;
+  }
+
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Outlet[iMarker_Outlet];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = OUTLET_FLOW;
@@ -2963,7 +2973,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
-  unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
+  unsigned short iMarker_Euler, iMarker_Custom, iMarker_Thrust, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
   iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
   iMarker_NRBC, iMarker_MixBound, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
@@ -4200,6 +4210,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
+  if (nMarker_Thrust != 0) {
+    cout << "Thrust boundary marker(s): ";
+    for (iMarker_Thrust = 0; iMarker_Thrust < nMarker_Thrust; iMarker_Thrust++) {
+      cout << Marker_Thrust[iMarker_Thrust];
+      if (iMarker_Thrust < nMarker_Thrust-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
+
   if (nMarker_ActDisk_Inlet != 0) {
 		cout << "Actuator disk (inlet) boundary marker(s): ";
 		for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
@@ -4614,6 +4633,7 @@ CConfig::~CConfig(void) {
   if (Marker_Euler != NULL )              delete[] Marker_Euler;
   if (Marker_FarField != NULL )           delete[] Marker_FarField;
   if (Marker_Custom != NULL )             delete[] Marker_Custom;
+	if (Marker_Thrust != NULL )             delete[] Marker_Thrust;
   if (Marker_SymWall != NULL )            delete[] Marker_SymWall;
   if (Marker_Pressure != NULL )           delete[] Marker_Pressure;
   if (Marker_PerBound != NULL )           delete[] Marker_PerBound;

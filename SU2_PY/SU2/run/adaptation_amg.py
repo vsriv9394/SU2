@@ -124,6 +124,7 @@ def Parse_Adap_Options (config, config_adap):
 		os.environ['SU2_RUN'] = "%s:%s" % (os.environ['SU2_RUN'], path);
 		os.environ['PATH'] = "%s:%s" % (os.environ['PATH'], path);
 		config_adap.ADAP_PATH = path;
+
 	else:
 		config_adap.ADAP_PATH = "";
 	
@@ -319,6 +320,9 @@ def Call_SU2 (config_adap, config):
 	config_cur.SOLUTION_FLOW_FILENAME = 'current.new_ini.solb';
 	config_cur.RESTART_FLOW_FILENAME  = outNam;
 	config_cur.MESH_FORMAT            = 'INRIA';
+
+	config_cur.VOLUME_FLOW_FILENAME = "flow.%d.%.0f" % (ite_glo,cpx);
+	config_cur.SURFACE_FLOW_FILENAME = "surface_flow.%d.%.0f" % (ite_glo,cpx);
 
 	#config_cur.EXT_ITER = 1;
 	

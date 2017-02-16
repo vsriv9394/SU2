@@ -151,6 +151,7 @@ private:
 	unsigned short nMarker_Euler,	/*!< \brief Number of Euler wall markers. */
 	nMarker_FarField,				/*!< \brief Number of far-field markers. */
 	nMarker_Custom,
+	nMarker_Thrust,
 	nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
   nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
@@ -187,6 +188,7 @@ private:
 	string *Marker_Euler,			/*!< \brief Euler wall markers. */
 	*Marker_FarField,				/*!< \brief Far field markers. */
 	*Marker_Custom,
+	*Marker_Thrust,          /*!< \brief Thrust surface markers. */
 	*Marker_SymWall,				/*!< \brief Symmetry wall markers. */
   *Marker_Pressure,				/*!< \brief Pressure boundary markers. */
 	*Marker_PerBound,				/*!< \brief Periodic boundary markers. */
