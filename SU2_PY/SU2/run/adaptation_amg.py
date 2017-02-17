@@ -325,7 +325,7 @@ def Call_SU2 (config_adap, config):
 	
 	#config_cur.EXT_ITER = 1;
 	
-	print " Running SU2 \n Log: %s\n" % (jobNam) ;
+	print " Running SU2_CFD \n Log: %s\n" % (jobNam) ;
 	
 	if os.path.isfile(outNam):
 		os.remove(outNam);
@@ -338,6 +338,18 @@ def Call_SU2 (config_adap, config):
 		msg = "  ## ERROR : SU2 failed at global iteration %d\n" % (ite_glo);
 		sys.stdout.write(msg);
 		sys.exit(1);
+		
+	# Solution merging
+	
+	jobNam = "SU2_merge.%d.%.0f.job" % (ite_glo,cpx);
+ 	config_cur.SOLUTION_FLOW_FILENAME = 'current.new_restart.dat';
+	config_cur.OUTPUT_LOG = jobNam;
+	
+	print " Merging solutions \n Log: %s\n" % (jobNam) ;
+	
+	info = SU2.run.merge(config_cur)
+	
+	state.update(info)
 		
 	shutil.copyfile ("mach.solb", "current.new_sensor.solb");
 	

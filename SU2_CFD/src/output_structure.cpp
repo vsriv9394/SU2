@@ -3643,6 +3643,12 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     filename = config->GetRestart_FlowFileName();
   }
 
+	
+	size_t lastindex = filename.find_last_of("."); 
+	string rawname = filename.substr(0, lastindex);
+	filename = rawname+".dat";
+	
+
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
     filename= config->GetMultizone_FileName(filename, val_iZone);
@@ -3657,7 +3663,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   }
 
   /*--- Open the restart file and write the solution. ---*/
-  
+  //restart_file.open('toto.dat', ios::out);
   restart_file.open(filename.c_str(), ios::out);
   restart_file.precision(15);
   
@@ -3905,6 +3911,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   /*--- Write file name with extension ---*/
   
   string filename = config->GetConv_FileName();
+	
+		
   strcpy (cstr, filename.data());
   
   if (config->GetWrt_Unsteady() && config->GetRestart()) {

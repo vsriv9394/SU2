@@ -733,11 +733,14 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 		unsigned short val_format = config->GetMesh_FileFormat();
 		
 		switch (val_format) {
+			printf("READ SOL\n");
+			
 	    case SU2:
 			Load_SU2_SolutionFlow(geometry, config, filename);
 			break;
 			
 			case INRIA:
+			printf("INRIA\n");
 			Load_Inria_SolutionFlow(geometry, config, filename);
 			break;
 			
