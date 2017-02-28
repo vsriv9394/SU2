@@ -298,6 +298,8 @@ public:
    * \param[in] val_iZone - iZone index.
 	 */
 	void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+	
+	void SetWallDistance(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
 	 * \brief Write the x, y, & z coordinates to a CGNS output file.
