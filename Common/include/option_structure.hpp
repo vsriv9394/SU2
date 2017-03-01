@@ -759,6 +759,7 @@ enum BC_TYPE {
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
   NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
+	WALL_TEMP = 40,      /*!< \brief No slip isothermal wall boundary condition. */
 };
 
 

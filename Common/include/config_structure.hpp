@@ -149,6 +149,7 @@ private:
 	su2double Current_UnstTime,									/*!< \brief Global time of the unsteady simulation. */
 	Current_UnstTimeND;									/*!< \brief Global time of the unsteady simulation. */
 	unsigned short nMarker_Euler,	/*!< \brief Number of Euler wall markers. */
+	nMarker_WallTemp,     	/*!< \brief Number of wall temp markers. */
 	nMarker_FarField,				/*!< \brief Number of far-field markers. */
 	nMarker_Custom,
 	nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
@@ -185,7 +186,8 @@ private:
 									(note that using parallel computation this number can be different
 									from nMarker_All). */
 	string *Marker_Euler,			/*!< \brief Euler wall markers. */
-	*Marker_FarField,				/*!< \brief Far field markers. */
+	*Marker_WallTemp,  /*!< \brief temp wall markers. */
+	*Marker_FarField,				  /*!< \brief Far field markers. */
 	*Marker_Custom,
 	*Marker_SymWall,				/*!< \brief Symmetry wall markers. */
   *Marker_Pressure,				/*!< \brief Pressure boundary markers. */
@@ -245,6 +247,8 @@ private:
   su2double *Exhaust_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
 	su2double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
+	su2double *Wall_Temp;    /*!< \brief Specified isothermal wall temperatures (static). */
+	su2double *Wall_Temp_Locations; /*!< \brief Specified isothermal wall temperatures (static). */
 	su2double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
 	su2double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
 	su2double *Load_Value;    /*!< \brief Specified force for load boundaries. */
@@ -623,6 +627,7 @@ private:
   *Translation_Rate_X,           /*!< \brief Translational velocity of the mesh in the x-direction. */
   *Translation_Rate_Y,           /*!< \brief Translational velocity of the mesh in the y-direction. */
   *Translation_Rate_Z,           /*!< \brief Translational velocity of the mesh in the z-direction. */
+	*WallTemp,           				/*!< \brief Wall temperature definition. */
   *Rotation_Rate_X,           /*!< \brief Angular velocity of the mesh about the x-axis. */
   *Rotation_Rate_Y,           /*!< \brief Angular velocity of the mesh about the y-axis. */
   *Rotation_Rate_Z,           /*!< \brief Angular velocity of the mesh about the z-axis. */
@@ -666,6 +671,7 @@ private:
 	nPlunging_Ampl_Y,           /*!< \brief Number of Plunging amplitudes in the y-direction. */
 	nPlunging_Ampl_Z,           /*!< \brief Number of Plunging amplitudes in the z-direction. */
   nMoveMotion_Origin,         /*!< \brief Number of motion origins. */
+	nWallTemp,                   /*!< \brief Number of wall temperature def locations. */
   *MoveMotion_Origin;         /*!< \brief Keeps track if we should move moment origin. */
   vector<vector<vector<su2double> > > Aeroelastic_np1, /*!< \brief Aeroelastic solution at time level n+1. */
   Aeroelastic_n, /*!< \brief Aeroelastic solution at time level n. */
@@ -2096,6 +2102,12 @@ public:
 	 * \return Number of Runge-Kutta steps.
 	 */
 	unsigned short GetnRKStep(void);
+	
+	/*!
+	 * \brief Get the number of wall temp def locations
+	 * \return number of wall temp def locations
+	 */
+	unsigned short GetnWallTemp(void);
 
 	/*!
 	 * \brief Get the total number of boundary markers.
@@ -2114,6 +2126,8 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_EngineInflow(void);
+	
+	unsigned short GetnMarker_WallTemp(void);
   
   /*!
    * \brief Get the total number of boundary markers.
@@ -2370,6 +2384,9 @@ public:
 	 * \return Alpha coefficient for the Runge-Kutta integration scheme.
 	 */
 	su2double Get_Alpha_RKStep(unsigned short val_step);
+	
+	
+	su2double Get_WallTemp_Value(unsigned short val);
 
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.

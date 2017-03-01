@@ -425,6 +425,10 @@ inline unsigned short CConfig::GetFFD_Continuity(void) { return FFD_Continuity; 
 
 inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
+inline unsigned short CConfig::GetnWallTemp(void) { return nWallTemp; }
+
+inline su2double CConfig::Get_WallTemp_Value(unsigned short val) { return WallTemp[val]; }
+
 inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_Alpha_Step[val_step]; }
 
 inline unsigned short CConfig::GetMG_PreSmooth(unsigned short val_mesh) {	
@@ -851,6 +855,8 @@ inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
 inline unsigned short CConfig::GetnMarker_Max(void) { return nMarker_Max; }
 
 inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_EngineInflow; }
+
+inline unsigned short CConfig::GetnMarker_WallTemp(void) {	return nMarker_WallTemp; }
 
 inline unsigned short CConfig::GetnMarker_EngineBleed(void) {	return nMarker_EngineBleed; }
 

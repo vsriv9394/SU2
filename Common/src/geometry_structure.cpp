@@ -8587,7 +8587,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
   
   nVertex = new unsigned long [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    
+	    
     /*--- Initialize the number of Bound Vertex for each Marker ---*/
     
     nVertex[iMarker] = 0;

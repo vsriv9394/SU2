@@ -138,7 +138,7 @@ void CConfig::SetPointersNull(void) {
   Marker_All_TagBound = NULL;     Marker_CfgFile_TagBound = NULL;   Marker_All_KindBC = NULL;
   Marker_CfgFile_KindBC = NULL;   Marker_All_SendRecv = NULL;       Marker_All_PerBound = NULL;
   Marker_FSIinterface = NULL;     Marker_All_FSIinterface=NULL; Marker_Riemann = NULL;
-  Marker_Load = NULL;
+  Marker_Load = NULL;             Marker_WallTemp = NULL; 
   /*--- Boundary Condition settings ---*/
 
   Dirichlet_Value = NULL;         Exhaust_Temperature_Target = NULL;
@@ -148,6 +148,7 @@ void CConfig::SetPointersNull(void) {
   Inflow_Pressure = NULL;         Bleed_Temperature_Target = NULL;  Bleed_Temperature = NULL;
   Bleed_MassFlow_Target = NULL;   Bleed_MassFlow = NULL;            Exhaust_Pressure = NULL; Exhaust_Temperature = NULL;
   Bleed_Pressure = NULL;          Outlet_Pressure = NULL;           Isothermal_Temperature = NULL;
+	Wall_Temp  = NULL;              Wall_Temp_Locations = NULL;
   Heat_Flux = NULL;               Displ_Value = NULL;               Load_Value = NULL;
   FlowLoad_Value = NULL;          Periodic_RotCenter = NULL;        Periodic_RotAngles = NULL;
   Periodic_Translation = NULL;    Periodic_Center = NULL;           Periodic_Rotation = NULL;
@@ -156,6 +157,8 @@ void CConfig::SetPointersNull(void) {
   Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
   Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
 
+	WallTemp = NULL;
+	
   /*--- Miscellaneous/unsorted ---*/
 
   Aeroelastic_plunge = NULL;    Aeroelastic_pitch = NULL;
@@ -407,8 +410,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief GEO_MARKER\n DESCRIPTION: Marker(s) of the surface where evaluate the geometrical functions \ingroup Config*/
   addStringListOption("GEO_MARKER", nMarker_GeoEval, Marker_GeoEval);
   /*!\brief MARKER_EULER\n DESCRIPTION: Euler wall boundary marker(s) \ingroup Config*/
+
+
   addStringListOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
   /*!\brief MARKER_FAR\n DESCRIPTION: Far-field boundary marker(s) \ingroup Config*/
+
+
+	addStringListOption("MARKER_WALL_TEMP", nMarker_WallTemp, Marker_WallTemp);
+	
   addStringListOption("MARKER_FAR", nMarker_FarField, Marker_FarField);
   /*!\brief MARKER_SYM\n DESCRIPTION: Symmetry boundary condition \ingroup Config*/
   addStringListOption("MARKER_SYM", nMarker_SymWall, Marker_SymWall);
@@ -943,6 +952,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
 
+
+	
+  /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
+  addDoubleListOption("WALL_TEMP_DEFINITION",  nWallTemp, WallTemp);
+
+	printf("WALL TEMP : %d values\n", SU2_TYPE::Int(nWallTemp));
 
   /*!\par CONFIG_CATEGORY: Dynamic mesh definition \ingroup Config*/
   /*--- Options related to dynamic meshes ---*/
@@ -2616,14 +2631,32 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine,
-  iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
+  iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D, iMarker_WallTemp;
 
   int size = SINGLE_NODE;
+
+	unsigned short i;
   
 #ifdef HAVE_MPI
   if (val_software != SU2_MSH)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
+
+	/*--- Setup wall temp BC ---*/
+	
+	if ( nMarker_WallTemp > 0 ) {
+		
+	  if ( nWallTemp <= 0 ) {
+			cout <<"A wall temperature marker was given but no wall temperature distribution !"<< endl;
+		  exit(EXIT_FAILURE);
+		}
+		
+		for (i=0; i<nWallTemp; i++) {
+			printf ("%d : %lf\n", i, SU2_TYPE::GetValue(WallTemp[i]));
+		}
+		
+		//exit(1);
+	}
 
   /*--- Compute the total number of markers in the config file ---*/
   
@@ -2635,7 +2668,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
-  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
+  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D + nMarker_WallTemp;
+	
   
   /*--- Add the possible send/receive domains ---*/
 
@@ -2644,6 +2678,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Basic dimensionalization of the markers (worst scenario) ---*/
 
   nMarker_All = nMarker_Max;
+
+	
 
   /*--- Allocate the memory (markers in each domain) ---*/
   
@@ -2702,10 +2738,19 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_PerBound[iMarker_CfgFile]   = 0;
     Marker_CfgFile_Out_1D[iMarker_CfgFile]     = 0;
   }
-
+	
   /*--- Populate the marker information in the config file (all domains) ---*/
 
   iMarker_CfgFile = 0;
+
+	printf("WALL TEMP n = %d\n", nMarker_WallTemp);
+
+  for (iMarker_WallTemp = 0; iMarker_WallTemp < nMarker_WallTemp; iMarker_WallTemp++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_WallTemp[iMarker_WallTemp];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = WALL_TEMP;
+    iMarker_CfgFile++;
+  }
+	
   for (iMarker_Euler = 0; iMarker_Euler < nMarker_Euler; iMarker_Euler++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Euler[iMarker_Euler];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = EULER_WALL;
@@ -2972,7 +3017,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iDV_Value,
   iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
-  iMarker_ActDisk_Outlet;
+  iMarker_ActDisk_Outlet, iMarker_WallTemp;
   
   
   /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
@@ -4139,6 +4184,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
+  if (nMarker_WallTemp != 0) {
+    cout << "Wall temperature distribution boundary marker(s): ";
+    for (iMarker_WallTemp = 0; iMarker_WallTemp < nMarker_WallTemp; iMarker_WallTemp++) {
+      cout << Marker_WallTemp[iMarker_WallTemp];
+      if (iMarker_WallTemp < nMarker_WallTemp-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
+
   if (nMarker_HeatFlux != 0) {
     cout << "Constant heat flux wall boundary marker(s): ";
     for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
@@ -4640,6 +4694,7 @@ CConfig::~CConfig(void) {
   if (Marker_Outlet != NULL )             delete[] Marker_Outlet;
   if (Marker_Out_1D != NULL )             delete[] Marker_Out_1D;
   if (Marker_Isothermal != NULL )         delete[] Marker_Isothermal;
+	if (Marker_WallTemp != NULL )         delete[] Marker_WallTemp;
   if (Marker_EngineInflow != NULL )      delete[] Marker_EngineInflow;
   if (Marker_EngineBleed != NULL )      delete[] Marker_EngineBleed;
   if (Marker_EngineExhaust != NULL )     delete[] Marker_EngineExhaust;

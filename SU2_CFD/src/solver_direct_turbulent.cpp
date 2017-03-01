@@ -1490,6 +1490,19 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   
 }
 
+void CTurbSASolver::BC_Isothermal_Wall_Distrib(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                                       unsigned short val_marker) {
+
+	int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+	if (rank == MASTER_NODE)
+	  cout << "BC_Isothermal_Wall_Distrib not implemented for  CTurbSASolver"<< endl;
+	exit(EXIT_FAILURE);
+}
+
 void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                        unsigned short val_marker) {
   unsigned long iPoint, iVertex;
@@ -3004,6 +3017,191 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
   }
   
 }
+
+
+//void CTurbSSTSolver::BC_Isothermal_Wall_Distrib(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+//                                        unsigned short val_marker) {
+//  
+//  unsigned long iPoint, jPoint, iVertex, total_index;
+//  unsigned short iDim, iVar;
+//  su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
+//  
+//  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+//  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+//  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+//  
+//	int rank = MASTER_NODE;
+//#ifdef HAVE_MPI
+//  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//#endif
+//	
+//	int nWallTemp = config->GetnWallTemp();
+//	unsigned long iWall;
+//	su2double xmin, xmax;
+//	
+//	su2double *Temp = new su2double[geometry->nVertex[val_marker]];
+//	
+//	struct SRTWALL {
+//		int idx;
+//		su2double x;
+//
+//	  bool operator() (SRTWALL i,SRTWALL j) { return (i.x<j.x);}
+//	} srtWall;
+//
+//
+//	std::vector<SRTWALL> vSrtWall;
+//
+//	iPoint = geometry->vertex[val_marker][0]->GetNode();
+//	xmin = xmax = geometry->node[iPoint]->GetCoord(0);
+//
+//	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//		xmin = min(geometry->node[iPoint]->GetCoord(0),xmin);
+//		xmax = max(geometry->node[iPoint]->GetCoord(0),xmax);	
+//		
+//		SRTWALL wallSrt;
+//		
+//		wallSrt.idx = iVertex;
+//		wallSrt.x   = geometry->node[iPoint]->GetCoord(0);
+//		
+//		vSrtWall.push_back(wallSrt);
+//	}
+//	
+//	std::sort(vSrtWall.begin(), vSrtWall.end(), srtWall);
+//	
+//	iWall = 0;
+//	
+//	su2double wallx, wallLoc, loc, alp;
+//	unsigned long iVertexOld;
+//	
+//	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//    iVertexOld = vSrtWall[iVertex].idx;
+//		
+//		loc = vSrtWall[iVertex].x / (xmax-xmin);
+//		
+//		wallx   = config->Get_WallTemp_Value(2*iWall+1);
+//		wallLoc = config->Get_WallTemp_Value(2*iWall);
+//		
+//		while ( loc > wallLoc ) {
+//			iWall++;
+//			wallLoc = config->Get_WallTemp_Value(2*iWall);
+//		}
+//		
+//		//cout << loc << " in [ " << config->Get_WallTemp_Value(2*(iWall-1)) << " , " << config->Get_WallTemp_Value(2*(iWall)) << " ]" << endl;
+//		
+//		alp = (loc-wallLoc)/(wallLoc-config->Get_WallTemp_Value(2*(iWall-1)));
+//		
+//		Temp[iVertexOld] = alp*config->Get_WallTemp_Value(2*iWall+1) + (1.-alp) * config->Get_WallTemp_Value(2*(iWall-1)+1);
+//		
+//	}
+//	
+//	
+//	
+//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//    
+//    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+//    if (geometry->node[iPoint]->GetDomain()) {
+//      
+//      /*--- distance to closest neighbor ---*/
+//      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+//      distance = 0.0;
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*
+//        (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+//      }
+//      distance = sqrt(distance);
+//      
+//      /*--- Set wall values ---*/
+//      if (compressible) {
+//        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+//        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
+//      }
+//      if (incompressible || freesurface) {
+//        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc();
+//        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc();
+//      }
+//      
+//      beta_1 = constants[4];
+//      
+//      Solution[0] = 0.0;
+//      Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
+//      
+//      /*--- Set the solution values and zero the residual ---*/
+//      node[iPoint]->SetSolution_Old(Solution);
+//      node[iPoint]->SetSolution(Solution);
+//      LinSysRes.SetBlock_Zero(iPoint);
+//      
+//      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        total_index = iPoint*nVar+iVar;
+//        Jacobian.DeleteValsRowi(total_index);
+//      }
+//      
+//    }
+//  }
+//  
+//}
+//
+
+
+void CTurbSSTSolver::BC_Isothermal_Wall_Distrib(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                                        unsigned short val_marker) {
+  
+  unsigned long iPoint, jPoint, iVertex, total_index;
+  unsigned short iDim, iVar;
+  su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
+  
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- distance to closest neighbor ---*/
+      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      distance = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*
+        (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+      }
+      distance = sqrt(distance);
+      
+      /*--- Set wall values ---*/
+      if (compressible) {
+        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
+      }
+      if (incompressible || freesurface) {
+        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc();
+        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc();
+      }
+      
+      beta_1 = constants[4];
+      
+      Solution[0] = 0.0;
+      Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
+      
+      /*--- Set the solution values and zero the residual ---*/
+      node[iPoint]->SetSolution_Old(Solution);
+      node[iPoint]->SetSolution(Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
+      
+      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+      
+    }
+  }
+  
+}
+
 
 void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   

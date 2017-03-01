@@ -191,6 +191,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
+	    case WALL_TEMP:
+	      solver_container[MainSolver]->BC_Isothermal_Wall_Distrib(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+	      break;
     }
   
 }
