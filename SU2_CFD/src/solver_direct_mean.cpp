@@ -14093,6 +14093,14 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 
 
 
+struct SRTWALL {
+	int idx;
+	su2double x;
+	
+  bool operator() (SRTWALL i,SRTWALL j) { return (i.x<j.x);}
+} srtWall;
+
+
 void CNSSolver::Set_Wall_Temp(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	
 	int nWallTemp = config->GetnWallTemp();
@@ -14107,14 +14115,8 @@ void CNSSolver::Set_Wall_Temp(CGeometry *geometry, CSolver **solver_container, C
 	WallTemp = new su2double[geometry->nVertex[val_marker]];
 	//su2double *Temp = new su2double[geometry->nVertex[val_marker]];
 	
-	struct SRTWALL {
-		int idx;
-		su2double x;
 
-	  bool operator() (SRTWALL i,SRTWALL j) { return (i.x<j.x);}
-	} srtWall;
-	
-	std::vector<SRTWALL> vSrtWall;
+	std::vector<struct SRTWALL> vSrtWall;
 
 	iPoint = geometry->vertex[val_marker][0]->GetNode();
 	xmin = xmax = geometry->node[iPoint]->GetCoord(0);
