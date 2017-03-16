@@ -580,6 +580,7 @@ private:
 	NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,  /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
   Pressure_FreeStream,     /*!< \brief Total pressure of the fluid. */
+	SA_Production_Factor,
 	Temperature_FreeStream,  /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream,  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   *MassFrac_FreeStream, /*!< \brief Mixture mass fractions of the fluid. */
@@ -1454,6 +1455,8 @@ public:
 	 */
 	su2double GetPressure_FreeStream(void);
 
+	su2double GetSA_Production_Factor(void);
+
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream pressure.
 	 * \return Non-dimensionalized freestream pressure.
@@ -1465,6 +1468,9 @@ public:
 	 * \return Dimensionalized freestream velocity vector.
 	 */
 	su2double* GetVelocity_FreeStream(void);
+	
+	
+	
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream temperature.
@@ -1841,6 +1847,8 @@ public:
 	 * \return Value of the Froude number.
 	 */
 	void SetPressure_FreeStream(su2double val_pressure_freestream);
+	
+	void SetSA_Production_Factor(su2double val_SA_Production_Factor);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
