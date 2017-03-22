@@ -2465,7 +2465,9 @@ void CTurbSSTSolver::Load_Inria_SolutionFlow(CGeometry *geometry, CConfig *confi
 	su2double StaticEnergy, Density, Velocity2, Pressure, Temperature, dull_val;
 	
 	/*--- Flow infinity initialization stuff ---*/
-  su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;
+  //su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;
+	
+	
 	
 	long iPoint_Local, iPoint;
 	unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line, index;
@@ -2491,6 +2493,54 @@ void CTurbSSTSolver::Load_Inria_SolutionFlow(CGeometry *geometry, CConfig *confi
 	#ifdef HAVE_MPI
 	  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	#endif
+	
+	
+	/*--- Initialize value for model constants ---*/
+	
+	unsigned short iDim, iVar;
+	
+  constants = new su2double[10];
+  constants[0] = 0.85;   //sigma_k1
+  constants[1] = 1.0;    //sigma_k2
+  constants[2] = 0.5;    //sigma_om1
+  constants[3] = 0.856;  //sigma_om2
+  constants[4] = 0.075;  //beta_1
+  constants[5] = 0.0828; //beta_2
+  constants[6] = 0.09;   //betaStar
+  constants[7] = 0.31;   //a1
+  constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
+  constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
+  
+  /*--- Initialize lower and upper limits---*/
+  lowerlimit = new su2double[nVar];
+  upperlimit = new su2double[nVar];
+  
+  lowerlimit[0] = 1.0e-10;
+  upperlimit[0] = 1.0e10;
+  
+  lowerlimit[1] = 1.0e-4;
+  upperlimit[1] = 1.0e15;
+  
+  /*--- Flow infinity initialization stuff ---*/
+  su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;
+  
+  rhoInf    = config->GetDensity_FreeStreamND();
+  VelInf    = config->GetVelocity_FreeStreamND();
+  muLamInf  = config->GetViscosity_FreeStreamND();
+  Intensity = config->GetTurbulenceIntensity_FreeStream();
+  viscRatio = config->GetTurb2LamViscRatio_FreeStream();
+  
+  su2double VelMag = 0;
+  for (iDim = 0; iDim < nDim; iDim++)
+  VelMag += VelInf[iDim]*VelInf[iDim];
+  VelMag = sqrt(VelMag);
+  
+  kine_Inf  = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
+  omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
+  
+  /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
+  muT_Inf = rhoInf*kine_Inf/omega_Inf;
+  
 	
 	/*--- Open the restart file, throw an error if this fails. ---*/
 	
@@ -2558,12 +2608,12 @@ void CTurbSSTSolver::Load_Inria_SolutionFlow(CGeometry *geometry, CConfig *confi
 	   on the restart file line is the global index, followed by the
 	   node coordinates, and then the conservative variables. ---*/
 		
+		
 	  if (iPoint_Local >= 0) {
-			
+					
 			for (i=0; i<nVar; i++)
 				Solution[i] = bufDbl[i];		
-			
-	 
+				 
    		/*--- Instantiate the solution at this node, note that the muT_Inf should recomputed ---*/
    		node[iPoint_Local] = new CTurbSSTVariable(Solution[0], Solution[1], muT_Inf, nDim, nVar, constants, config);
 	    iPoint_Global_Local++;
