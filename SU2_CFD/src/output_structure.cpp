@@ -3643,6 +3643,12 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     filename = config->GetRestart_FlowFileName();
   }
 
+	
+	size_t lastindex = filename.find_last_of("."); 
+	string rawname = filename.substr(0, lastindex);
+	filename = rawname+".dat";
+	
+
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
     filename= config->GetMultizone_FileName(filename, val_iZone);
@@ -3657,7 +3663,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   }
 
   /*--- Open the restart file and write the solution. ---*/
-  
+  //restart_file.open('toto.dat', ios::out);
   restart_file.open(filename.c_str(), ios::out);
   restart_file.precision(15);
   
@@ -3808,6 +3814,105 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   
 }
 
+
+
+void COutput::SetWallDistance(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+  
+  /*--- Local variables ---*/
+
+  unsigned short nZone = geometry->GetnZone();
+  unsigned short Kind_Solver  = config->GetKind_Solver();
+  unsigned short iVar, iDim, nDim = geometry->GetnDim();
+  unsigned long iPoint, iExtIter = config->GetExtIter();
+  bool grid_movement = config->GetGrid_Movement();
+  bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  ofstream restart_file;
+  string filename;
+  
+  /*--- Retrieve filename from config ---*/
+ 	
+	
+	size_t lastindex = filename.find_last_of("."); 
+	string rawname = filename.substr(0, lastindex);
+	filename = "distance.dat";
+	
+  /*--- Open the restart file and write the solution. ---*/
+  //restart_file.open('distance.dat', ios::out);
+  restart_file.open(filename.c_str(), ios::out);
+  restart_file.precision(15);
+  
+  /*--- Write the header line based on the particular solver ----*/
+  
+  restart_file << "\"PointID\"";
+  
+  /*--- Mesh coordinates are always written to the restart first ---*/
+  
+  if (nDim == 2) {
+    restart_file << "\t\"x\"\t\"y\"";
+  } else {
+    restart_file << "\t\"x\"\t\"y\"\t\"z\"";
+  }
+
+	restart_file << "\t\"Distance\"";
+  
+  restart_file << endl;
+  
+	int vid;
+
+  /*--- Write the restart file ---*/
+
+	long *Global2Local = NULL;
+  Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+  /*--- First, set all indices to a negative value by default ---*/
+  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    Global2Local[iPoint] = -1;
+  }
+
+  /*--- Now fill array with the transform values only for local points ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+  
+  /*--- Read all lines in the restart file ---*/
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+
+  
+  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    
+		iPoint_Global = geometry->node[iPoint]->GetGlobalIndex();
+    iPoint_Local  = Global2Local[iPoint];
+		
+    if (iPoint_Local < 0) 
+			continue;
+
+		//vid = geometry->node[iPoint]->GetGlobalIndex();
+		vid = iPoint_Local;
+
+    /*--- Index of the point ---*/
+    restart_file << iPoint << "\t";
+		
+    
+    /*--- Write the grid coordinates first ---*/
+    for (iDim = 0; iDim < nDim; iDim++) {
+      //restart_file << scientific << Coords[iDim][vid] << "\t";
+			restart_file << scientific <<  geometry->node[vid]->GetCoord(iDim) << "\t";
+    }
+		
+		restart_file << scientific <<  geometry->node[vid]->GetWall_Distance()  << "\t";
+		//restart_file << scientific <<  solver[TURB_SOL]->node[iPoint]->GetDistance()  << "\t";
+    
+    restart_file << endl;
+  }
+
+  delete [] Global2Local;
+  
+  restart_file.close();
+  
+}
+
+
+
 void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
   
   unsigned short iDim, nDim = geometry->GetnDim();
@@ -3905,6 +4010,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   /*--- Write file name with extension ---*/
   
   string filename = config->GetConv_FileName();
+	
+		
   strcpy (cstr, filename.data());
   
   if (config->GetWrt_Unsteady() && config->GetRestart()) {
@@ -6536,6 +6643,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
                               unsigned long iExtIter, unsigned short val_nZone) {
   
   int rank = MASTER_NODE;
+
   
 #ifdef HAVE_MPI
   int size;
@@ -6621,12 +6729,25 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
      executed by the master proc alone (as if in serial). ---*/
     
     if (rank == MASTER_NODE) {
+	
+			if ( config[iZone]->GetWrt_InriaMesh() ) {
+	      if (rank == MASTER_NODE) cout << "Writing Inria mesh." << endl;
+				SetInriaMesh(config[iZone], geometry[iZone][MESH_0]);
+			}
       
       /*--- Write a native restart file ---*/
       
       if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
       SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
       
+			SetWallDistance(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
+
+			if (rank == MASTER_NODE) cout << "Writing Inria native restart file." << endl;
+      SetInriaRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
+			WriteInriaOutputs(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
+
+
+
       if (Wrt_Vol) {
         
         switch (FileFormat) {

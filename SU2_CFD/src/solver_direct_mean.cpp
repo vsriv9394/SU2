@@ -287,7 +287,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
   /*--- Jacobians and vector structures for implicit computations ---*/
-  
+	
+
+
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
     
     Jacobian_i = new su2double* [nVar];
@@ -312,6 +314,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     if (rank == MASTER_NODE) cout << "Explicit scheme. No Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
   }
   
+	
+
   /*--- Define some auxiliary vectors for computing flow variable
    gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
    c vector := transpose(WA)*(Wb) ---*/
@@ -354,6 +358,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
   }
   
+
   /*--- Non-dimensional coefficients ---*/
   
   ForceInviscid     = new su2double[nDim];
@@ -436,6 +441,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Energy_Inf      = config->GetEnergy_FreeStreamND();
   Temperature_Inf = config->GetTemperature_FreeStreamND();
   Mach_Inf        = config->GetMach();
+
+	
   
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   
@@ -464,6 +471,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
   
+
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Inflow_MassFlow[iMarker]     = 0.0;
     Inflow_Mach[iMarker]         = Mach_Inf;
@@ -625,112 +633,130 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 		}
 		
 		
-		/*--- Open the restart file, throw an error if this fails. ---*/
+//		/*--- Open the restart file, throw an error if this fails. ---*/
+//    
+//    restart_file.open(filename.data(), ios::in);
+//    if (restart_file.fail()) {
+//      if (rank == MASTER_NODE)
+//        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
+//      exit(EXIT_FAILURE);
+//    }
+//    
+//    /*--- In case this is a parallel simulation, we need to perform the
+//     Global2Local index transformation first. ---*/
+//    
+//    long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+//    
+//    /*--- First, set all indices to a negative value by default ---*/
+//    
+//    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
+//      Global2Local[iPoint] = -1;
+//    
+//    /*--- Now fill array with the transform values only for local points ---*/
+//    
+//    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+//      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+//    
+//    /*--- Read all lines in the restart file ---*/
+//    
+//    long iPoint_Local;
+//    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
+//    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+//    
+//    /*--- The first line is the header ---*/
+//    
+//    getline (restart_file, text_line);
+//    
+//    while (getline (restart_file, text_line)) {
+//      istringstream point_line(text_line);
+//      
+//      /*--- Retrieve local index. If this node from the restart file lives
+//       on a different processor, the value of iPoint_Local will be -1.
+//       Otherwise, the local index for this node on the current processor
+//       will be returned and used to instantiate the vars. ---*/
+//      
+//      iPoint_Local = Global2Local[iPoint_Global];
+//      
+//      /*--- Load the solution for this node. Note that the first entry
+//       on the restart file line is the global index, followed by the
+//       node coordinates, and then the conservative variables. ---*/
+//      
+//      if (iPoint_Local >= 0) {
+//        if (compressible) {
+//          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+//          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+//        }
+//        if (incompressible) {
+//          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+//          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+//        }
+//        if (freesurface) {
+//          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+//          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+//        }
+//        node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
+//        iPoint_Global_Local++;
+//      }
+//      iPoint_Global++;
+//    }
+//    
+//    /*--- Detect a wrong solution file ---*/
+//    
+//    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+//    
+//#ifndef HAVE_MPI
+//    rbuf_NotMatching = sbuf_NotMatching;
+//#else
+//    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+//#endif
+//    
+//    if (rbuf_NotMatching != 0) {
+//      if (rank == MASTER_NODE) {
+//        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file! 1" << endl;
+//        cout << "It could be empty lines at the end of the file." << endl << endl;
+//      }
+//#ifndef HAVE_MPI
+//      exit(EXIT_FAILURE);
+//#else
+//      MPI_Barrier(MPI_COMM_WORLD);
+//      MPI_Abort(MPI_COMM_WORLD,1);
+//      MPI_Finalize();
+//#endif
+//    }
+//    
+//    /*--- Instantiate the variable class with an arbitrary solution
+//     at any halo/periodic nodes. The initial solution can be arbitrary,
+//     because a send/recv is performed immediately in the solver. ---*/
+//    
+//    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+//      node[iPoint] = new CEulerVariable(Solution, nDim, nVar, config);
+//    
+//    /*--- Close the restart file ---*/
+//    
+//    restart_file.close();
+//    
+//    /*--- Free memory needed for the transformation ---*/
+//    
+//    delete [] Global2Local;
     
-    restart_file.open(filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-    
-    /*--- First, set all indices to a negative value by default ---*/
-    
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-      Global2Local[iPoint] = -1;
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    
-    /*--- Read all lines in the restart file ---*/
-    
-    long iPoint_Local;
-    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
-    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-    
-    /*--- The first line is the header ---*/
-    
-    getline (restart_file, text_line);
-    
-    while (getline (restart_file, text_line)) {
-      istringstream point_line(text_line);
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
-      
-      iPoint_Local = Global2Local[iPoint_Global];
-      
-      /*--- Load the solution for this node. Note that the first entry
-       on the restart file line is the global index, followed by the
-       node coordinates, and then the conservative variables. ---*/
-      
-      if (iPoint_Local >= 0) {
-        if (compressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-        }
-        if (incompressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        }
-        if (freesurface) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-        }
-        node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
-        iPoint_Global_Local++;
-      }
-      iPoint_Global++;
-    }
-    
-    /*--- Detect a wrong solution file ---*/
-    
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-    
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    
-    if (rbuf_NotMatching != 0) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
-    
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CEulerVariable(Solution, nDim, nVar, config);
-    
-    /*--- Close the restart file ---*/
-    
-    restart_file.close();
-    
-    /*--- Free memory needed for the transformation ---*/
-    
-    delete [] Global2Local;
-    
+		unsigned short val_format = config->GetMesh_FileFormat();
+		
+		switch (val_format) {
+			printf("READ SOL\n");
+			
+	    case SU2:
+			Load_SU2_SolutionFlow(geometry, config, filename);
+			break;
+			
+			case INRIA:
+			printf("INRIA\n");
+			Load_Inria_SolutionFlow(geometry, config, filename);
+			break;
+			
+			default:
+	      if (rank == MASTER_NODE) cout << "Unrecognized mesh format specified!" << endl;
+		}
+
   }
   
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
@@ -766,6 +792,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       }
       
     }
+
     
     /*--- Warning message about non-physical points ---*/
     
@@ -795,6 +822,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Perform the MPI communication of the solution ---*/
   
   Set_MPI_Solution(geometry, config);
+
+	
   
 }
 
@@ -2819,6 +2848,618 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   }
   
 }
+
+
+void CEulerSolver::Load_SU2_SolutionFlow(CGeometry *geometry, CConfig *config, string filename) {
+	
+	ifstream restart_file;
+	
+	su2double StaticEnergy, Density, Velocity2, Pressure, Temperature, dull_val;
+	
+	long iPoint_Local, iPoint;
+	unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line, index;
+	unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+	
+	bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
+  bool adjoint = config->GetContinuous_Adjoint();
+	
+  string restart_filename = config->GetSolution_FlowFileName();
+	
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+	  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+	
+	/*--- Open the restart file, throw an error if this fails. ---*/
+	
+	restart_file.open(filename.data(), ios::in);
+	if (restart_file.fail()) {
+	  if (rank == MASTER_NODE)
+	    cout << "There is no flow restart file!! (8) " << filename.data() << "."<< endl;
+	  exit(EXIT_FAILURE);
+	}
+	
+	/*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+  
+  long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+  	    
+	/*--- First, set all indices to a negative value by default ---*/
+	
+	for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
+	  Global2Local[iPoint] = -1;
+	
+	/*--- Now fill array with the transform values only for local points ---*/
+	
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+	  Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+	
+	/*--- Read all lines in the restart file ---*/	
+	/*--- The first line is the header ---*/
+	
+	getline (restart_file, text_line);
+	
+	while (getline (restart_file, text_line)) {
+	  istringstream point_line(text_line);
+	  
+	  /*--- Retrieve local index. If this node from the restart file lives
+	   on a different processor, the value of iPoint_Local will be -1.
+	   Otherwise, the local index for this node on the current processor
+	   will be returned and used to instantiate the vars. ---*/
+	  
+	  iPoint_Local = Global2Local[iPoint_Global];
+	  
+	  /*--- Load the solution for this node. Note that the first entry
+	   on the restart file line is the global index, followed by the
+	   node coordinates, and then the conservative variables. ---*/
+	  
+		
+	  if (iPoint_Local >= 0) {
+	    if (compressible) {
+	      if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+	      if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+	    }
+	    if (incompressible) {
+	      if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+	      if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+	    }
+	    if (freesurface) {
+	      if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+	      if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+	    }
+	    node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
+	    iPoint_Global_Local++;
+	  }
+	  iPoint_Global++;
+	}
+	
+	/*--- Detect a wrong solution file ---*/
+	
+	if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+	rbuf_NotMatching = sbuf_NotMatching;
+#else
+	SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+	
+	if (rbuf_NotMatching != 0) {
+	  if (rank == MASTER_NODE) {
+	    cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file! 2" << endl;
+	    cout << "It could be empty lines at the end of the file." << endl << endl;
+	  }
+#ifndef HAVE_MPI
+	  exit(EXIT_FAILURE);
+#else
+	  MPI_Barrier(MPI_COMM_WORLD);
+	  MPI_Abort(MPI_COMM_WORLD,1);
+	  MPI_Finalize();
+#endif
+
+	}
+	
+	/*--- Instantiate the variable class with an arbitrary solution
+	 at any halo/periodic nodes. The initial solution can be arbitrary,
+	 because a send/recv is performed immediately in the solver. ---*/
+	
+	for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+	  node[iPoint] = new CEulerVariable(Solution, nDim, nVar, config);
+	
+	/*--- Close the restart file ---*/
+	
+	restart_file.close();
+	
+	/*--- Free memory needed for the transformation ---*/
+	
+	delete [] Global2Local;	
+	
+}
+
+
+
+void CNSSolver::Load_SU2_SolutionFlow(CGeometry *geometry, CConfig *config, string filename) {
+	
+	
+	
+	ifstream restart_file;
+	
+	su2double StaticEnergy, Density, Velocity2, Pressure, Temperature, dull_val;
+	
+	long iPoint_Local, iPoint;
+	unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line, index;
+	unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+	
+	bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
+  bool adjoint = config->GetContinuous_Adjoint();
+	
+  string restart_filename = config->GetSolution_FlowFileName();
+	
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+	  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+	
+	
+		printf("######## CNS LOAD SU2\n");
+	
+	/*--- Open the restart file, throw an error if this fails. ---*/
+	
+	restart_file.open(filename.data(), ios::in);
+	if (restart_file.fail()) {
+	  if (rank == MASTER_NODE)
+	    cout << "There is no flow restart file!! (8) " << filename.data() << "."<< endl;
+	  exit(EXIT_FAILURE);
+	}
+	
+	/*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+  
+  long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+  	    
+	/*--- First, set all indices to a negative value by default ---*/
+	
+	for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
+	  Global2Local[iPoint] = -1;
+	
+	/*--- Now fill array with the transform values only for local points ---*/
+	
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+	  Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+	
+	/*--- Read all lines in the restart file ---*/	
+	/*--- The first line is the header ---*/
+	
+	getline (restart_file, text_line);
+	
+	while (getline (restart_file, text_line)) {
+	  istringstream point_line(text_line);
+	  
+	  /*--- Retrieve local index. If this node from the restart file lives
+	   on a different processor, the value of iPoint_Local will be -1.
+	   Otherwise, the local index for this node on the current processor
+	   will be returned and used to instantiate the vars. ---*/
+	  
+	  iPoint_Local = Global2Local[iPoint_Global];
+	  
+	  /*--- Load the solution for this node. Note that the first entry
+	   on the restart file line is the global index, followed by the
+	   node coordinates, and then the conservative variables. ---*/
+	  
+		
+	  if (iPoint_Local >= 0) {
+	    if (compressible) {
+	      if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+	      if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+	    }
+	    if (incompressible) {
+	      if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+	      if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+	    }
+	    if (freesurface) {
+	      if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+	      if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+	    }
+	
+			//if ( iPoint_Local < 1e6 ) {
+			//	printf("iPoint_Local %ld : ", iPoint_Local);
+			//	for (int jj=0; jj<nVar; jj++)
+			//		printf ("%lf ", Solution[jj]);
+			//	printf("\n");
+			//}
+	
+	
+	    node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
+	    iPoint_Global_Local++;
+	  }
+	  iPoint_Global++;
+	}
+	
+	/*--- Detect a wrong solution file ---*/
+	
+	if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+	rbuf_NotMatching = sbuf_NotMatching;
+#else
+	SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+	
+	if (rbuf_NotMatching != 0) {
+	  if (rank == MASTER_NODE) {
+	    cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file! 2" << endl;
+	    cout << "It could be empty lines at the end of the file." << endl << endl;
+	  }
+#ifndef HAVE_MPI
+	  exit(EXIT_FAILURE);
+#else
+	  MPI_Barrier(MPI_COMM_WORLD);
+	  MPI_Abort(MPI_COMM_WORLD,1);
+	  MPI_Finalize();
+#endif
+
+	}
+	
+	/*--- Instantiate the variable class with an arbitrary solution
+	 at any halo/periodic nodes. The initial solution can be arbitrary,
+	 because a send/recv is performed immediately in the solver. ---*/
+	
+	for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+	  node[iPoint] = new CEulerVariable(Solution, nDim, nVar, config);
+	
+	/*--- Close the restart file ---*/
+	
+	restart_file.close();
+	
+	/*--- Free memory needed for the transformation ---*/
+	
+	delete [] Global2Local;	
+	
+}
+
+
+void CEulerSolver::Load_Inria_SolutionFlow(CGeometry *geometry, CConfig *config, string filename) {
+	
+	ifstream restart_file;
+	
+	su2double StaticEnergy, Density, Velocity2, Pressure, Temperature, dull_val;
+	
+	long iPoint_Local, iPoint;
+	unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line, index;
+	unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+	
+	bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
+  bool adjoint = config->GetContinuous_Adjoint();
+	
+	//--- Inria declarations
+	char InpNam[1024];
+	int  dim, FilVer, InpSol, i, iVer;
+	int    NbrLin,NbrTyp,SolSiz,TypTab[GmfMaxTyp];
+  double *bufDbl;
+	
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+	  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+	
+	/*--- Open the restart file, throw an error if this fails. ---*/
+	
+	strcpy(InpNam, filename.c_str());
+	
+	//sprintf(InpNam, "solution_flow.solb");
+	
+  InpSol = GmfOpenMesh(InpNam,GmfRead,&FilVer,&dim);
+	
+	if (!InpSol) {
+		if (rank == MASTER_NODE)
+	    cout << "There is no flow restart file!! " << filename.data() << ".sol[b]"<< endl;
+	  exit(EXIT_FAILURE);
+	}
+	
+	if ( dim != nDim ) {
+		if (rank == MASTER_NODE)
+	    cout << "Wrong dimension number!! "<< endl;
+	  exit(EXIT_FAILURE);
+	}
+	
+	//restart_file.open(filename.data(), ios::in);
+	//if (restart_file.fail()) {
+	//  if (rank == MASTER_NODE)
+	//    cout << "There is no flow restart file!! (8) " << filename.data() << "."<< endl;
+	//  exit(EXIT_FAILURE);
+	//}
+	
+	/*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+  
+  long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+  	    
+	/*--- First, set all indices to a negative value by default ---*/
+	
+	for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
+	  Global2Local[iPoint] = -1;
+	
+	/*--- Now fill array with the transform values only for local points ---*/
+	
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+	  Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+	
+	/*--- Read all lines in the restart file ---*/	
+	
+  NbrLin = GmfStatKwd(InpSol, GmfSolAtVertices, &NbrTyp, &SolSiz, TypTab);	
+		
+	GmfGotoKwd(InpSol, GmfSolAtVertices);
+	
+	//bufDbl = (double*)malloc(sizeof(double)*SolSiz);
+	
+	bufDbl = new double[SolSiz];
+	
+	for (iVer=1; iVer<=NbrLin; ++iVer) {
+    GmfGetLin(InpSol, GmfSolAtVertices, bufDbl);
+		
+	  /*--- Retrieve local index. If this node from the restart file lives
+	   on a different processor, the value of iPoint_Local will be -1.
+	   Otherwise, the local index for this node on the current processor
+	   will be returned and used to instantiate the vars. ---*/
+	  
+	  iPoint_Local = Global2Local[iVer-1];
+			
+	  /*--- Load the solution for this node. Note that the first entry
+	   on the restart file line is the global index, followed by the
+	   node coordinates, and then the conservative variables. ---*/
+		
+	  if (iPoint_Local >= 0) {
+			
+			for (i=0; i<nVar; i++)
+				Solution[i] = bufDbl[i];		
+			
+	    node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
+	    iPoint_Global_Local++;
+	  }
+
+  }
+	
+	delete [] bufDbl;	
+	
+	/*--- Detect a wrong solution file ---*/
+	
+	if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+	rbuf_NotMatching = sbuf_NotMatching;
+#else
+	SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+	
+	if (rbuf_NotMatching != 0) {
+	  if (rank == MASTER_NODE) {
+	    cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+	    cout << "It could be empty lines at the end of the file." << endl << endl;
+	  }
+#ifndef HAVE_MPI
+	  exit(EXIT_FAILURE);
+#else
+	  MPI_Barrier(MPI_COMM_WORLD);
+	  MPI_Abort(MPI_COMM_WORLD,1);
+	  MPI_Finalize();
+#endif
+
+	}
+	
+	/*--- Instantiate the variable class with an arbitrary solution
+	 at any halo/periodic nodes. The initial solution can be arbitrary,
+	 because a send/recv is performed immediately in the solver. ---*/
+	
+	for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+	  node[iPoint] = new CEulerVariable(Solution, nDim, nVar, config);
+	
+	/*--- Close the restart file ---*/
+	
+	//restart_file.close();
+	
+	if ( !GmfCloseMesh(InpSol) ) {
+		if (rank == MASTER_NODE) {
+		  cout << endl << "Could not close the solution file " << filename.data() << "!" << endl;
+		}
+		exit(EXIT_FAILURE);
+  }
+	
+	/*--- Free memory needed for the transformation ---*/
+	
+	delete [] Global2Local;	
+	
+}
+
+
+
+void CNSSolver::Load_Inria_SolutionFlow(CGeometry *geometry, CConfig *config, string filename) {
+	
+
+	ifstream restart_file;
+	
+	su2double StaticEnergy, Density, Velocity2, Pressure, Temperature, dull_val;
+	
+	long iPoint_Local, iPoint;
+	unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line, index;
+	unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+	
+	bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
+  bool adjoint = config->GetContinuous_Adjoint();
+	
+	//--- Inria declarations
+	char InpNam[1024];
+	int  dim, FilVer, InpSol, i, iVer;
+	int    NbrLin,NbrTyp,SolSiz,TypTab[GmfMaxTyp];
+  double *bufDbl;
+	
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+	  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+	
+	/*--- Open the restart file, throw an error if this fails. ---*/
+	
+	strcpy(InpNam, filename.c_str());
+	
+	//sprintf(InpNam, "solution_flow.solb");
+	
+  InpSol = GmfOpenMesh(InpNam,GmfRead,&FilVer,&dim);
+	
+	if (!InpSol) {
+		if (rank == MASTER_NODE)
+	    cout << "There is no flow restart file!! " << filename.data() << ".sol[b]"<< endl;
+	  exit(EXIT_FAILURE);
+	}
+	
+	if ( dim != nDim ) {
+		if (rank == MASTER_NODE)
+	    cout << "Wrong dimension number!! "<< endl;
+	  exit(EXIT_FAILURE);
+	}
+	
+	//restart_file.open(filename.data(), ios::in);
+	//if (restart_file.fail()) {
+	//  if (rank == MASTER_NODE)
+	//    cout << "There is no flow restart file!! (8) " << filename.data() << "."<< endl;
+	//  exit(EXIT_FAILURE);
+	//}
+	
+	/*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+  
+  long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+  	    
+	/*--- First, set all indices to a negative value by default ---*/
+	
+	for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
+	  Global2Local[iPoint] = -1;
+	
+	/*--- Now fill array with the transform values only for local points ---*/
+	
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+	  Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+	
+	/*--- Read all lines in the restart file ---*/	
+	
+  NbrLin = GmfStatKwd(InpSol, GmfSolAtVertices, &NbrTyp, &SolSiz, TypTab);	
+		
+	GmfGotoKwd(InpSol, GmfSolAtVertices);
+	
+	//bufDbl = (double*)malloc(sizeof(double)*SolSiz);
+	
+	bufDbl = new double[SolSiz];
+	
+	for (iVer=1; iVer<=NbrLin; ++iVer) {
+    GmfGetLin(InpSol, GmfSolAtVertices, bufDbl);
+		
+	  /*--- Retrieve local index. If this node from the restart file lives
+	   on a different processor, the value of iPoint_Local will be -1.
+	   Otherwise, the local index for this node on the current processor
+	   will be returned and used to instantiate the vars. ---*/
+	  
+	  iPoint_Local = Global2Local[iVer-1];
+			
+	  /*--- Load the solution for this node. Note that the first entry
+	   on the restart file line is the global index, followed by the
+	   node coordinates, and then the conservative variables. ---*/
+		
+	  if (iPoint_Local >= 0) {
+			
+			for (i=0; i<nVar; i++)
+				Solution[i] = bufDbl[i];		
+			
+			//if ( iPoint_Local < 10000000 ) {
+			//	printf("iPoint_Local %ld : ", iPoint_Local);
+			//	for (int jj=0; jj<nVar; jj++)
+			//		printf ("%lf ", Solution[jj]);
+			//	printf("\n");
+			//}
+			
+			
+			
+	    node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
+	    iPoint_Global_Local++;
+	  }
+
+  }
+	
+	delete [] bufDbl;	
+	
+	/*--- Detect a wrong solution file ---*/
+	
+	if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+	rbuf_NotMatching = sbuf_NotMatching;
+#else
+	SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+	
+	if (rbuf_NotMatching != 0) {
+	  if (rank == MASTER_NODE) {
+	    cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+	    cout << "It could be empty lines at the end of the file." << endl << endl;
+	  }
+#ifndef HAVE_MPI
+	  exit(EXIT_FAILURE);
+#else
+	  MPI_Barrier(MPI_COMM_WORLD);
+	  MPI_Abort(MPI_COMM_WORLD,1);
+	  MPI_Finalize();
+#endif
+
+	}
+	
+	/*--- Instantiate the variable class with an arbitrary solution
+	 at any halo/periodic nodes. The initial solution can be arbitrary,
+	 because a send/recv is performed immediately in the solver. ---*/
+	
+	
+	for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+	  node[iPoint] = new CNSVariable(Solution, nDim, nVar, config);
+	
+	/*--- Close the restart file ---*/
+	
+	if ( !GmfCloseMesh(InpSol) ) {
+		if (rank == MASTER_NODE) {
+		  cout << endl << "Could not close the solution file " << filename.data() << "!" << endl;
+		}
+		exit(EXIT_FAILURE);
+  }
+	
+	/*--- Free memory needed for the transformation ---*/
+	
+	delete [] Global2Local;	
+	
+}
+
 
 void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
   
@@ -7109,6 +7750,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   
+
+
   su2double *GridVel;
   su2double Area, UnitNormal[3] = {0.0,0.0,0.0};
   su2double Density, Pressure, Energy,  Velocity[3] = {0.0,0.0,0.0};
@@ -9432,8 +10075,13 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     V_inlet[nDim+1] = Pressure;
     V_inlet[nDim+2] = Density;
     V_inlet[nDim+3] = Energy + Pressure/Density;
+
+		
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+		
+
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
@@ -9457,6 +10105,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_inlet);
       
+			
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                   geometry->node[iPoint]->GetGridVel());
@@ -9507,7 +10156,9 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       }
       
     }
-  }
+    
+    
+	}
   
   /*--- Free locally allocated memory ---*/
   
@@ -12726,113 +13377,131 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 			filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
 		}
     
-    /*--- Open the restart file, throw an error if this fails. ---*/
+    ///*--- Open the restart file, throw an error if this fails. ---*/
+    //
+    //restart_file.open(filename.data(), ios::in);
+    //if (restart_file.fail()) {
+    //  if (rank == MASTER_NODE)
+    //    cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
+    //  exit(EXIT_FAILURE);
+    //}
+    //
+    ///*--- In case this is a parallel simulation, we need to perform the
+    // Global2Local index transformation first. ---*/
+    //
+    //long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+    //
+    ///*--- First, set all indices to a negative value by default ---*/
+    //
+    //for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
+    //  Global2Local[iPoint] = -1;
+    //
+    ///*--- Now fill array with the transform values only for local points ---*/
+    //
+    //for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+    //  Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+    //
+    ///*--- Read all lines in the restart file ---*/
+    //
+    //long iPoint_Local;
+    //unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
+    //unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+    //
+    ///*--- The first line is the header ---*/
+    //
+    //getline (restart_file, text_line);
+    //
+    //while (getline (restart_file, text_line)) {
+    //  istringstream point_line(text_line);
+    //  
+    //  /*--- Retrieve local index. If this node from the restart file lives
+    //   on a different processor, the value of iPoint_Local will be -1.
+    //   Otherwise, the local index for this node on the current processor
+    //   will be returned and used to instantiate the vars. ---*/
+    //  
+    //  if (iPoint_Global >= geometry->GetGlobal_nPointDomain()) { sbuf_NotMatching = 1; break; }
+    //  
+    //  iPoint_Local = Global2Local[iPoint_Global];
+    //  
+    //  /*--- Load the solution for this node. Note that the first entry
+    //   on the restart file line is the global index, followed by the
+    //   node coordinates, and then the conservative variables. ---*/
+    //  
+    //  if (iPoint_Local >= 0) {
+    //    if (compressible) {
+    //      if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+    //      if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+    //    }
+    //    if (incompressible) {
+    //      if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+    //      if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+    //    }
+    //    if (freesurface) {
+    //      if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+    //      if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+    //    }
+    //    node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
+    //    iPoint_Global_Local++;
+    //  }
+    //  iPoint_Global++;
+    //}
+
+		unsigned short val_format = config->GetMesh_FileFormat();
+		
+		switch (val_format) {
+	    case SU2:
+			Load_SU2_SolutionFlow(geometry, config, filename);
+			break;
+			
+			case INRIA:
+			//Load_SU2_SolutionFlow(geometry, config, "current2.o.dat");
+			Load_Inria_SolutionFlow(geometry, config, filename);
+			break;
+			
+			default:
+	      if (rank == MASTER_NODE) cout << "Unrecognized mesh format specified!" << endl;
+		}
+		
+		
     
-    restart_file.open(filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-    
-    /*--- First, set all indices to a negative value by default ---*/
-    
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-      Global2Local[iPoint] = -1;
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    
-    /*--- Read all lines in the restart file ---*/
-    
-    long iPoint_Local;
-    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
-    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-    
-    /*--- The first line is the header ---*/
-    
-    getline (restart_file, text_line);
-    
-    while (getline (restart_file, text_line)) {
-      istringstream point_line(text_line);
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
-      
-      if (iPoint_Global >= geometry->GetGlobal_nPointDomain()) { sbuf_NotMatching = 1; break; }
-      
-      iPoint_Local = Global2Local[iPoint_Global];
-      
-      /*--- Load the solution for this node. Note that the first entry
-       on the restart file line is the global index, followed by the
-       node coordinates, and then the conservative variables. ---*/
-      
-      if (iPoint_Local >= 0) {
-        if (compressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-        }
-        if (incompressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        }
-        if (freesurface) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-        }
-        node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
-        iPoint_Global_Local++;
-      }
-      iPoint_Global++;
-    }
-    
-    /*--- Detect a wrong solution file ---*/
-    
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-    
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    
-    if (rbuf_NotMatching != 0) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
-    
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CNSVariable(Solution, nDim, nVar, config);
-    
-    /*--- Close the restart file ---*/
-    
-    restart_file.close();
-    
-    /*--- Free memory needed for the transformation ---*/
-    
-    delete [] Global2Local;
+//    /*--- Detect a wrong solution file ---*/
+//    
+//    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+//    
+//#ifndef HAVE_MPI
+//    rbuf_NotMatching = sbuf_NotMatching;
+//#else
+//    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+//#endif
+//    
+//    if (rbuf_NotMatching != 0) {
+//      if (rank == MASTER_NODE) {
+//        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+//        cout << "It could be empty lines at the end of the file." << endl << endl;
+//      }
+//#ifndef HAVE_MPI
+//      exit(EXIT_FAILURE);
+//#else
+//      MPI_Barrier(MPI_COMM_WORLD);
+//      MPI_Abort(MPI_COMM_WORLD,1);
+//      MPI_Finalize();
+//#endif
+//    }
+//    
+//    /*--- Instantiate the variable class with an arbitrary solution
+//     at any halo/periodic nodes. The initial solution can be arbitrary,
+//     because a send/recv is performed immediately in the solver. ---*/
+//    
+//    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+//      node[iPoint] = new CNSVariable(Solution, nDim, nVar, config);
+//    
+//    /*--- Close the restart file ---*/
+//    
+//    restart_file.close();
+//    
+//    /*--- Free memory needed for the transformation ---*/
+//    
+//    delete [] Global2Local;
     
   }
   
@@ -13098,25 +13767,35 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
   bool compressible         = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
-  
+
+
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-    
+
     /*--- Retrieve the value of the kinetic energy (if need it) ---*/
     
     if (turb_model != NONE) {
+
       eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
+
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+
+			
     }
     
+
+
     /*--- Initialize the non-physical points vector ---*/
     
     node[iPoint]->SetNon_Physical(false);
     
+
+
     /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
      FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
      Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
     
     if (compressible) {
+
       RightSol = node[iPoint]->SetPrimVar_Compressible(eddy_visc, turb_ke, FluidModel);
       node[iPoint]->SetSecondaryVar_Compressible(FluidModel);
     }
@@ -13136,7 +13815,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
     
   }
-  
+
   return ErrorCounter;
 }
 
@@ -14782,5 +15461,4 @@ void CNSSolver::BC_Isothermal_Wall_Distrib(CGeometry *geometry, CSolver **solver
     }
   }
 }
-
 

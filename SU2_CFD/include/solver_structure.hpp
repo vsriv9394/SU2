@@ -230,6 +230,7 @@ public:
 	 */
   virtual void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
   
+
 	/*!
 	 * \brief Compute the pressure at the infinity.
 	 * \return Value of the pressure at the infinity.
@@ -3177,6 +3178,23 @@ public:
 	 */
   void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
   
+		/*!
+	 * \brief Parse the native Inria restart solution file
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Load_Inria_SolutionFlow(CGeometry *geometry, CConfig *config, string filename);  
+  
+  
+		/*!
+	 * \brief Parse the native SU2 restart solution file
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Load_SU2_SolutionFlow(CGeometry *geometry, CConfig *config, string filename);
+
+
+
 //  /*!
 //	 * \brief Impose the send-receive boundary condition.
 //	 * \param[in] geometry - Geometrical definition of the problem.
@@ -4743,6 +4761,24 @@ public:
 	 * \return Value of the turbulent kinetic energy at the infinity.
 	 */
 	su2double GetTke_Inf(void);
+	
+	
+		/*!
+	 * \brief Parse the native Inria restart solution file
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Load_Inria_SolutionFlow(CGeometry *geometry, CConfig *config, string filename);  
+  
+	
+		/*!
+	 * \brief Parse the native SU2 restart solution file
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Load_SU2_SolutionFlow(CGeometry *geometry, CConfig *config, string filename);
+
+  
     
 	/*!
 	 * \brief Compute the time step for solving the Navier-Stokes equations with turbulence model.
@@ -5521,6 +5557,24 @@ public:
 	 */
 	void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                         unsigned short iMesh);
+
+	
+		/*!
+	 * \brief Parse the native Inria restart solution file
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Load_Inria_SolutionFlow(CGeometry *geometry, CConfig *config, string filename);  
+	
+	
+		/*!
+	 * \brief Parse the native SU2 restart solution file
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Load_SU2_SolutionFlow(CGeometry *geometry, CConfig *config, string filename);
+	
+	
   
 	/*!
 	 * \brief Source term computation.

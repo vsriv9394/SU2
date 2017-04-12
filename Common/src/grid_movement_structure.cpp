@@ -3070,6 +3070,15 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   else if (config->GetDesign_Variable(0) == CUSTOM && rank == MASTER_NODE)
     cout <<"Custom design variable will be used in external script" << endl;
   
+ /*--- Bspline ---*/
+  else if (config->GetDesign_Variable(0) == BSPLINECOEF) {
+		cout << "NDV = " << config->GetnDV() << endl;
+		for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+        SetBspline(geometry, config, iDV, false); 
+		}
+	}
+
+
   /*--- Design variable not implement ---*/
 
   else {
@@ -4643,6 +4652,43 @@ void CSurfaceMovement::SetScale(CGeometry *boundary, CConfig *config, unsigned s
 		}
   
 }
+
+
+void CSurfaceMovement::SetBspline(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
+	unsigned long iVertex;
+  unsigned short iMarker;
+	su2double VarCoord[3] = {0.0,0.0,0.0}, x, y, z, *Coord;
+	su2double Ampl = config->GetDV_Value(iDV);
+	
+	cout << "DV " << iDV << " : VALUE = " << Ampl << " PARAM = " << config->GetParamDV(iDV, 1) << endl;
+	
+  /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
+  
+	if ((iDV == 0) || (ResetDef == true)) {
+		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+			for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+				VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+				boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+			}
+	}
+	
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+			if (config->GetMarker_All_DV(iMarker) == YES) {
+        Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
+        x = Coord[0]; y = Coord[1]; z = Coord[2];
+				VarCoord[0] = (Ampl-1.0)*x;
+				VarCoord[1] = (Ampl-1.0)*y;
+				if (boundary->GetnDim() == 3) VarCoord[2] = (Ampl-1.0)*z;
+			}
+			boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+		}
+  
+}
+
+
+
 
 void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
                                     unsigned short iZone, unsigned long iter) {

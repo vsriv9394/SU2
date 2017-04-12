@@ -30,6 +30,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #pragma once
 
 #include "../../Common/include/mpi_structure.hpp"
@@ -279,12 +280,38 @@ public:
 	void MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone);
   
   /*!
+	 * \brief Write a native Inria restart file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+	 */
+	void SetInriaRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+	
+	/*!
+	 * \brief Write an Inria mesh.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 */
+	void SetInriaMesh(CConfig *config, CGeometry *geometry);
+	 
+	/*!
+	 * \brief Write a native Inria restart file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+	 */
+	void WriteInriaOutputs(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
+
+  /*!
 	 * \brief Write a native SU2 restart file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
 	 */
 	void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+	
+	void SetWallDistance(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
 	 * \brief Write the x, y, & z coordinates to a CGNS output file.

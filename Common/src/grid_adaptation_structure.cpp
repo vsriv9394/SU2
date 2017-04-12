@@ -3333,6 +3333,8 @@ void CGridAdaptation::SetIndicator_FlowAdj(CGeometry *geometry, CConfig *config)
 			Gradient_Flow[iPoint][iDim] = 0.0;
 			Gradient_Adj[iPoint][iDim] = 0.0;
 		}
+		
+		printf("NBREDG=%d\n", geometry->GetnEdge());
 
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {	
 		Point_0 = geometry->edge[iEdge]->GetNode(0);
@@ -3355,7 +3357,7 @@ void CGridAdaptation::SetIndicator_FlowAdj(CGeometry *geometry, CConfig *config)
 			Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Gradient_Flow[Point][iDim] = Gradient_Flow[Point][iDim] - ConsVar_Sol[Point][0] * Normal[iDim];
-				Gradient_Adj[Point][iDim] = Gradient_Adj[Point][iDim] - AdjVar_Sol[Point][0] * Normal[iDim];
+				Gradient_Adj[Point][iDim]  = Gradient_Adj[Point][iDim] - AdjVar_Sol[Point][0] * Normal[iDim];
 			}
 		}
 	
@@ -3363,7 +3365,7 @@ void CGridAdaptation::SetIndicator_FlowAdj(CGeometry *geometry, CConfig *config)
 		for (iDim = 0; iDim < nDim; iDim++) {
 			DualArea = geometry->node[iPoint]->GetVolume();
 			Gradient_Flow[iPoint][iDim] = Gradient_Flow[iPoint][iDim]/DualArea;
-			Gradient_Adj[iPoint][iDim] = Gradient_Adj[iPoint][iDim]/DualArea;
+			Gradient_Adj[iPoint][iDim]  = Gradient_Adj[iPoint][iDim]/DualArea;
 		}
 	
 	// Compute the the adaptation index at each point.

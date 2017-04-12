@@ -914,7 +914,8 @@ enum ENUM_OBJECTIVE {
   AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
   AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
-  OUTFLOW_GENERALIZED=31          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  OUTFLOW_GENERALIZED=31,          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+	THRUST_NOZZLE = 32							  /*!< \brief Nozzle objective function definition. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -933,6 +934,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("FORCE_Y", FORCE_Y_COEFFICIENT)
 ("FORCE_Z", FORCE_Z_COEFFICIENT)
 ("THRUST", THRUST_COEFFICIENT)
+("THRUST_NOZZLE", THRUST_NOZZLE)
 ("TORQUE", TORQUE_COEFFICIENT)
 ("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
 ("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)
@@ -1016,11 +1018,14 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
  */
 enum ENUM_INPUT {
   SU2 = 1,                       /*!< \brief SU2 input format. */
-  CGNS = 2                     /*!< \brief CGNS input format for the computational grid. */
+  CGNS = 2,                     /*!< \brief CGNS input format for the computational grid. */
+	INRIA = 3                      /*!< \brief Inria input format (.meshb) for the computational grid. */
 };
 static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
 ("SU2", SU2)
-("CGNS", CGNS);
+("CGNS", CGNS)
+//("INRIA", SU2); //HACKVIC
+("INRIA", INRIA);
 
 const int CGNS_STRING_SIZE = 33;/*!< \brief Length of strings used in the CGNS format. */
 
@@ -1106,7 +1111,8 @@ enum ENUM_PARAM {
   NACA_4DIGITS = 16,	         /*!< \brief The four digits NACA airfoil family as design variables. */
   AIRFOIL = 17,		           /*!< \brief Airfoil definition as design variables. */
   SURFACE_FILE = 18,		     /*!< Nodal coordinates set using a surface file. */
-  CUSTOM = 19                /*!< 'CUSTOM' for use in external python analysis. */
+  CUSTOM = 19,                /*!< 'CUSTOM' for use in external python analysis. */
+	BSPLINECOEF = 20               /*!< control points of a BSPLINE a design variables */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1128,7 +1134,8 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("PARABOLIC", PARABOLIC)
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE)
-("CUSTOM",CUSTOM);
+("CUSTOM",CUSTOM)
+("BSPLINECOEF", BSPLINECOEF);
 
 /*!
  * \brief types of solvers for solving linear systems
@@ -2002,6 +2009,7 @@ public:
         case FFD_CAMBER: nParamDV = 3; break;
         case FFD_THICKNESS: nParamDV = 3; break;
         case SURFACE_FILE: nParamDV = 0; break;
+				case BSPLINECOEF: nParamDV = 1; break;
         case CUSTOM: nParamDV = 1; break;
         default : {
           string newstring;

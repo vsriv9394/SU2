@@ -89,6 +89,7 @@ int main(int argc, char *argv[]) {
   
   nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+
   delete config;
   /*--- Definition and of the containers for all possible zones. ---*/
   
@@ -146,6 +147,7 @@ int main(int argc, char *argv[]) {
      between the ranks. ---*/
     
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
+		
     geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     
     /*--- Deallocate the memory of geometry_aux ---*/
@@ -300,6 +302,9 @@ int main(int argc, char *argv[]) {
   if(config_container[ZONE_0]->GetBoolMixingPlane())
   	for (iZone = 0; iZone < nZone; iZone++)
   	  iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+
+
+	
 
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
   

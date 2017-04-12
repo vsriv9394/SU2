@@ -90,6 +90,7 @@ private:
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
+	NozzleThrust,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
   Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
   Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
@@ -547,6 +548,8 @@ private:
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
 	Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
+	Wrt_InriaMesh,              /*!< \brief Write mesh in the Inria format */
+	Mesh_Decomposition,					/*!< \brief Perform hybrid mesh decomposition */
   Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
 	Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
   unsigned short Console_Output_Verb;  /*!< \brief Level of verbosity for console output */
@@ -2367,6 +2370,18 @@ public:
 	 * \return <code>TRUE</code> means that residuals will be written to the solution file.
 	 */
 	bool GetWrt_SharpEdges(void);
+	
+	/*!
+	 * \brief Get information about writing residuals to volume solution file.
+	 * \return <code>TRUE</code> means that an Inria mesh will be written.
+	 */
+	bool GetWrt_InriaMesh(void);
+	
+	/*!
+	 * \brief Get information about performing a hybrid mesh decomposition.
+	 * \return <code>TRUE</code> means that mesh elements will be decomposed into simplicial ones (tet and tri).
+	 */
+	bool GetMesh_Decomposition(void);
 
   /*!
 	 * \brief Get information about writing rind layers to the solution files.
@@ -3775,6 +3790,12 @@ public:
 	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
 	 */
 	bool GetInvDesign_HeatFlux(void);
+	
+	/*!
+	 * \brief Information about computing and plotting the nozzle thrust.
+	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
+	 */
+	bool GetNozzleThrust(void);
 
 	/*!
 	 * \brief Get name of the input grid.

@@ -778,6 +778,8 @@ inline bool CConfig::GetEquivArea(void) { return EquivArea; }
 
 inline bool CConfig::GetInvDesign_Cp(void) { return InvDesign_Cp; }
 
+inline bool CConfig::GetNozzleThrust(void) { return NozzleThrust; }
+
 inline bool CConfig::GetInvDesign_HeatFlux(void) { return InvDesign_HeatFlux; }
 
 inline void CConfig::SetnMarker_All(unsigned short val_nmarker) { nMarker_All = val_nmarker; }
@@ -1061,6 +1063,10 @@ inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 inline bool CConfig::GetWrt_Limiters(void) { return Wrt_Limiters; }
 
 inline bool CConfig::GetWrt_SharpEdges(void) { return Wrt_SharpEdges; }
+
+inline bool CConfig::GetWrt_InriaMesh(void) { return Wrt_InriaMesh; }
+
+inline bool CConfig::GetMesh_Decomposition(void) { return Mesh_Decomposition; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 

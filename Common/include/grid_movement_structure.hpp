@@ -1236,6 +1236,15 @@ public:
    */
   void SetScale(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
 
+  /*!
+   * \brief Set a displacement for surface movement.
+   * \param[in] boundary - Geometry of the boundary.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  void SetBspline(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+
 	/*! 
 	 * \brief Copy the boundary coordinates to each vertex.
 	 * \param[in] geometry - Geometrical definition of the problem.

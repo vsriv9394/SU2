@@ -1693,7 +1693,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 	if (rbuf_NotMatching != 0) {
 		if (rank == MASTER_NODE) {
-			cout << endl << "The solution file " << filename_n.data() << " doesn't match with the mesh file!" << endl;
+			cout << endl << "The solution file " << filename_n.data() << " doesn't match with the mesh file 1!" << endl;
 			cout << "It could be empty lines at the end of the file." << endl << endl;
 		}
 #ifndef HAVE_MPI
@@ -1797,7 +1797,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 		if (rbuf_NotMatching != 0) {
 			if (rank == MASTER_NODE) {
-				cout << endl << "The solution file " << filename_n1.data() << " doesn't match with the mesh file!" << endl;
+				cout << endl << "The solution file " << filename_n1.data() << " doesn't match with the mesh file 2!" << endl;
 				cout << "It could be empty lines at the end of the file." << endl << endl;
 			}
 #ifndef HAVE_MPI
