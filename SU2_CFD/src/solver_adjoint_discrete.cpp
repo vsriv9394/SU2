@@ -335,7 +335,7 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
   switch (config->GetKind_ObjFunc()){
   case DRAG_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CDrag();
-			printf("DRAG VALUE = %lf\n",  SU2_TYPE::GetValue(ObjFunc_Value));
+			//printf("DRAG VALUE = %lf\n",  SU2_TYPE::GetValue(ObjFunc_Value));
       break;
   case LIFT_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CLift();
@@ -370,7 +370,7 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
 	case THRUST_NOZZLE:
 	    ObjFunc_Value = direct_solver->GetThrust_Nozzle();
 			//ObjFunc_Value = direct_solver->GetTotal_CDrag();
-			printf("THRUST NOZZLE = %lf\n", SU2_TYPE::GetValue(ObjFunc_Value));
+			//printf("THRUST NOZZLE = %lf\n", SU2_TYPE::GetValue(ObjFunc_Value));
 	    break;
  /*--- Template for new objective functions where TemplateObjFunction()
   *  is the routine that returns the obj. function value. The computation

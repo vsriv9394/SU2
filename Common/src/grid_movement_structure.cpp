@@ -4904,7 +4904,7 @@ void CSurfaceMovement::SetBspline(CGeometry *boundary, CConfig *config, unsigned
 	
 	Ampl = config->GetDV_Value(iDV);
 	
-	Ampl = 0.0001;
+	//Ampl = 0.0001;
 	
 	//unsigned short int tagDV[1000];
 	//memset(tagDV,0,sizeof(short)*1000);
