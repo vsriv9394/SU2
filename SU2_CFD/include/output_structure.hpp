@@ -187,8 +187,9 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 */
-	void ComputeNozzleThrust(CSolver *solver_container, CGeometry *geometry, CConfig *config);
 
+	void SetNozzleThrust(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+	
 
 
   /*!
@@ -310,6 +311,9 @@ public:
    * \param[in] val_iZone - iZone index.
 	 */
 	void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+	
+	
+	void WriteAdjointSolution(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 	
 	void SetWallDistance(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 

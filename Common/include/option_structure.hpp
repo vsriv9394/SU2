@@ -758,6 +758,7 @@ enum BC_TYPE {
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
   NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
+	THRUST_BOUNDARY = 38,         /*!< \brief Thrust boundary definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 	WALL_TEMP = 40,      /*!< \brief No slip isothermal wall boundary condition. */
 };
@@ -996,7 +997,8 @@ enum ENUM_ADAPT {
   WAKE = 12,			/*!< \brief Do a grid refinement on the wake. */
   SMOOTHING = 14,		/*!< \brief Do a grid smoothing of the geometry. */
   SUPERSONIC_SHOCK = 15,	/*!< \brief Do a grid smoothing. */
-  PERIODIC = 17			/*!< \brief Add the periodic halo cells. */
+  PERIODIC = 17,			/*!< \brief Add the periodic halo cells. */
+  AMG_ADJ = 18			/*!< \brief Add the periodic halo cells. */
 };
 static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("NONE", NO_ADAPT)
@@ -1011,7 +1013,8 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("WAKE", WAKE)
 ("SMOOTHING", SMOOTHING)
 ("SUPERSONIC_SHOCK", SUPERSONIC_SHOCK)
-("PERIODIC", PERIODIC);
+("PERIODIC", PERIODIC)
+("AMG_ADJ", AMG_ADJ);
 
 /*!
  * \brief types of input file formats

@@ -1519,7 +1519,14 @@ public:
 	 * \param[in] val_Total_CDrag - Value of the total drag coefficient.
 	 */
 	virtual void SetTotal_CDrag(su2double val_Total_CDrag);
-    
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_Thrust_Nozzle - Value of the nozzle thrust.
+	 */
+	virtual void SetThrust_Nozzle(su2double val_Thrust_Nozzle);
+
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_Total_CLift - Value of the total lift coefficient.
@@ -1952,6 +1959,12 @@ public:
 	 * \return Value of the drag coefficient (inviscid + viscous contribution).
 	 */
 	virtual su2double GetTotal_CDrag(void);
+	
+	/*!
+	 * \brief A virtual member.
+	 * \return Value of the thrust.
+	 */
+	virtual su2double GetThrust_Nozzle(void);
     
 	/*!
 	 * \brief A virtual member.
@@ -3012,6 +3025,7 @@ protected:
   OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
   OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
   Total_CDrag, /*!< \brief Total drag coefficient for all the boundaries. */
+	Thrust_Nozzle,       /*!< \brief Thrust. */
 	Total_CLift,		/*!< \brief Total lift coefficient for all the boundaries. */
 	Total_CSideForce,		/*!< \brief Total sideforce coefficient for all the boundaries. */
 	Total_CMx,			/*!< \brief Total x moment coefficient for all the boundaries. */
@@ -4317,6 +4331,12 @@ public:
 	 * \return Value of the drag coefficient (inviscid + viscous contribution).
 	 */
 	su2double GetTotal_CDrag(void);
+	
+	/*!
+	 * \brief Provide the thrust.
+	 * \return Value of the thrust.
+	 */
+	su2double GetThrust_Nozzle(void);
     
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional x moment coefficient.
@@ -4413,6 +4433,13 @@ public:
 	 * \param[in] val_Total_CDrag - Value of the total drag coefficient.
 	 */
 	void SetTotal_CDrag(su2double val_Total_CDrag);
+	
+	
+	/*!
+	 * \brief Store the nozzle thrust.
+	 * \param[in] val_Thrust_Nozzle - Value of the nozzle thrust.
+	 */
+	void SetThrust_Nozzle(su2double val_Thrust_Nozzle);
     
 	/*!
 	 * \brief Get the inviscid contribution to the lift coefficient.

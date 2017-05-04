@@ -1461,7 +1461,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   }
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
-  
+
   assert((nDim == 2) || (nDim == 3));
   
   /*--- Loop over the points element to re-scale the mesh, and plot it (only SU2_CFD) ---*/

@@ -431,6 +431,8 @@ inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
 inline unsigned short CConfig::GetnWallTemp(void) { return nWallTemp; }
 
+inline unsigned short CConfig::GetnBSplineCoefs(void) { return nBSplineCoefs; }
+
 inline su2double CConfig::Get_WallTemp_Value(unsigned short val) { return WallTemp[val]; }
 
 inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_Alpha_Step[val_step]; }
@@ -461,6 +463,8 @@ inline unsigned long CConfig::GetWrt_Con_Freq_DualTime(void) { return Wrt_Con_Fr
 inline bool CConfig::GetWrt_Unsteady(void) { return Wrt_Unsteady; }
 
 inline bool CConfig::GetLowFidelitySim(void) { return LowFidelitySim; }
+
+inline bool CConfig::GetSaveDefFile(void) { return SaveDefFile; }
 
 inline bool CConfig::GetIonization(void) { return ionization; }
 
@@ -884,6 +888,8 @@ inline unsigned short CConfig::GetnMarker_ActDisk_Outlet(void) { return nMarker_
 
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
 
+inline string CConfig::GetThrust_FileName(void) { return Thrust_FileName; }
+
 inline string CConfig::GetMesh_Out_FileName(void) { return Mesh_Out_FileName; }
 
 inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat; }
@@ -965,6 +971,9 @@ inline su2double CConfig::GetTotal_UnstTime(void) { return Total_UnstTime; }
 inline bool CConfig::GetEngine_Intake(void) { return Engine_Intake; }
 
 inline su2double CConfig::GetDV_Value(unsigned short val_dv, unsigned short val_value) { return DV_Value[val_dv][val_value]; }
+
+inline su2double CConfig::GetBSplineCoefs_Value(unsigned short val) { return BSplineCoefs[val]; }
+inline unsigned short CConfig::GetBSplineCoefs_DV_Value(unsigned short val) { return BSplineCoefs_DV[val]; }
 
 inline void CConfig::SetDV_Value(unsigned short val_dv, unsigned short val_ind, su2double val) { DV_Value[val_dv][val_ind] = val; }
 

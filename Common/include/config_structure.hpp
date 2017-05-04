@@ -120,6 +120,11 @@ private:
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
+	
+	su2double      *BSplineCoefs;		   /*!< \brief  */
+	unsigned short  *BSplineCoefs_DV;	 /*!< \brief  */
+	unsigned short  nBSplineCoefs;	   /*!< \brief  */
+		
 	su2double LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
 	su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
@@ -153,6 +158,7 @@ private:
 	nMarker_WallTemp,     	/*!< \brief Number of wall temp markers. */
 	nMarker_FarField,				/*!< \brief Number of far-field markers. */
 	nMarker_Custom,
+	nMarker_Thrust,
 	nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
   nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
@@ -190,6 +196,7 @@ private:
 	*Marker_WallTemp,  /*!< \brief temp wall markers. */
 	*Marker_FarField,				  /*!< \brief Far field markers. */
 	*Marker_Custom,
+	*Marker_Thrust,          /*!< \brief Thrust surface markers. */
 	*Marker_SymWall,				/*!< \brief Symmetry wall markers. */
   *Marker_Pressure,				/*!< \brief Pressure boundary markers. */
 	*Marker_PerBound,				/*!< \brief Periodic boundary markers. */
@@ -453,6 +460,7 @@ private:
 	bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
 	bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
+	bool SaveDefFile;  /*!< \brief Save DEF file. */
 	bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
 	Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
 	unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
@@ -512,6 +520,7 @@ private:
 	nRefOriginMoment_Y,           /*!< \brief Number of Y-coordinate moment computation origins. */
 	nRefOriginMoment_Z;           /*!< \brief Number of Z-coordinate moment computation origins. */
 	string Mesh_FileName,			/*!< \brief Mesh input file. */
+  Thrust_FileName,			/*!< \brief Mesh input file. */
 	Mesh_Out_FileName,				/*!< \brief Mesh output file. */
 	Solution_FlowFileName,			/*!< \brief Flow solution input file. */
 	Solution_LinFileName,			/*!< \brief Linearized flow solution input file. */
@@ -2119,6 +2128,8 @@ public:
 	 * \return number of wall temp def locations
 	 */
 	unsigned short GetnWallTemp(void);
+	
+	unsigned short GetnBSplineCoefs(void);
 
 	/*!
 	 * \brief Get the total number of boundary markers.
@@ -2328,6 +2339,12 @@ public:
 	 * \return 	<code>TRUE</code> means that a low fidelity simulation will be performed.
 	 */
 	bool GetLowFidelitySim(void);
+	
+	/*!
+	 * \brief Get information about performing a low fidelity simulation.
+	 * \return 	<code>TRUE</code> means that a low fidelity simulation will be performed.
+	 */
+	bool GetSaveDefFile(void);
 
 	/*!
 	 * \brief Get information about writing a volume solution file.
@@ -3802,6 +3819,12 @@ public:
 	 * \return File name of the input grid.
 	 */
 	string GetMesh_FileName(void);
+	
+	/*!
+	 * \brief Get name of the output thrust file.
+	 * \return File name of the output thrust file.
+	 */
+	string GetThrust_FileName(void);
 
 	/*!
 	 * \brief Get name of the output grid, this parameter is important for grid
@@ -4086,6 +4109,9 @@ public:
 	 * \return Design variable step.
 	 */
   su2double GetDV_Value(unsigned short val_dv, unsigned short val_val = 0);
+
+  su2double GetBSplineCoefs_Value(unsigned short val);
+  unsigned short GetBSplineCoefs_DV_Value(unsigned short val);
 
   /*!
    * \brief Set the value of the design variable step, we use this value in design problems.

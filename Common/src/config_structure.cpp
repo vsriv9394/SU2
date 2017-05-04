@@ -125,7 +125,7 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_KindBC=NULL;       Marker_All_KindBC=NULL;
   /*--- Marker Pointers ---*/
 
-  Marker_Euler = NULL;            Marker_FarField = NULL;           Marker_Custom = NULL;
+  Marker_Euler = NULL;            Marker_FarField = NULL;           Marker_Custom = NULL;  Marker_Thrust = NULL;
   Marker_SymWall = NULL;          Marker_Pressure = NULL;           Marker_PerBound = NULL;
   Marker_PerDonor = NULL;         Marker_NearFieldBound = NULL;     Marker_InterfaceBound = NULL;
   Marker_Dirichlet = NULL;        Marker_Inlet = NULL;
@@ -177,6 +177,9 @@ void CConfig::SetPointersNull(void) {
   Hold_GridFixed_Coord=NULL;
   EA_IntLimit=NULL;
   RK_Alpha_Step=NULL;
+
+	BSplineCoefs = NULL;
+	BSplineCoefs_DV = NULL;
 
   /*--- Moving mesh pointers ---*/
 
@@ -255,6 +258,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
   /* DESCRIPTION: Perform a low fidelity simulation */
   addBoolOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, false);
+  addBoolOption("SAVE_DEF_FILE", SaveDefFile, false);
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
@@ -438,6 +442,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
   /* DESCRIPTION: Custom boundary marker(s) */
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
+
+  /*!\brief MARKER_THRUST\n DESCRIPTION: Marker(s) of the surfaces used for Thrust computation  \ingroup Config*/
+  addStringListOption("MARKER_THRUST", nMarker_Thrust, Marker_Thrust);
+
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
@@ -850,6 +858,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
+
+  addStringOption("THRUST_FILENAME", Thrust_FileName, string("thrust.dat"));
+	
   /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out.su2 \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
 
@@ -969,7 +980,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("WALL_TEMP_DEFINITION",  nWallTemp, WallTemp);
 
 	printf("WALL TEMP : %d values\n", SU2_TYPE::Int(nWallTemp));
-
+	
   /*!\par CONFIG_CATEGORY: Dynamic mesh definition \ingroup Config*/
   /*--- Options related to dynamic meshes ---*/
 
@@ -1151,6 +1162,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, Design_Variable);
   /* DESCRIPTION: New value of the shape deformation */
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
+
+  addDoubleListOption("BSPLINECOEFS", nBSplineCoefs, BSplineCoefs);
+	addUShortListOption("BSPLINECOEFS_DV", nBSplineCoefs, BSplineCoefs_DV);
+	
+	//printf("nBSplineCoefs = %d\n", nBSplineCoefs);
+	//exit(1);
+	
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
 	default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
@@ -2650,7 +2668,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 void CConfig::SetMarkers(unsigned short val_software) {
 
-  unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
+  unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom, iMarker_Thrust,
   iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
   iMarker_Inlet, iMarker_Riemann, iMarker_NRBC, iMarker_Outlet, iMarker_Isothermal,
@@ -2694,7 +2712,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_NRBC + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
-  nMarker_FlowLoad + nMarker_Custom +
+  nMarker_FlowLoad + nMarker_Custom + nMarker_Thrust +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D + nMarker_WallTemp;
 	
@@ -2917,6 +2935,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
+	for (iMarker_Thrust = 0; iMarker_Thrust < nMarker_Thrust; iMarker_Thrust++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Thrust[iMarker_Thrust];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = THRUST_BOUNDARY;
+    iMarker_CfgFile++;
+  }
+
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Outlet[iMarker_Outlet];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = OUTLET_FLOW;
@@ -3036,7 +3060,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
-  unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
+  unsigned short iMarker_Euler, iMarker_Custom, iMarker_Thrust, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
   iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
   iMarker_NRBC, iMarker_MixBound, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
@@ -4296,6 +4320,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
+  if (nMarker_Thrust != 0) {
+    cout << "Thrust boundary marker(s): ";
+    for (iMarker_Thrust = 0; iMarker_Thrust < nMarker_Thrust; iMarker_Thrust++) {
+      cout << Marker_Thrust[iMarker_Thrust];
+      if (iMarker_Thrust < nMarker_Thrust-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
+
   if (nMarker_ActDisk_Inlet != 0) {
 		cout << "Actuator disk (inlet) boundary marker(s): ";
 		for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
@@ -4659,6 +4692,8 @@ CConfig::~CConfig(void) {
   if (Hold_GridFixed_Coord != NULL)    delete[] Hold_GridFixed_Coord ;
   if (Subsonic_Engine_Box != NULL)    delete[] Subsonic_Engine_Box ;
   if (DV_Value != NULL)    delete[] DV_Value;
+  if (BSplineCoefs != NULL)    delete[] BSplineCoefs;
+  if (BSplineCoefs_DV != NULL)    delete[] BSplineCoefs_DV;
   if (Design_Variable != NULL)    delete[] Design_Variable;
   if (Dirichlet_Value != NULL)    delete[] Dirichlet_Value;
   if (Exhaust_Temperature_Target != NULL)    delete[]  Exhaust_Temperature_Target;
@@ -4712,6 +4747,7 @@ CConfig::~CConfig(void) {
   if (Marker_Euler != NULL )              delete[] Marker_Euler;
   if (Marker_FarField != NULL )           delete[] Marker_FarField;
   if (Marker_Custom != NULL )             delete[] Marker_Custom;
+	if (Marker_Thrust != NULL )             delete[] Marker_Thrust;
   if (Marker_SymWall != NULL )            delete[] Marker_SymWall;
   if (Marker_Pressure != NULL )           delete[] Marker_Pressure;
   if (Marker_PerBound != NULL )           delete[] Marker_PerBound;

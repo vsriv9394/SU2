@@ -1104,6 +1104,10 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
         if (nDim == 3) z = geometry->node[iPoint]->GetCoord(2);
         
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+				printf("CHECK HERE\n");
+				exit(1);
+
         switch (config->GetKind_ObjFunc()) {
           case DRAG_COEFFICIENT :
             if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha); ForceProj_Vector[1] = sin(Alpha); }
@@ -4036,6 +4040,7 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
         
         /*--- Gradient and limiter of Adjoint Variables ---*/
         
+
         visc_numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
         
         /*--- Compute residual ---*/
@@ -5679,7 +5684,8 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
 
     /*--- Gradient of adjoint variables ---*/
-    
+    printf("SET ADJ GRAD\n");
+		exit(1);
     numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), NULL);
     numerics->SetAdjointVarLimiter(node[iPoint]->GetLimiter(), NULL);
 

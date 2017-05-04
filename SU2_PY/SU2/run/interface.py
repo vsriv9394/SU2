@@ -117,11 +117,14 @@ def CFD(config):
     if not konfig.get('OUTPUT_LOG',"") in ["NONE", ""] :
         the_Command = "%s > %s" % (the_Command, konfig.get('OUTPUT_LOG',""));
 
-    if not konfig.get('ADAP_PATH',"") in ["NONE", ""] :
-        #the_Command = "%s/%s" % (konfig.get('ADAP_PATH',""), the_Command);
-				sys.path.append( konfig.get('ADAP_PATH',"") )
+    #if not konfig.get('ADAP_PATH',"") in ["NONE", ""] :
+    #   #the_Command = "%s/%s" % (konfig.get('ADAP_PATH',""), the_Command);
+    #   sys.path.append( konfig.get('ADAP_PATH',"") )
 		
     the_Command = build_command( the_Command , processes )
+    print konfig.get('ADAP_PATH',"")
+    print "COMMAND: %s" % the_Command
+
     run_command( the_Command )
     
     #os.remove(tempname)

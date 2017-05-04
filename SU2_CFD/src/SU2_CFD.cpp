@@ -503,9 +503,30 @@ int main(int argc, char *argv[]) {
     
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
     
+		//if ( StopCalc || ExtIter == config_container[ZONE_0]->GetnExtIter()-1 ) {
+		//	output->ComputeNozzleThrust(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+    //                             	geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+		//}
+		
+		
 		if ( StopCalc || ExtIter == config_container[ZONE_0]->GetnExtIter()-1 ) {
-			output->ComputeNozzleThrust(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                 	geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+			
+			/*--- Compute thrust ---*/
+	  	if ( config_container[ZONE_0]->GetKind_ObjFunc() == THRUST_NOZZLE ) {
+    	
+				//printf("COMPUTE NOZZLE THRUST\n");
+				output->SetNozzleThrust(solver_container[ZONE_0][MESH_0][FLOW_SOL],geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+	  		
+				if (rank == MASTER_NODE){
+					//char cstr[1024] = config_container[ZONE_0]->GetThrust_FileName();
+					//std::sprintf(cstr,"thrust");
+					ofstream file;
+					file.open(config_container[ZONE_0]->GetThrust_FileName(), ios::out);
+					file << solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetThrust_Nozzle() << endl;
+					file.close();
+				}
+		}
+
 		}
 
     if (StopCalc) break;

@@ -5345,6 +5345,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   
   /*--- Update the total coefficients (note that all the nodes have the same value) ---*/
   
+
   Total_CDrag         = AllBound_CDrag_Inv;
   Total_CLift         = AllBound_CLift_Inv;
   Total_CSideForce    = AllBound_CSideForce_Inv;
