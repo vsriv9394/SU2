@@ -6985,7 +6985,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 					break;
 	    }
 			
-			SetWallDistance(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
+			//SetWallDistance(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
 
 			if (rank == MASTER_NODE) cout << "Writing Inria native restart file." << endl;
       SetInriaRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
