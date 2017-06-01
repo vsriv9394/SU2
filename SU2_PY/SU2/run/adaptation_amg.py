@@ -321,15 +321,9 @@ def Call_SU2 (config_adap, config):
 	config_cur.RESTART_FLOW_FILENAME  = outNam;
 	config_cur.MESH_FORMAT            = 'INRIA';
 
-<<<<<<< HEAD
-	config_cur.SURFACE_FLOW_FILENAME = "surface_flow.%d.%.0f" % (ite_glo,cpx);
-	config_cur.VOLUME_FLOW_FILENAME  = "flow.%d.%.0f" % (ite_glo,cpx);
-	
-=======
 	config_cur.VOLUME_FLOW_FILENAME = "flow.%d.%.0f" % (ite_glo,cpx);
 	config_cur.SURFACE_FLOW_FILENAME = "surface_flow.%d.%.0f" % (ite_glo,cpx);
 
->>>>>>> thrust_AD
 	#config_cur.EXT_ITER = 1;
 	
 	print " Running SU2_CFD \n Log: %s\n" % (jobNam) ;

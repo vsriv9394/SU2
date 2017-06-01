@@ -521,6 +521,7 @@ int main(int argc, char *argv[]) {
 					//char cstr[1024] = config_container[ZONE_0]->GetThrust_FileName();
 					//std::sprintf(cstr,"thrust");
 					ofstream file;
+					file.precision(20);
 					file.open(config_container[ZONE_0]->GetThrust_FileName().c_str(), ios::out);
 					file << solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetThrust_Nozzle() << endl;
 					file.close();

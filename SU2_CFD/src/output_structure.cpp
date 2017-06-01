@@ -7543,6 +7543,210 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
 }
 
+//
+//void COutput::SetNozzleThrust(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
+//	
+//  unsigned short iMarker, icommas, Boundary, iDim;
+//  unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
+//  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff;
+//  bool *PointInDomain;
+//  string text_line, surfCp_filename;
+//  ifstream Surface_file;
+//  char buffer[50], cstr[200];
+//
+//	int rank = MASTER_NODE;
+//	#ifdef HAVE_MPI
+//	  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//	#endif
+//	
+//	int Dim = geometry->GetnDim();
+//
+//
+//	su2double RefMach, RefDensity, RefPressure, RefAreaCoeff, *Velocity_Inf, Gas_Constant, Mach2Vel, Mach_Motion, \
+//	 Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin, RefLengthMoment, Alpha, Beta, CDrag_Inv, CLift_Inv, CMy_Inv;
+//
+//	su2double vel[3], velMod, rho, pres;
+//
+//	su2double AreaTot = 0.0, Thrust = 0.0;
+//	
+//	bool grid_movement = config->GetGrid_Movement();
+//  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+//  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+//  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+//
+//
+//  nPointLocal = geometry->GetnPoint();
+//#ifdef HAVE_MPI
+//  SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+//#else
+//  nPointGlobal = nPointLocal;
+//#endif
+//	
+//	/*--- Compute some reference quantities and necessary values ---*/
+//  RefDensity = solver_container->GetDensity_Inf();
+//  RefPressure = solver_container->GetPressure_Inf();
+//  RefAreaCoeff = config->GetRefAreaCoeff();
+//  Velocity_Inf = solver_container->GetVelocity_Inf();
+//  Gamma = config->GetGamma();
+//  Origin = config->GetRefOriginMoment(0);
+//  RefLengthMoment  = config->GetRefLengthMoment();
+//  Alpha            = config->GetAoA()*PI_NUMBER/180.0;
+//  Beta             = config->GetAoS()*PI_NUMBER/180.0;
+//  
+//	RefMach = config->GetMach();
+//
+//  if (grid_movement) {
+//    Gas_Constant = config->GetGas_ConstantND();
+//    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+//    Mach_Motion = config->GetMach_Motion();
+//    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+//  }
+//  else {
+//    RefVel2 = 0.0;
+//    for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+//      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+//  }
+//	RefVel2 = sqrt(RefVel2);
+//
+//  //factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
+//	
+//	AreaTot = 0.0;
+//	
+//	int Vid[4];
+//	su2double *Coord_v[4];
+//	
+//	int iElem, i;
+//	CPrimalGrid* bnd = NULL;
+//	
+//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//    Boundary   = config->GetMarker_All_KindBC(iMarker);
+//
+//    if ( Boundary == THRUST_BOUNDARY ) {
+//			
+//			for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+//				bnd = geometry->bound[iMarker][iElem];
+//				switch ( bnd->GetVTK_Type() ) {
+//					case LINE: 
+//					
+//						if ( Dim != 2 )
+//							break;
+//						
+//						for (i = 0; i < 2; i++) {
+//#ifndef HAVE_MPI
+//        			Vid[i] = bnd->GetNode(i);
+//#else
+//        			Vid[i] = geometry->node[bnd->GetNode(i)]->GetGlobalIndex();
+//#endif
+//							
+//							//Vid[i]     = bnd->GetNode(i);
+//							Coord_v[i] = geometry->node[Vid[i]]->GetCoord();
+//						}
+//						
+//						Area = pow(Coord_v[1][0]-Coord_v[0][0], 2.0) + pow(Coord_v[1][1]-Coord_v[0][1], 2.0);
+//						Area = sqrt(Area);
+//						
+//						//cout << "AREA " << iElem << " : " << Area << " y = " <<  Coord_v[1][1] << " - " << Coord_v[0][1] << endl;
+//						
+//						
+//						//printf("EDGE %d %d : (%lf %lf) (%lf %lf) : area %lf\n", Vid[0], Vid[1], SU2_TYPE::GetValue(Coord_v[0][0]), SU2_TYPE::GetValue(Coord_v[0][1]), SU2_TYPE::GetValue(Coord_v[1][0]), SU2_TYPE::GetValue(Coord_v[1][1]), SU2_TYPE::GetValue(Area));
+//						
+//						AreaTot += Area;
+//						
+//						rho = pres = velMod =  0.0;
+//						for (i = 0; i < 2; i++) {
+//							rho  += solver_container->node[Vid[i]]->GetDensity();
+//							pres += solver_container->node[Vid[i]]->GetPressure();	
+//							
+//							vel[0] = solver_container->node[Vid[i]]->GetVelocity(0);
+//							vel[1] = solver_container->node[Vid[i]]->GetVelocity(1);
+//							velMod = sqrt(vel[0]*vel[0]+vel[1]*vel[1]);
+//							
+//						}
+//						rho    *= 0.5;
+//						pres   *= 0.5;
+//						velMod *= 0.5;
+//						
+//						Thrust +=  Area*(rho*velMod*(velMod-RefVel2)+pres-RefPressure);
+//						
+//						
+//						
+//					break;
+//					case TRIANGLE:     break;
+//					case QUADRILATERAL:  break;
+//				}
+//			}
+//			
+////      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+////	
+////#ifndef HAVE_MPI
+////        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+////#else
+////        iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+////#endif
+////
+////				if ( iPoint >  geometry->GetnPointDomain()) {
+////					continue;
+////				}
+////
+////				Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+////
+////				Area = 0.0;
+////        for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+////          Area += Normal[iDim]*Normal[iDim];
+////        Area = sqrt(Area);
+////				
+////				rho  = solver_container->node[iPoint]->GetDensity();
+////				pres = solver_container->node[iPoint]->GetPressure();
+////				
+////				velMod = 0.0;
+////				for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+////          vel[iDim] = solver_container->node[iPoint]->GetVelocity(iDim);
+////					velMod += vel[iDim]*vel[iDim];
+////				}
+////				velMod = sqrt(velMod);
+////				
+////				Thrust +=  Area*(rho*velMod*(velMod-RefVel2)+pres-RefPressure);
+////				
+////				//printf("rho = %lf, velMod = %lf, RefVel2 = %lf, pres = %lf, RefPRessure = %lf\n", \
+////				//SU2_TYPE::GetValue(rho), SU2_TYPE::GetValue(velMod), SU2_TYPE::GetValue(RefVel2), \
+////				// SU2_TYPE::GetValue(pres), SU2_TYPE::GetValue(RefPressure));
+////				
+////				AreaTot += Area;
+////      }
+//			
+//    }
+//  }
+//
+//
+//	printf ("AERA TOT %lf\n", SU2_TYPE::GetValue(AreaTot));
+//
+//
+//#ifdef HAVE_MPI
+//
+//
+//	su2double My_AreaTot = AreaTot;
+//	AreaTot = 0.0;
+//	SU2_MPI::Allreduce(&My_AreaTot, &AreaTot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//
+//
+//  /*--- Add AllBound information using all the nodes ---*/
+//  su2double My_Total_Thrust    = Thrust;    Thrust = 0.0;
+//  SU2_MPI::Allreduce(&My_Total_Thrust, &Thrust, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//	//Thrust = My_Total_Thrust;
+//	
+//	printf("THRUST %lf My_Total_Thrust %lf My_AreaTot %lf AreaTot %lf\n", SU2_TYPE::GetValue(Thrust), SU2_TYPE::GetValue(My_Total_Thrust), SU2_TYPE::GetValue(My_AreaTot), SU2_TYPE::GetValue(AreaTot));
+//#endif
+//
+//
+//
+//	//printf("RANK %d THRUST = %lf, Master = %d\n", rank, SU2_TYPE::GetValue(Thrust), MASTER_NODE);
+//	
+//	solver_container->SetThrust_Nozzle(My_Total_Thrust);
+//
+//
+//	
+//}
+//
 
 void COutput::SetNozzleThrust(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
 	
@@ -7566,7 +7770,6 @@ void COutput::SetNozzleThrust(CSolver *solver_container, CGeometry *geometry, CC
 	su2double vel[3], velMod, rho, pres;
 
 	su2double AreaTot = 0.0, Thrust = 0.0;
-
 	
 	bool grid_movement = config->GetGrid_Movement();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
