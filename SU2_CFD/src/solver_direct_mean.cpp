@@ -3014,8 +3014,6 @@ void CNSSolver::Load_SU2_SolutionFlow(CGeometry *geometry, CConfig *config, stri
 	#endif
 	
 	
-		printf("######## CNS LOAD SU2\n");
-	
 	/*--- Open the restart file, throw an error if this fails. ---*/
 	
 	restart_file.open(filename.data(), ios::in);

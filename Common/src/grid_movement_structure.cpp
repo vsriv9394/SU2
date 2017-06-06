@@ -4931,7 +4931,6 @@ void CSurfaceMovement::SetBspline(CGeometry *boundary, CConfig *config, unsigned
 		bsp_coefs_dv[i] = config->GetBSplineCoefs_DV_Value(i);
 	}
 	
-	
 	// --- Set knots using assumptions about 3rd degree B-spline
 	
 	int nKnots = nCoefs/2-3;

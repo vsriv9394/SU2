@@ -287,8 +287,6 @@ def Call_AMG (config_adap, config):
 	
 	os.rename(itpNam, "current.new_ini.solb");
 	
-	
-	
 #: def amg_RunIte
 
 def Call_SU2 (config_adap, config):
@@ -314,7 +312,7 @@ def Call_SU2 (config_adap, config):
 	config_cur.NUMBER_PART = partitions
 	config_cur.CONSOLE = 'QUIET'
 	config_cur.OUTPUT_LOG = jobNam;
-		
+	
 	config_cur.RESTART_SOL            = 'YES'
 	config_cur.MESH_FILENAME          = 'current.new.meshb'
 	config_cur.SOLUTION_FLOW_FILENAME = 'current.new_ini.solb';
@@ -351,7 +349,7 @@ def Call_SU2 (config_adap, config):
 	info = SU2.run.merge(config_cur)
 	
 	state.update(info)
-		
+	
 	shutil.copyfile ("mach.solb", "current.new_sensor.solb");
 	
 #: Call_SU2
