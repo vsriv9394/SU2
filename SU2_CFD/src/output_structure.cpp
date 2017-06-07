@@ -7619,6 +7619,7 @@ void COutput::SetNozzleThrust(CSolver *solver_container, CGeometry *geometry, CC
       RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
   }
 	RefVel2 = sqrt(RefVel2);
+	
 		
 	int iElem;
 	CPrimalGrid* bnd = NULL;
@@ -7632,8 +7633,7 @@ void COutput::SetNozzleThrust(CSolver *solver_container, CGeometry *geometry, CC
 				bnd = geometry->bound[iMarker][iElem];
 				
 				for (iNodes = 0; iNodes < bnd->GetnNodes(); iNodes++) {
-					
-					
+										
 					if ( Global2Local[geometry->node[bnd->GetNode(iNodes)]->GetGlobalIndex()] < 0  ) {
 						continue;
 					} 
@@ -7653,6 +7653,9 @@ void COutput::SetNozzleThrust(CSolver *solver_container, CGeometry *geometry, CC
 					rho  = solver_container->node[iPoint]->GetDensity();
 					pres = solver_container->node[iPoint]->GetPressure();
 					
+					
+					su2double rhoU = solver_container->node[iPoint]->GetSolution(1);
+					
 					velMod = 0.0;
 					for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
 					  vel[iDim] = solver_container->node[iPoint]->GetVelocity(iDim);
@@ -7662,7 +7665,7 @@ void COutput::SetNozzleThrust(CSolver *solver_container, CGeometry *geometry, CC
 					
 					Thrust +=  Area*(rho*velMod*(velMod-RefVel2)+pres-RefPressure);
 					
-					cout << geometry->node[iPoint]->GetCoord(1) << " " << rho << " " << pres << endl;
+					//cout << geometry->node[iPoint]->GetCoord(0) << " " << geometry->node[iPoint]->GetCoord(1) << " " << solver_container->node[iPoint]->GetSolution(0) << " " << solver_container->node[iPoint]->GetSolution(1) << " " << solver_container->node[iPoint]->GetSolution(2) << " " << pres << " " << Area << endl;
 					
 				}
 							
@@ -7670,6 +7673,8 @@ void COutput::SetNozzleThrust(CSolver *solver_container, CGeometry *geometry, CC
 			
     }
   }
+
+
 
 #ifdef HAVE_MPI
 
