@@ -572,7 +572,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 
     if (monitor != monitor) {
       if (rank == MASTER_NODE)
-      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! 1\n" << endl;
 #ifndef HAVE_MPI
       exit(EXIT_DIVERGENCE);
 #else

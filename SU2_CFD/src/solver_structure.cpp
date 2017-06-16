@@ -176,7 +176,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   for (iVar = 0; iVar < nVar; iVar++) {
     
     if (GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
-      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! 2\n" << endl;
       exit(EXIT_FAILURE);
     }
 
@@ -212,7 +212,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
       
       if (rank == MASTER_NODE)
-        cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+        cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! 3\n" << endl;
       
       MPI_Abort(MPI_COMM_WORLD,1);
       
