@@ -1200,6 +1200,8 @@ inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; 
 
 inline unsigned short CConfig::GetnMarker_Analyze(void) { return nMarker_Analyze; }
 
+inline unsigned short CConfig::GetnMarker_Thrust(void) { return nMarker_Thrust; }
+
 inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_NearFieldBound; }
 
 inline unsigned short CConfig::GetnMarker_ActDiskInlet(void) { return nMarker_ActDiskInlet; }

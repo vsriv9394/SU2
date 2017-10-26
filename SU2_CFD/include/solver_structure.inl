@@ -392,6 +392,8 @@ inline su2double CSolver::GetTotal_IDC() { return 0; }
 
 inline su2double CSolver::GetTotal_CpDiff() { return 0; }
 
+inline su2double CSolver::GetThrust_Nozzle() { return 0; }
+
 inline su2double CSolver::GetTotal_HeatFluxDiff() { return 0; }
 
 inline su2double CSolver::GetTotal_CFEA() { return 0; }
@@ -405,6 +407,8 @@ inline void CSolver::SetTotal_CEquivArea(su2double val_cequivarea) { }
 inline void CSolver::SetTotal_AeroCD(su2double val_aerocd) { }
 
 inline void CSolver::SetTotal_CpDiff(su2double val_pressure) { }
+
+inline void CSolver::SetThrust_Nozzle(su2double val_pressure) { }
 
 inline void CSolver::SetTotal_HeatFluxDiff(su2double val_heat) { }
 
@@ -1188,6 +1192,8 @@ inline su2double CEulerSolver::GetTotal_IDC() { return Total_IDC; }
 
 inline su2double CEulerSolver::GetTotal_CpDiff() { return Total_CpDiff; }
 
+inline su2double CEulerSolver::GetThrust_Nozzle() { return Thrust_Nozzle; }
+
 inline su2double CEulerSolver::GetTotal_HeatFluxDiff() { return Total_HeatFluxDiff; }
 
 inline su2double CEulerSolver::GetTotal_CNearFieldOF() { return Total_CNearFieldOF; }
@@ -1199,6 +1205,8 @@ inline void CEulerSolver::SetTotal_CEquivArea(su2double val_cequivarea) { Total_
 inline void CEulerSolver::SetTotal_AeroCD(su2double val_aerocd) { Total_AeroCD = val_aerocd; }
 
 inline void CEulerSolver::SetTotal_CpDiff(su2double pressure) { Total_CpDiff = pressure; }
+
+inline void CEulerSolver::SetThrust_Nozzle(su2double val_Thrust_Nozzle) { Thrust_Nozzle = val_Thrust_Nozzle; }
 
 inline void CEulerSolver::SetTotal_HeatFluxDiff(su2double heat) { Total_HeatFluxDiff = heat; }
 
@@ -1648,9 +1656,13 @@ inline su2double CIncEulerSolver::GetTotal_CMerit() { return Total_CMerit; }
 
 inline su2double CIncEulerSolver::GetTotal_CpDiff() { return Total_CpDiff; }
 
+inline su2double CIncEulerSolver::GetThrust_Nozzle() { return Thrust_Nozzle; }
+
 inline su2double CIncEulerSolver::GetTotal_HeatFluxDiff() { return Total_HeatFluxDiff; }
 
 inline void CIncEulerSolver::SetTotal_CpDiff(su2double pressure) { Total_CpDiff = pressure; }
+
+inline void CIncEulerSolver::SetThrust_Nozzle(su2double val_Thrust_Nozzle) { Thrust_Nozzle = val_Thrust_Nozzle; }
 
 inline void CIncEulerSolver::SetTotal_HeatFluxDiff(su2double heat) { Total_HeatFluxDiff = heat; }
 

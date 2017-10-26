@@ -1957,7 +1957,13 @@ public:
    * \return Value of the difference of the presure and the target pressure.
    */
   virtual su2double GetTotal_CpDiff(void);
-  
+	
+	/*!
+	 * \brief Provide the nozzle thrust.
+	 * \return Value of the nozzle thrust.
+	 */
+	virtual su2double GetThrust_Nozzle(void);
+		
   /*!
    * \brief A virtual member.
    * \return Value of the difference of the heat and the target heat.
@@ -2001,6 +2007,14 @@ public:
    */
   virtual void SetTotal_CpDiff(su2double val_pressure);
   
+	
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_Thrust_Nozzle - Value of the nozzle thrust.
+	 */
+	virtual void SetThrust_Nozzle(su2double val_Thrust_Nozzle);
+		
+	
   /*!
    * \brief A virtual member.
    * \param[in] val_pressure - Value of the difference between heat and the target heat.
@@ -3823,6 +3837,7 @@ protected:
   Total_CEquivArea,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_CNearFieldOF,      /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   Total_CpDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+	Thrust_Nozzle,     /*!< \brief nozzle thrust. */
   Total_HeatFluxDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_MassFlowRate;     /*!< \brief Total Mass Flow Rate on monitored boundaries. */
   su2double *Surface_CL,   /*!< \brief Lift coefficient for each monitoring surface. */
@@ -4892,6 +4907,13 @@ public:
    */
   su2double GetTotal_CpDiff(void);
   
+	
+	/*!
+	 * \brief Provide the nozzle thrust.
+	 * \return Value of the nozzle thrust.
+	 */
+	su2double GetThrust_Nozzle(void);
+	
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
@@ -4929,6 +4951,13 @@ public:
    */
   void SetTotal_CpDiff(su2double val_pressure);
   
+ /*!
+  * \brief Set the value of the nozzle thrust.
+  * \param[in] val_cequivarea - Value of the nozzle thrust.
+  */
+	void SetThrust_Nozzle(su2double val_Thrust_Nozzle);
+	
+	
   /*!
    * \brief Set the value of the Equivalent Area coefficient.
    * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
@@ -6153,6 +6182,7 @@ protected:
   Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
   Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
   Total_CpDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+	Thrust_Nozzle,     /*!< \brief nozzle thrust. */
   Total_HeatFluxDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_Custom_ObjFunc,        /*!< \brief Total custom objective function for all the boundaries. */
   Total_MassFlowRate;     /*!< \brief Total Mass Flow Rate on monitored boundaries. */
@@ -6859,6 +6889,12 @@ public:
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
   su2double GetTotal_CpDiff(void);
+	
+ /*!
+  * \brief Provide the nozzle thrust.
+  * \return Value of the nozzle thrust.
+  */
+ su2double GetThrust_Nozzle(void);
   
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
@@ -6872,6 +6908,12 @@ public:
    */
   void SetTotal_CpDiff(su2double val_pressure);
   
+ 	/*!
+  * \brief Set the value of the nozzle thrust.
+  * \param[in] val_cequivarea - Value of the nozzle thrust.
+  */
+	void SetThrust_Nozzle(su2double val_Thrust_Nozzle);
+	
   /*!
    * \brief Set the value of the Equivalent Area coefficient.
    * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.

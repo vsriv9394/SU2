@@ -790,6 +790,7 @@ enum BC_TYPE {
   GILES_BOUNDARY= 37,   /*!< \brief Giles Boundary definition. */
   INTERNAL_BOUNDARY= 38,   /*!< \brief Internal Boundary definition. */
   FLUID_INTERFACE = 39,	/*!< \brief Domain interface definition. */
+	THRUST_BOUNDARY = 40, /*!< \brief Nozzle thrust boundary definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
@@ -1044,6 +1045,7 @@ enum ENUM_OBJECTIVE {
   SURFACE_MASSFLOW = 30,           /*!< \brief Mass Flow Rate objective function definition. */
   SURFACE_MACH = 51,           /*!< \brief Mach number objective function definition. */
   CUSTOM_OBJFUNC = 31, 	           /*!< \brief Custom objective function definition. */
+	THRUST_NOZZLE = 32,
   TOTAL_PRESSURE_LOSS = 39,
   KINETIC_ENERGY_LOSS = 40,
   TOTAL_EFFICIENCY = 41,
@@ -1074,6 +1076,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("FORCE_Y", FORCE_Y_COEFFICIENT)
 ("FORCE_Z", FORCE_Z_COEFFICIENT)
 ("THRUST", THRUST_COEFFICIENT)
+("THRUST_NOZZLE", THRUST_NOZZLE)
 ("TORQUE", TORQUE_COEFFICIENT)
 ("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
 ("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)

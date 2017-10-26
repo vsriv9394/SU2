@@ -8417,6 +8417,160 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
   
 }
 
+
+void COutput::SetNozzleThrust(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
+	
+  unsigned short iMarker, icommas, Boundary, iDim, flag, iNodes;
+  unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
+  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff;
+  bool *PointInDomain;
+  string text_line, surfCp_filename;
+  ifstream Surface_file;
+  char buffer[50], cstr[200];
+
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+	  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+	
+	
+	int Dim = geometry->GetnDim();
+	
+	su2double RefMach, RefDensity, RefPressure, *Velocity_Inf, Gas_Constant, Mach2Vel, Mach_Motion, \
+	 Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin, Alpha, Beta, CDrag_Inv, CLift_Inv, CMy_Inv;
+
+	su2double vel[3], velMod, rho, pres;
+	
+	su2double AreaTot = 0.0, Thrust = 0.0;
+	
+	bool grid_movement = config->GetGrid_Movement();
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
+	long *Global2Local = NULL;
+  Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+  /*--- First, set all indices to a negative value by default ---*/
+  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    Global2Local[iPoint] = -1;
+  }
+
+  /*--- Now fill array with the transform values only for local points ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+
+
+  nPointLocal = geometry->GetnPoint();
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  nPointGlobal = nPointLocal;
+#endif
+	
+	/*--- Compute some reference quantities and necessary values ---*/
+  RefDensity = solver_container->GetDensity_Inf();
+  RefPressure = solver_container->GetPressure_Inf();
+  Velocity_Inf = solver_container->GetVelocity_Inf();
+  Gamma = config->GetGamma();
+  Origin = config->GetRefOriginMoment(0);
+  Alpha            = config->GetAoA()*PI_NUMBER/180.0;
+  Beta             = config->GetAoS()*PI_NUMBER/180.0;
+  
+	RefMach = config->GetMach();
+
+  if (grid_movement) {
+    Gas_Constant = config->GetGas_ConstantND();
+    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+    Mach_Motion = config->GetMach_Motion();
+    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+  }
+  else {
+    RefVel2 = 0.0;
+    for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+  }
+	RefVel2 = sqrt(RefVel2);
+	
+		
+	int iElem;
+	CPrimalGrid* bnd = NULL;
+	
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    Boundary   = config->GetMarker_All_KindBC(iMarker);
+
+    if ( Boundary == THRUST_BOUNDARY ) {
+						
+			for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+				bnd = geometry->bound[iMarker][iElem];
+				
+				for (iNodes = 0; iNodes < bnd->GetnNodes(); iNodes++) {
+										
+					if ( Global2Local[geometry->node[bnd->GetNode(iNodes)]->GetGlobalIndex()] < 0  ) {
+						continue;
+					} 
+					
+					iPoint = Global2Local[geometry->node[bnd->GetNode(iNodes)]->GetGlobalIndex()];
+					Global2Local[geometry->node[bnd->GetNode(iNodes)]->GetGlobalIndex()] = -2;
+					iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+					
+					Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+					
+					Area = 0.0;
+					for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+					  Area += Normal[iDim]*Normal[iDim];
+					Area = sqrt(Area);							
+					AreaTot += Area;
+					
+					rho  = solver_container->node[iPoint]->GetDensity();
+					pres = solver_container->node[iPoint]->GetPressure();
+					
+					
+					su2double rhoU = solver_container->node[iPoint]->GetSolution(1);
+					
+					velMod = 0.0;
+					for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+					  vel[iDim] = solver_container->node[iPoint]->GetVelocity(iDim);
+						velMod += vel[iDim]*vel[iDim];
+					}
+					velMod = sqrt(velMod);
+					
+					Thrust +=  Area*(rho*velMod*(velMod-RefVel2)+pres-RefPressure);
+					
+					//cout << geometry->node[iPoint]->GetCoord(0) << " " << geometry->node[iPoint]->GetCoord(1) << " " << solver_container->node[iPoint]->GetSolution(0) << " " << solver_container->node[iPoint]->GetSolution(1) << " " << solver_container->node[iPoint]->GetSolution(2) << " " << pres << " " << Area << endl;
+					
+				}
+							
+			}
+			
+    }
+  }
+
+
+
+#ifdef HAVE_MPI
+
+	su2double My_AreaTot = AreaTot;
+	AreaTot = 0.0;
+	SU2_MPI::Allreduce(&My_AreaTot, &AreaTot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	
+  /*--- Add AllBound information using all the nodes ---*/
+  su2double My_Total_Thrust    = Thrust;    Thrust = 0.0;
+  SU2_MPI::Allreduce(&My_Total_Thrust, &Thrust, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	
+#endif
+
+	if ( Global2Local )
+		delete [] Global2Local;
+		
+	
+	if ( config->GetAxisymmetric() ) {
+		Thrust *= PI_NUMBER * AreaTot;
+	}
+	
+	solver_container->SetThrust_Nozzle(Thrust);
+	
+}
+
 void COutput::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
   
   unsigned short iMarker, icommas, Boundary, iDim;

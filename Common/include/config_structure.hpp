@@ -178,6 +178,7 @@ private:
   unsigned short nMarker_Euler,	/*!< \brief Number of Euler wall markers. */
   nMarker_FarField,				/*!< \brief Number of far-field markers. */
   nMarker_Custom,
+	nMarker_Thrust,
   nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
   nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
   nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
@@ -218,6 +219,7 @@ private:
   string *Marker_Euler,			/*!< \brief Euler wall markers. */
   *Marker_FarField,				/*!< \brief Far field markers. */
   *Marker_Custom,
+	*Marker_Thrust,
   *Marker_SymWall,				/*!< \brief Symmetry wall markers. */
   *Marker_Pressure,				/*!< \brief Pressure boundary markers. */
   *Marker_PerBound,				/*!< \brief Periodic boundary markers. */
@@ -534,6 +536,7 @@ private:
   su2double Total_CD;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
   su2double dCL_dAlpha;        /*!< \brief value of dCl/dAlpha. */
   su2double dCM_diH;        /*!< \brief value of dCM/dHi. */
+	su2double Thrust_Nozzle;            /*!< \brief Compute nozzle thrust. */
   unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_CM;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_NetThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
@@ -2406,6 +2409,13 @@ public:
    */
   unsigned short GetnMarker_Analyze(void);
   
+	/*!
+	 * \brief Get the total number of nozzle thrust markers.
+	 * \return Total number of nozzle thrust markers.
+	 */
+	unsigned short GetnMarker_Thrust(void);
+ 
+	
   /*!
    * \brief Get the total number of objectives in kind_objective list
    * \return Total number of objectives in kind_objective list
@@ -2624,6 +2634,7 @@ public:
    */
   bool GetPlot_Section_Forces(void);
   
+	
   /*!
    * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
    * \param[in] val_step - Index of the step.
