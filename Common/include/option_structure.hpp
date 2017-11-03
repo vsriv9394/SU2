@@ -1272,6 +1272,8 @@ enum ENUM_PARAM {
   SURFACE_BUMP = 22,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
   SURFACE_FILE = 23,		     /*!< Nodal coordinates set using a surface file. */
   NO_DEFORMATION = 24,		   /*!< \brief No Deformation. */
+	BSPLINECOEF = 25,          /*!< control points of a BSPLINE a design variables */
+	NOZZLE3DCOEF = 26,        /*!< control points of the centerline of the 3D nozzle shape  */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
 };
@@ -1302,6 +1304,8 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE)
 ("NO_DEFORMATION", NO_DEFORMATION)
+("BSPLINECOEF", BSPLINECOEF)
+("NOZZLE3DCOEF", NOZZLE3DCOEF)
 ("CST", CST);
 
 
@@ -2273,6 +2277,8 @@ public:
         case FFD_THICKNESS:        nParamDV = 3; break;
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
+				case BSPLINECOEF:          nParamDV = 1; break;
+				case NOZZLE3DCOEF:         nParamDV = 1; break;
         default : {
           string newstring;
           newstring.append(this->name);

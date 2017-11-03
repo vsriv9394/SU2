@@ -8530,9 +8530,11 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
   
   unsigned short iMarker_Monitoring;
   su2double Weight_ObjFunc;
-  
+	
+
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
   
+	
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     
     Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
@@ -8620,7 +8622,7 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
         Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
         break;
 			case THRUST_NOZZLE:
-				Total_ComboObj+= 0.0;
+				Total_ComboObj+= Weight_ObjFunc*Thrust_Nozzle;
 				break;
       default:
         break;

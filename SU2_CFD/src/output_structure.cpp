@@ -8564,11 +8564,13 @@ void COutput::SetNozzleThrust(CSolver *solver_container, CGeometry *geometry, CC
 
 	if ( Global2Local )
 		delete [] Global2Local;
-		
 	
 	if ( config->GetAxisymmetric() ) {
 		Thrust *= PI_NUMBER * AreaTot;
 	}
+	
+	//if ( rank == MASTER_NODE )
+	//	cout << "THRUST = " << Thrust << endl;
 	
 	solver_container->SetThrust_Nozzle(Thrust);
 	

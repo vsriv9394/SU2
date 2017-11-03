@@ -644,6 +644,12 @@ inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
 inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_Alpha_Step[val_step]; }
 
+inline unsigned short CConfig::GetnBSplineCoefs(void) { return nBSplineCoefs; }
+
+inline unsigned short CConfig::GetnNozzle3dCoefs1(void) { return nNozzle3dCoefs1; }
+inline unsigned short CConfig::GetnNozzle3dCoefs2(void) { return nNozzle3dCoefs2; }
+inline unsigned short CConfig::GetnNozzle3dCoefs3(void) { return nNozzle3dCoefs3; }
+
 inline su2double CConfig::GetLocationStations(unsigned short val_section) { return LocationStations[val_section]; }
 
 inline unsigned short CConfig::GetnFFD_Fix_IDir(void) { return nFFD_Fix_IDir; }
@@ -1307,6 +1313,20 @@ inline bool CConfig::GetEngine_HalfModel(void) { return Engine_HalfModel; }
 inline bool CConfig::GetActDisk_SU2_DEF(void) { return ActDisk_SU2_DEF; }
 
 inline su2double CConfig::GetDV_Value(unsigned short val_dv, unsigned short val_value) { return DV_Value[val_dv][val_value]; }
+
+inline su2double CConfig::GetBSplineCoefs_Value(unsigned short val) { return BSplineCoefs[val]; }
+
+inline su2double CConfig::GetNozzle3dCoefs1_Value(unsigned short val) { return Nozzle3dCoefs1[val]; }
+
+inline su2double CConfig::GetNozzle3dCoefs2_Value(unsigned short val) { return Nozzle3dCoefs2[val]; }
+
+inline su2double CConfig::GetNozzle3dCoefs3_Value(unsigned short val) { return Nozzle3dCoefs3[val]; }
+
+inline unsigned short CConfig::GetBSplineCoefs_DV_Value(unsigned short val) { return BSplineCoefs_DV[val]; }
+
+inline unsigned short CConfig::GetNozzle3dCoefs1_DV_Value(unsigned short val) { return Nozzle3dCoefs1_DV[val]; }
+inline unsigned short CConfig::GetNozzle3dCoefs2_DV_Value(unsigned short val) { return Nozzle3dCoefs2_DV[val]; }
+inline unsigned short CConfig::GetNozzle3dCoefs3_DV_Value(unsigned short val) { return Nozzle3dCoefs3_DV[val]; }
 
 inline void CConfig::SetDV_Value(unsigned short val_dv, unsigned short val_ind, su2double val) { DV_Value[val_dv][val_ind] = val; }
 

@@ -151,6 +151,24 @@ private:
   unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
+	
+	
+	su2double      *BSplineCoefs;		   /*!< \brief  */
+	unsigned short  *BSplineCoefs_DV;	 /*!< \brief  */
+	unsigned short  nBSplineCoefs;	   /*!< \brief  */
+	
+	su2double       *Nozzle3dCoefs1;		   /*!< \brief  */
+	unsigned short  *Nozzle3dCoefs1_DV;	 /*!< \brief  */
+	unsigned short  nNozzle3dCoefs1;	   /*!< \brief  */
+	
+	su2double       *Nozzle3dCoefs2;		   /*!< \brief  */
+	unsigned short  *Nozzle3dCoefs2_DV;	 /*!< \brief  */
+	unsigned short  nNozzle3dCoefs2;	   /*!< \brief  */
+	
+	su2double       *Nozzle3dCoefs3;		   /*!< \brief  */
+	unsigned short  *Nozzle3dCoefs3_DV;	 /*!< \brief  */
+	unsigned short  nNozzle3dCoefs3;	   /*!< \brief  */
+	
   su2double Venkat_LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
   su2double AdjSharp_LimiterCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
@@ -2350,6 +2368,18 @@ public:
    */
   unsigned short GetnMarker_All(void);
   
+	
+	/*!
+	 * \brief Get the total number of bspline boundary markers.
+	 * \return Total number of bspline boundary markers.
+	 */
+	unsigned short GetnBSplineCoefs(void);
+	
+	unsigned short GetnNozzle3dCoefs1(void);
+	unsigned short GetnNozzle3dCoefs2(void);
+	unsigned short GetnNozzle3dCoefs3(void);
+	
+	
   /*!
    * \brief Get the total number of boundary markers.
    * \return Total number of boundary markers.
@@ -4704,6 +4734,23 @@ public:
    * \return Design variable step.
    */
   su2double GetDV_Value(unsigned short val_dv, unsigned short val_val = 0);
+	
+ 	/*!
+  * \brief Value of the bspline coefficient.
+  * \param[in] val - Number of the bspline coefficient that we want to read.
+  * \return Bspline coefficient.
+  */
+  su2double GetBSplineCoefs_Value(unsigned short val);
+	
+	su2double GetNozzle3dCoefs1_Value(unsigned short val);
+	su2double GetNozzle3dCoefs2_Value(unsigned short val);
+	su2double GetNozzle3dCoefs3_Value(unsigned short val);
+	
+  unsigned short GetBSplineCoefs_DV_Value(unsigned short val);
+	
+	unsigned short GetNozzle3dCoefs1_DV_Value(unsigned short val);
+	unsigned short GetNozzle3dCoefs2_DV_Value(unsigned short val);
+	unsigned short GetNozzle3dCoefs3_DV_Value(unsigned short val);
   
   /*!
    * \brief Set the value of the design variable step, we use this value in design problems.

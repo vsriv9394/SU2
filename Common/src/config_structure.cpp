@@ -420,6 +420,17 @@ void CConfig::SetPointersNull(void) {
   MG_PreSmooth        = NULL;
   MG_PostSmooth       = NULL;
   Int_Coeffs          = NULL;
+	
+	BSplineCoefs = NULL;
+	BSplineCoefs_DV = NULL;
+	
+	Nozzle3dCoefs1 = NULL;
+	Nozzle3dCoefs2 = NULL;
+	Nozzle3dCoefs3 = NULL;
+	
+	Nozzle3dCoefs1_DV = NULL;
+	Nozzle3dCoefs2_DV = NULL;
+	Nozzle3dCoefs3_DV = NULL;
 
   Kind_ObjFunc   = NULL;
 
@@ -1555,6 +1566,19 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, Design_Variable);
   /* DESCRIPTION: New value of the shape deformation */
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
+	
+  addDoubleListOption("BSPLINECOEFS", nBSplineCoefs, BSplineCoefs);
+	addUShortListOption("BSPLINECOEFS_DV", nBSplineCoefs, BSplineCoefs_DV);
+	
+	/* DESCRIPTION: 3D Nozzle parameterization definition */
+	addDoubleListOption("NOZZLE3DCOEFS1", nNozzle3dCoefs1, Nozzle3dCoefs1);
+	addDoubleListOption("NOZZLE3DCOEFS2", nNozzle3dCoefs2, Nozzle3dCoefs2);
+	addDoubleListOption("NOZZLE3DCOEFS3", nNozzle3dCoefs3, Nozzle3dCoefs3);
+	
+	addUShortListOption("NOZZLE3DCOEFS1_DV", nNozzle3dCoefs1, Nozzle3dCoefs1_DV);
+	addUShortListOption("NOZZLE3DCOEFS2_DV", nNozzle3dCoefs2, Nozzle3dCoefs2_DV);
+	addUShortListOption("NOZZLE3DCOEFS3_DV", nNozzle3dCoefs3, Nozzle3dCoefs3_DV);
+	
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
 	default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
@@ -3355,7 +3379,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (!ContinuousAdjoint & !DiscreteAdjoint) {
   	if ((Fixed_CL_Mode) || (Fixed_CM_Mode)) {
-    ConvCriteria = RESIDUAL;
+   	 	ConvCriteria = RESIDUAL;
   		nExtIter += Iter_dCL_dAlpha;
   		OrderMagResidual = 24;
   		MinLogResidual = -24;
@@ -4288,6 +4312,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
           case FFD_THICKNESS:         cout << "FFD (thickness) -> "; break;
           case FFD_ANGLE_OF_ATTACK:   cout << "FFD (angle of attack) <-> "; break;
+					case BSPLINECOEF:           cout << "BSPLINE DV <-> "; break;
+					case NOZZLE3DCOEF:          cout << "NOZZLE3D DV <-> "; break;
         }
         
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
@@ -4305,7 +4331,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if ((Design_Variable[iDV] == NO_DEFORMATION) ||
             (Design_Variable[iDV] == FFD_SETTING) ||
             (Design_Variable[iDV] == SCALE) ) nParamDV = 0;
-        if (Design_Variable[iDV] == ANGLE_OF_ATTACK) nParamDV = 1;
+        if ((Design_Variable[iDV] == ANGLE_OF_ATTACK) ||
+					  (Design_Variable[iDV] == BSPLINECOEF) ||
+					  (Design_Variable[iDV] == NOZZLE3DCOEF) ) nParamDV = 1;
         if ((Design_Variable[iDV] == FFD_CAMBER_2D) ||
             (Design_Variable[iDV] == FFD_THICKNESS_2D) ||
             (Design_Variable[iDV] == HICKS_HENNE) ||
@@ -5763,6 +5791,17 @@ CConfig::~CConfig(void) {
     delete [] DegreeFFDBox;
   }
   
+  if (BSplineCoefs != NULL)    delete[] BSplineCoefs;
+  if (BSplineCoefs_DV != NULL)    delete[] BSplineCoefs_DV;
+	
+	if (Nozzle3dCoefs1 != NULL)    delete[] Nozzle3dCoefs1;
+	if (Nozzle3dCoefs2 != NULL)    delete[] Nozzle3dCoefs2;
+	if (Nozzle3dCoefs3 != NULL)    delete[] Nozzle3dCoefs3;
+	
+	if (Nozzle3dCoefs1_DV != NULL)    delete[] Nozzle3dCoefs1_DV;
+	if (Nozzle3dCoefs2_DV != NULL)    delete[] Nozzle3dCoefs2_DV;
+	if (Nozzle3dCoefs3_DV != NULL)    delete[] Nozzle3dCoefs3_DV;
+		
   if (Design_Variable != NULL)    delete[] Design_Variable;
   if (Dirichlet_Value != NULL)    delete[] Dirichlet_Value;
   

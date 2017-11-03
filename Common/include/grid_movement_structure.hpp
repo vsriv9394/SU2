@@ -1494,6 +1494,36 @@ public:
 	 */
 	void CopyBoundary(CGeometry *geometry, CConfig *config);
   
+	
+	void uMap3(su2double *knots, su2double *coefs, su2double u, su2double *x, su2double *y,
+		su2double *dxdu, su2double *dydu, int k, int c);
+	
+	int bsp_find(su2double xFind, su2double *xVec, int size);
+	
+ 	void	bSplineGeo3(su2double *knots, su2double *coefs, su2double *x, su2double *y,
+		su2double *dydx, int nx, int k, int c);
+	
+ /*!
+  * \brief Set a displacement for surface movement.
+  * \param[in] boundary - Geometry of the boundary.
+  * \param[in] config - Definition of the particular problem.
+  * \param[in] iDV - Index of the design variable.
+  * \param[in] ResetDef - Reset the deformation before starting a new one.
+  */
+ void SetBspline(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+	
+	
+	/*!
+	 * \brief Set a displacement for surface movement.
+	 * \param[in] boundary - Geometry of the boundary.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
+	 */
+	void SetNozzle3d(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+	
+	
+	
   /*!
 	 * \brief Set the surface/boundary deformation.
 	 * \param[in] geometry - Geometrical definition of the problem.
