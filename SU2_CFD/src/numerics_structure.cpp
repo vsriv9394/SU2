@@ -87,6 +87,9 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   l = NULL;
   m = NULL;
+
+  MeanReynoldsStress  = NULL; //Jayant
+  MeanPerturbedRSM    = NULL;
  
   nDim = val_nDim;
   nVar = val_nVar;
@@ -108,13 +111,13 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     tau[iDim] = new su2double [nDim];
   }
 
-  delta = new su2double* [nDim];
-  for (iDim = 0; iDim < nDim; iDim++) {
-    delta[iDim] = new su2double [nDim];
+  delta = new su2double* [3];
+  for (iDim = 0; iDim < 3; iDim++) {
+    delta[iDim] = new su2double [3];
   }
 
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0; jDim < nDim; jDim++) {
+  for (iDim = 0; iDim < 3; iDim++) {
+    for (jDim = 0; jDim < 3; jDim++) {
       if (iDim == jDim) delta[iDim][jDim] = 1.0;
       else delta[iDim][jDim]=0.0;
     }
@@ -133,6 +136,16 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   
   l = new su2double [nDim];
   m = new su2double [nDim];
+
+  if (config->GetUsing_UQ()){
+      MeanReynoldsStress = new su2double* [3];
+      MeanPerturbedRSM = new su2double* [3];
+      for (unsigned short iDim = 0; iDim < 3; iDim++){
+          MeanReynoldsStress[iDim] = new su2double [3];
+          MeanPerturbedRSM[iDim] = new su2double [3];
+
+      }
+  }
   
 }
 
@@ -163,7 +176,7 @@ CNumerics::~CNumerics(void) {
   }
 
   if (delta != NULL) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short iDim = 0; iDim < 3; iDim++) {
       delete [] delta[iDim];
     }
     delete [] delta;
@@ -178,6 +191,18 @@ CNumerics::~CNumerics(void) {
 
   if (l != NULL) delete [] l;
   if (m != NULL) delete [] m;
+
+  if (MeanReynoldsStress != NULL) {
+    for (unsigned short iDim = 0; iDim < 3; iDim++)
+      if (MeanReynoldsStress[iDim] != NULL) delete [] MeanReynoldsStress[iDim];
+    delete [] MeanReynoldsStress;
+  }
+
+  if (MeanPerturbedRSM != NULL) {
+    for (unsigned short iDim = 0; iDim < 3; iDim++)
+      if (MeanPerturbedRSM[iDim] != NULL) delete [] MeanPerturbedRSM[iDim];
+    delete [] MeanPerturbedRSM;
+  }
 
 }
 
@@ -1856,6 +1881,70 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
 
 }
 
+//Jayant
+void CNumerics::GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
+                        su2double val_turb_ke, su2double *val_normal,
+                        su2double val_laminar_viscosity,
+                        su2double val_eddy_viscosity,
+                        su2double **val_reynolds_stress,
+                        su2double **val_perturbed_rsm) {
+
+
+  unsigned short iVar, iDim, jDim;
+  su2double total_viscosity, heat_flux_factor, div_vel, Cp, Density;
+
+  Density = val_primvar[nDim+2];
+  total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
+  Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  heat_flux_factor = Cp * (val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb);
+
+  div_vel = 0.0;
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    div_vel += val_gradprimvar[iDim+1][iDim];
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    for (jDim = 0 ; jDim < nDim; jDim++)
+        tau[iDim][jDim] = val_laminar_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
+        - TWO3*val_laminar_viscosity*div_vel*delta[iDim][jDim] - Density * val_perturbed_rsm[iDim][jDim];
+
+  /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
+  if (nDim == 2) {
+    Flux_Tensor[0][0] = 0.0;
+    Flux_Tensor[1][0] = tau[0][0];
+    Flux_Tensor[2][0] = tau[0][1];
+    Flux_Tensor[3][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2]+
+        heat_flux_factor*val_gradprimvar[0][0];
+    Flux_Tensor[0][1] = 0.0;
+    Flux_Tensor[1][1] = tau[1][0];
+    Flux_Tensor[2][1] = tau[1][1];
+    Flux_Tensor[3][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
+        heat_flux_factor*val_gradprimvar[0][1];
+  } else {
+    Flux_Tensor[0][0] = 0.0;
+    Flux_Tensor[1][0] = tau[0][0];
+    Flux_Tensor[2][0] = tau[0][1];
+    Flux_Tensor[3][0] = tau[0][2];
+    Flux_Tensor[4][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2] + tau[0][2]*val_primvar[3] +
+        heat_flux_factor*val_gradprimvar[0][0];
+    Flux_Tensor[0][1] = 0.0;
+    Flux_Tensor[1][1] = tau[1][0];
+    Flux_Tensor[2][1] = tau[1][1];
+    Flux_Tensor[3][1] = tau[1][2];
+    Flux_Tensor[4][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2] + tau[1][2]*val_primvar[3] +
+        heat_flux_factor*val_gradprimvar[0][1];
+    Flux_Tensor[0][2] = 0.0;
+    Flux_Tensor[1][2] = tau[2][0];
+    Flux_Tensor[2][2] = tau[2][1];
+    Flux_Tensor[3][2] = tau[2][2];
+    Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
+        heat_flux_factor*val_gradprimvar[0][2];
+  }
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Proj_Flux_Tensor[iVar] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
+  }
+}
+
 void CNumerics::GetViscousArtCompProjFlux(su2double **val_gradprimvar, su2double *val_normal, su2double val_laminar_viscosity,
     su2double val_eddy_viscosity) {
   unsigned short iVar, iDim;
@@ -2625,6 +2714,285 @@ void CNumerics::CreateBasis(su2double *val_Normal) {
     m[iDim] = m[iDim]/modm;
   }
 }
+
+void CNumerics::EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val){
+    int iDim,jDim;
+    su2double *e = new su2double [3];
+    for (iDim= 0; iDim< 3; iDim++){
+        e[iDim] = 0;
+        for (jDim = 0; jDim < 3; jDim++){
+            Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
+        }
+    }
+    tred2(Eig_Vec, Eig_Val, e);
+    tql2(Eig_Vec, Eig_Val, e);
+
+    delete [] e;
+}
+
+void CNumerics::EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val){
+    unsigned short i,j,k;
+    su2double **tmp = new su2double* [3];
+    for (i= 0; i< 3; i++){
+        tmp[i] = new su2double [3];
+    }
+
+    for (i= 0; i< 3; i++){
+        for (j = 0; j < 3; j++){
+            tmp[i][j] = 0.0;
+            for (k = 0; k < 3; k++){
+                tmp[i][j] += Eig_Vec[i][k] * Eig_Val[k] * delta[k][j];
+            }
+        }
+    }
+
+    for (i= 0; i< 3; i++){
+        for (j = 0; j < 3; j++){
+            A_ij[i][j] = 0.0;
+            for (k = 0; k < 3; k++){
+                A_ij[i][j] += tmp[i][k] * Eig_Vec[j][k];
+            }
+        }
+    }
+
+    for (i = 0; i < 3; i++){
+        delete [] tmp[i];
+    }
+    delete [] tmp;
+}
+
+void CNumerics::tred2(su2double **V, su2double *d, su2double *e) {
+
+    unsigned short i,j,k;
+    /*  This is derived from the Algol procedures tred2 by        */
+    /*  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for     */
+    /*  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding */
+    /*  Fortran subroutine in EISPACK.                            */
+
+    for (j = 0; j < 3; j++) {
+        d[j] = V[3-1][j];
+    }
+
+    /* Householder reduction to tridiagonal form. */
+
+    for (i = 3-1; i > 0; i--) {
+
+        /* Scale to avoid under/overflow. */
+
+        su2double scale = 0.0;
+        su2double h = 0.0;
+        for (k = 0; k < i; k++) {
+            scale = scale + fabs(d[k]);
+        }
+        if (scale == 0.0) {
+            e[i] = d[i-1];
+            for (j = 0; j < i; j++) {
+                d[j] = V[i-1][j];
+                V[i][j] = 0.0;
+                V[j][i] = 0.0;
+            }
+        }
+        else {
+
+            /* Generate Householder vector. */
+
+            for (k = 0; k < i; k++) {
+                d[k] /= scale;
+                h += d[k] * d[k];
+            }
+            su2double f = d[i-1];
+            su2double g = sqrt(h);
+            if (f > 0) {
+                g = -g;
+            }
+            e[i] = scale * g;
+            h = h - f * g;
+            d[i-1] = f - g;
+            for (j = 0; j < i; j++) {
+                e[j] = 0.0;
+            }
+
+            /* Apply similarity transformation to remaining columns. */
+
+            for (j = 0; j < i; j++) {
+                f = d[j];
+                V[j][i] = f;
+                g = e[j] + V[j][j] * f;
+                for (k = j+1; k <= i-1; k++) {
+                    g += V[k][j] * d[k];
+                    e[k] += V[k][j] * f;
+                }
+                e[j] = g;
+            }
+            f = 0.0;
+            for (j = 0; j < i; j++) {
+                e[j] /= h;
+                f += e[j] * d[j];
+            }
+            su2double hh = f / (h + h);
+            for (j = 0; j < i; j++) {
+                e[j] -= hh * d[j];
+            }
+            for (j = 0; j < i; j++) {
+                f = d[j];
+                g = e[j];
+                for (k = j; k <= i-1; k++) {
+                    V[k][j] -= (f * e[k] + g * d[k]);
+                }
+                d[j] = V[i-1][j];
+                V[i][j] = 0.0;
+            }
+        }
+        d[i] = h;
+    }
+
+    /* Accumulate transformations. */
+
+    for (i = 0; i < 3-1; i++) {
+        V[3-1][i] = V[i][i];
+        V[i][i] = 1.0;
+        su2double h = d[i+1];
+        if (h != 0.0) {
+            for (k = 0; k <= i; k++) {
+                d[k] = V[k][i+1] / h;
+            }
+            for (j = 0; j <= i; j++) {
+                su2double g = 0.0;
+                for (k = 0; k <= i; k++) {
+                    g += V[k][i+1] * V[k][j];
+                }
+                for (k = 0; k <= i; k++) {
+                    V[k][j] -= g * d[k];
+                }
+            }
+        }
+        for (k = 0; k <= i; k++) {
+            V[k][i+1] = 0.0;
+        }
+    }
+    for (j = 0; j < 3; j++) {
+        d[j] = V[3-1][j];
+        V[3-1][j] = 0.0;
+    }
+    V[3-1][3-1] = 1.0;
+    e[0] = 0.0;
+}
+
+/* Symmetric tridiagonal QL algorithm */
+void CNumerics::tql2(su2double **V, su2double *d, su2double *e) {
+
+    int i,j,k,l;
+    for (i = 1; i < 3; i++) {
+        e[i-1] = e[i];
+    }
+    e[3-1] = 0.0;
+
+    su2double f = 0.0;
+    su2double tst1 = 0.0;
+    su2double eps = pow(2.0,-52.0);
+    for (l = 0; l < 3; l++) {
+
+        /* Find small subdiagonal element */
+
+        tst1 = max(tst1,(fabs(d[l]) + fabs(e[l])));
+        int m = l;
+        while (m < 3) {
+            if (fabs(e[m]) <= eps*tst1) {
+                break;
+            }
+            m++;
+        }
+
+        /* If m == l, d[l] is an eigenvalue, */
+        /* otherwise, iterate.               */
+
+        if (m > l) {
+            int iter = 0;
+            do {
+                iter = iter + 1;  /* (Could check iteration count here.) */
+
+                /* Compute implicit shift */
+
+                su2double g = d[l];
+                su2double p = (d[l+1] - g) / (2.0 * e[l]);
+                su2double r = sqrt(p*p+1.0);
+                if (p < 0) {
+                    r = -r;
+                }
+                d[l] = e[l] / (p + r);
+                d[l+1] = e[l] * (p + r);
+                su2double dl1 = d[l+1];
+                su2double h = g - d[l];
+                for (i = l+2; i < 3; i++) {
+                    d[i] -= h;
+                }
+                f = f + h;
+
+                /* Implicit QL transformation. */
+
+                p = d[m];
+                su2double c = 1.0;
+                su2double c2 = c;
+                su2double c3 = c;
+                su2double el1 = e[l+1];
+                su2double s = 0.0;
+                su2double s2 = 0.0;
+                for (i = m-1; i >= l; i--) {
+                    c3 = c2;
+                    c2 = c;
+                    s2 = s;
+                    g = c * e[i];
+                    h = c * p;
+                    r = sqrt(p*p+e[i]*e[i]);
+                    e[i+1] = s * r;
+                    s = e[i] / r;
+                    c = p / r;
+                    p = c * d[i] - s * g;
+                    d[i+1] = h + s * (c * g + s * d[i]);
+
+                    /* Accumulate transformation. */
+
+                    for (k = 0; k < 3; k++) {
+                        h = V[k][i+1];
+                        V[k][i+1] = s * V[k][i] + c * h;
+                        V[k][i] = c * V[k][i] - s * h;
+                    }
+                }
+                p = -s * s2 * c3 * el1 * e[l] / dl1;
+                e[l] = s * p;
+                d[l] = c * p;
+
+                /* Check for convergence. */
+
+            } while (fabs(e[l]) > eps*tst1);
+        }
+        d[l] = d[l] + f;
+        e[l] = 0.0;
+    }
+
+    /* Sort eigenvalues and corresponding vectors. */
+
+    for (i = 0; i < 3-1; i++) {
+        k = i;
+        su2double p = d[i];
+        for (j = i+1; j < 3; j++) {
+            if (d[j] < p) {
+                k = j;
+                p = d[j];
+            }
+        }
+        if (k != i) {
+            d[k] = d[i];
+            d[i] = p;
+            for (j = 0; j < 3; j++) {
+                p = V[j][i];
+                V[j][i] = V[j][k];
+                V[j][k] = p;
+            }
+        }
+    }
+}
+
 
 CSourceNothing::CSourceNothing(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
