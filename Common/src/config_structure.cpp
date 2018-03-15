@@ -3590,13 +3590,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
-<<<<<<< HEAD
-  nMarker_FlowLoad + nMarker_Custom + nMarker_Thrust,
-  nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
-=======
-  nMarker_FlowLoad + nMarker_Custom + nMarker_Damper +
+  nMarker_FlowLoad + nMarker_Custom + nMarker_Damper +  nMarker_Thrust +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir + nMarker_Disp_Dir +
->>>>>>> 70a1ea848df7e021f9caff19029be7f6dc2861a2
+
+			
+			
+			
   nMarker_ActDiskInlet + nMarker_ActDiskOutlet;
   
   /*--- Add the possible send/receive domains ---*/
@@ -6404,12 +6403,9 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case MASS_FLOW_IN:            AdjExt = "_mfi";       break;
       case MASS_FLOW_OUT:           AdjExt = "_mfo";       break;
       case ENTROPY_GENERATION:      AdjExt = "_entg";      break;
-<<<<<<< HEAD
 			case THRUST_NOZZLE:           AdjExt = "_nt";       break;
-=======
       case REFERENCE_GEOMETRY:      AdjExt = "_refgeom";       break;
       case REFERENCE_NODE:          AdjExt = "_refnode";       break;
->>>>>>> 70a1ea848df7e021f9caff19029be7f6dc2861a2
       }
     }
     else{

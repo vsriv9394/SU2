@@ -1358,16 +1358,13 @@ enum ENUM_PARAM {
   SURFACE_BUMP = 22,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
   SURFACE_FILE = 23,		     /*!< Nodal coordinates set using a surface file. */
   NO_DEFORMATION = 24,		   /*!< \brief No Deformation. */
-<<<<<<< HEAD
 	BSPLINECOEF = 25,          /*!< control points of a BSPLINE a design variables */
 	NOZZLE3DCOEF = 26,        /*!< control points of the centerline of the 3D nozzle shape  */
-=======
   DV_EFIELD = 30,            /*!< \brief Electric field in deformable membranes. */
   DV_YOUNG = 31,
   DV_POISSON = 32,
   DV_RHO = 33,
   DV_RHO_DL = 34,
->>>>>>> 70a1ea848df7e021f9caff19029be7f6dc2861a2
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
 };
@@ -1398,19 +1395,15 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE)
 ("NO_DEFORMATION", NO_DEFORMATION)
-<<<<<<< HEAD
 ("BSPLINECOEF", BSPLINECOEF)
 ("NOZZLE3DCOEF", NOZZLE3DCOEF)
-("CST", CST);
-=======
-("CST", CST)
 ("ELECTRIC_FIELD", DV_EFIELD)
 ("YOUNG_MODULUS", DV_YOUNG)
 ("POISSON_RATIO", DV_POISSON)
 ("STRUCTURAL_DENSITY", DV_RHO)
 ("DEAD_WEIGHT", DV_RHO_DL)
 ;
->>>>>>> 70a1ea848df7e021f9caff19029be7f6dc2861a2
+
 
 
 /*!
@@ -2407,16 +2400,13 @@ public:
         case FFD_THICKNESS:        nParamDV = 3; break;
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
-<<<<<<< HEAD
 				case BSPLINECOEF:          nParamDV = 1; break;
 				case NOZZLE3DCOEF:         nParamDV = 1; break;
-=======
         case DV_EFIELD:            nParamDV = 2; break;
         case DV_YOUNG:             nParamDV = 0; break;
         case DV_POISSON:           nParamDV = 0; break;
         case DV_RHO:               nParamDV = 0; break;
         case DV_RHO_DL:            nParamDV = 0; break;
->>>>>>> 70a1ea848df7e021f9caff19029be7f6dc2861a2
         default : {
           string newstring;
           newstring.append(this->name);
