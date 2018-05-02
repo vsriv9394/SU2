@@ -587,21 +587,109 @@ int main(int argc, char *argv[]) {
   delete driver;
   */
 
-  // Compile the files into one
+  // Assemble all the vectors into these arrays
+  
+  int Strainsize = config->StrainFile.IndexCurr.size();
+  int Tausize = config->TauFile.IndexCurr.size();
+  int Ssize[size];
+  int Tsize[size];
+  int Scumlf[size];
+  int Tcumlf[size];
+  int Ssizef=0;
+  int Tsizef=0;
+  MPI_Allgather(&Strainsize,1,MPI_INT,Ssize,1,MPI_INT,MPI_COMM_WORLD);
+  MPI_Allgather(&Tausize,1,MPI_INT,Tsize,1,MPI_INT,MPI_COMM_WORLD);
+  
+  for(int i=0; i<size; i++){
+	  Scumlf[i] = Ssizef;
+	  Tcumlf[i] = Tsizef;
+	  Ssizef += Ssize[i];
+	  Tsizef += Tsize[i];
+  }
 
-  if (rank==MASTER_NODE){
 
-	int filenum=0;
+///////////////////////////////////////////////////////////////////////////////
+
+
+  unsigned long SIndexCurrp[Strainsize];
+  double Sp1p[Strainsize];
+  double Swalldistp[Strainsize];
+  unsigned long SIndexBndyp[Strainsize];
+  double Sstrain_ratep[Strainsize];
+  double Smu_tp[Strainsize];
+
+  for(int j=0; j<Strainsize; j++){
+	
+	SIndexCurrp[j] = config->StrainFile.IndexCurr[j];
+	Sp1p[j] = config->StrainFile.p1[j];
+	Swalldistp[j] = config->StrainFile.walldist[j];
+	SIndexBndyp[j] = config->StrainFile.IndexBndy[j];
+	Sstrain_ratep[j] = config->StrainFile.strain_rate[j];
+	Smu_tp[j] = config->StrainFile.mu_t[j];
+
+  }
+
+  unsigned long TIndexCurrp[Tausize];
+  double TTauTangentp[Tausize];
+
+  for(int j=0; j<Tausize; j++){
+
+	TIndexCurrp[j] = config->TauFile.IndexCurr[j];
+	TTauTangentp[j]= config->TauFile.TauTangent[j];	
+
+  }
+
+
+/////////////////////////////////////////////////////////////////////////////////
+
+
+  unsigned long* SIndexCurr;
+  double*        Sp1;
+  double*        Swalldist;
+  unsigned long* SIndexBndy;
+  double*        Sstrain_rate;
+  double*        Smu_t;
+  unsigned long* TIndexCurr;
+  double*        TTauTangent;
+
+  //if (rank==MASTER_NODE){
+
+	SIndexCurr   = new unsigned long[Ssizef];
+	Sp1          = new double[Ssizef];
+	Swalldist    = new double[Ssizef];
+	SIndexBndy   = new unsigned long[Ssizef];
+	Sstrain_rate = new double[Ssizef];
+	Smu_t        = new double[Ssizef];
+	TIndexCurr   = new unsigned long[Tsizef];
+	TTauTangent  = new double[Tsizef]; 
+
+  //}
+
+  MPI_Allgatherv( SIndexCurrp,   Strainsize, MPI_UNSIGNED_LONG, SIndexCurr,   Ssize, Scumlf, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  MPI_Allgatherv( Sp1p,          Strainsize, MPI_DOUBLE,        Sp1,          Ssize, Scumlf, MPI_DOUBLE,        MPI_COMM_WORLD);
+  MPI_Allgatherv( Swalldistp,    Strainsize, MPI_DOUBLE,        Swalldist,    Ssize, Scumlf, MPI_DOUBLE,        MPI_COMM_WORLD);
+  MPI_Allgatherv( SIndexBndyp,   Strainsize, MPI_UNSIGNED_LONG, SIndexBndy,   Ssize, Scumlf, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  MPI_Allgatherv( Sstrain_ratep, Strainsize, MPI_DOUBLE,        Sstrain_rate, Ssize, Scumlf, MPI_DOUBLE,        MPI_COMM_WORLD);
+  MPI_Allgatherv( Smu_tp,        Strainsize, MPI_DOUBLE,        Smu_t,        Ssize, Scumlf, MPI_DOUBLE,        MPI_COMM_WORLD);
+  MPI_Allgatherv( TIndexCurrp,   Tausize,    MPI_UNSIGNED_LONG, TIndexCurr,   Tsize, Tcumlf, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  MPI_Allgatherv( TTauTangentp,  Tausize,    MPI_DOUBLE,        TTauTangent,  Tsize, Tcumlf, MPI_DOUBLE,        MPI_COMM_WORLD);
+ 
+  //if (rank==MASTER_NODE){
+
+	//int filenum=0;
+
+	cout<<"Creating Features file for ML"<<endl;
 
 	int stat = system("rm -f sample_features.dat");
 
-	double* tauwallf = new double [counter];
-	double* srf = new double [counter];
-	double* p1f = new double [counter];
-	double* p3f = new double [counter]; 
-	double* muf = new double [counter];
+	double* tauwallf       =        new double [counter];
+	double* srf            =        new double [counter];
+	double* p1f            =        new double [counter];
+	double* p3f            =        new double [counter]; 
+	double* muf            =        new double [counter];
 	unsigned long* neighbf = new unsigned long [counter];
 
+	/*
 	while(true){
 
 		char Buffer_File[20];
@@ -622,7 +710,7 @@ int main(int argc, char *argv[]) {
   		infile.close();
   		char command[50];
   		sprintf(command, "rm Feature%d", filenum);
-  		stat = system(command);
+  		//stat = system(command);
 
   		sprintf(Buffer_File, "Tau%d", filenum);
   		infile.open(Buffer_File);
@@ -634,10 +722,31 @@ int main(int argc, char *argv[]) {
   		}
   		infile.close();
   		sprintf(command, "rm Tau%d", filenum);
-  		stat = system(command);
+  		//stat = system(command);
 
   		filenum++;
   	}
+	*/
+
+	for(int i=0; i<Ssizef; i++){
+
+		p1f[SIndexCurr[i]]     = Sp1[i];
+		p3f[SIndexCurr[i]]     = Swalldist[i];
+		srf[SIndexCurr[i]]     = Sstrain_rate[i];
+		muf[SIndexCurr[i]]     = Smu_t[i];
+		neighbf[SIndexCurr[i]] = SIndexBndy[i];
+		if(rank==MASTER_NODE){ cout<<SIndexCurr[i]<<" "<<p1f[SIndexCurr[i]]<<" "<<p3f[SIndexCurr[i]]<<endl; }
+
+	}
+
+
+	for(int i=0; i<Tsizef; i++){
+
+		tauwallf[TIndexCurr[i]]   = TTauTangent[i];
+	
+	}
+
+ if (rank==MASTER_NODE){
 	
 	ofstream outfile("sample_features.dat");
 	
@@ -661,8 +770,6 @@ int main(int argc, char *argv[]) {
 	}
 
 	outfile.close();
-
-	infile.close();
 
   }
 

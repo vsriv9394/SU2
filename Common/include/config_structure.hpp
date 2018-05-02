@@ -58,7 +58,26 @@ using namespace std;
  * \version 4.1.2 "Cardinal"
  */
 
+struct StrainItem{
+
+	vector<unsigned long> IndexCurr;
+	vector<double> p1;
+	vector<double> walldist;
+	vector<unsigned long> IndexBndy;
+	vector<double> strain_rate;
+	vector<double> mu_t;
+
+};
+
+struct TauItem{
+
+	vector<unsigned long> IndexCurr;
+	vector<double> TauTangent;
+
+};
+
 class CConfig {
+
 private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
@@ -731,7 +750,6 @@ private:
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
   double *betaArr;		/*!< \brief Array for values of SA_Production_Factor >*/
-
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
@@ -1017,6 +1035,8 @@ private:
 
 public:
 
+	StrainItem StrainFile;
+	TauItem TauFile;
 	vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
 
 	/*!

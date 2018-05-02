@@ -14927,7 +14927,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CFz_Visc[iMarker_Monitoring]        = 0.0; Surface_CMx_Visc[iMarker_Monitoring]        = 0.0;
     Surface_CMy_Visc[iMarker_Monitoring]        = 0.0; Surface_CMz_Visc[iMarker_Monitoring]        = 0.0;
   }
-  
+
   /*--- Loop over the Navier-Stokes markers ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -15024,16 +15024,17 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         }
         WallShearStress = sqrt(WallShearStress);
         
-        int proc_rank = 0;
-        #ifdef HAVE_MPI
-          MPI_Comm_rank(MPI_COMM_WORLD, &proc_rank);
-        #endif
+        //#ifdef HAVE_MPI
+        //  MPI_Comm_rank(MPI_COMM_WORLD, &proc_rank);
+        //#endif
         if(config->GetExtIter()==(config->GetnExtIter()-1)){
-          char buffer_file[20];
-          sprintf(buffer_file, "Tau%d", proc_rank);
-          ofstream outfile(buffer_file, ofstream::app);
-          outfile<<scientific<<setprecision(15)<<geometry->node[iPoint]->GetGlobalIndex()<<'\t'<<sqrt(SU2_TYPE::GetValue(TauTangent[0]*TauTangent[0]+TauTangent[1]*TauTangent[1]))<<endl;
-          outfile.close();
+          //char buffer_file[20];
+          //sprintf(buffer_file, "Tau%d", proc_rank);
+          //ofstream outfile(buffer_file, ofstream::app);
+          //outfile<<scientific<<setprecision(15)<<geometry->node[iPoint]->GetGlobalIndex()<<'\t'<<sqrt(SU2_TYPE::GetValue(TauTangent[0]*TauTangent[0]+TauTangent[1]*TauTangent[1]))<<endl;
+          //outfile.close();
+          config->TauFile.IndexCurr.push_back(geometry->node[iPoint]->GetGlobalIndex());
+	  config->TauFile.TauTangent.push_back(sqrt(SU2_TYPE::GetValue(TauTangent[0]*TauTangent[0]+TauTangent[1]*TauTangent[1])));  
         }
 
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);

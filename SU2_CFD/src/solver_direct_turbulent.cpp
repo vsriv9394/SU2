@@ -1373,8 +1373,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   bool freesurface   = (config->GetKind_Regime() == FREESURFACE);
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool transition    = (config->GetKind_Trans_Model() == LM);
-  su2double epsilon     = config->GetFreeSurface_Thickness();
-  
+  su2double epsilon  = config->GetFreeSurface_Thickness();
+ 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
     /*--- Conservative variables w/o reconstruction ---*/
@@ -1385,14 +1385,14 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
     numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
 
-    int proc_rank = 0;
-    #ifdef HAVE_MPI
-    	MPI_Comm_rank(MPI_COMM_WORLD, &proc_rank);
-    #endif
+    //int proc_rank = MASTER_NODE;
+    //#ifdef HAVE_MPI
+    // 	MPI_Comm_rank(MPI_COMM_WORLD, &proc_rank);
+    //#endif
     if(config->GetExtIter()==(config->GetnExtIter()-1)){
-    	char buffer_file[20];
-    	sprintf(buffer_file, "Feature%d", proc_rank);
-    	ofstream outfile(buffer_file, ofstream::app);
+	//char buffer_file[20];
+    	//sprintf(buffer_file, "Feature%d", proc_rank);
+    	//ofstream outfile(buffer_file, ofstream::app);
     	double dudx = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[1][0]);
     	double dudy = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[1][1]);
     	double dvdx = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[2][0]);
@@ -1406,8 +1406,15 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
         long IndexBndy  = geometry->node[iPoint]->GetVertex_nearWall();
         double walldist = SU2_TYPE::GetValue(geometry->node[iPoint]->GetWall_Distance());
 	double p1 = dens*strain_rate*walldist*walldist/visc;
-    	outfile<<scientific<<setprecision(15)<<IndexCurr<<'\t'<<p1<<'\t'<<walldist<<'\t'<<IndexBndy<<'\t'<<strain_rate<<'\t'<<mu_t<<endl;
-    	outfile.close();
+    	
+	config->StrainFile.IndexCurr.push_back(IndexCurr);
+	config->StrainFile.p1.push_back(p1);
+	config->StrainFile.walldist.push_back(walldist);
+	config->StrainFile.IndexBndy.push_back(IndexBndy);
+	config->StrainFile.strain_rate.push_back(strain_rate);
+	config->StrainFile.mu_t.push_back(mu_t);
+	//outfile<<scientific<<setprecision(15)<<IndexCurr<<'\t'<<p1<<'\t'<<walldist<<'\t'<<IndexBndy<<'\t'<<strain_rate<<'\t'<<mu_t<<endl;
+    	//outfile.close();
 	}
     
     /*--- Set vorticity and strain rate magnitude ---*/
