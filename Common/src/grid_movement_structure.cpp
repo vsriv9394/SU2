@@ -454,6 +454,7 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   
   vector<su2double>     Coord_bound(nDim*nVertex_SolidWall);
   vector<unsigned long> PointIDs(nVertex_SolidWall);
+  vector<unsigned long> GPID(nVertex_SolidWall);
   
   /*--- Retrieve and store the coordinates of the no-slip boundary nodes
    and their local point IDs. ---*/
@@ -465,7 +466,9 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
       for (iVertex=0; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        PointIDs[jj++] = iPoint;
+        PointIDs[jj] = iPoint;
+        GPID[jj] = iPoint;
+        jj = jj+1;
         for (iDim=0; iDim<nDim; ++iDim)
           Coord_bound[ii++] = geometry->node[iPoint]->GetCoord(iDim);
       }
@@ -474,7 +477,7 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   
   /*--- Build the ADT of the boundary nodes. ---*/
   
-  su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
+  su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data(), GPID.data());
   
   /*--- Loop over all interior mesh nodes and compute the distances to each
    of the no-slip boundary nodes. Store the minimum distance to the wall
@@ -493,10 +496,12 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
     
+    unsigned long GBID;
+
     for(iPoint=0; iPoint<geometry->GetnPoint(); ++iPoint) {
       
       WallADT.DetermineNearestNode(geometry->node[iPoint]->GetCoord(), dist,
-                                   pointID, rankID);
+                                   pointID, GBID, rankID);
       geometry->node[iPoint]->SetWall_Distance(dist);
       
       MaxDistance = max(MaxDistance, dist);

@@ -65,6 +65,24 @@ using namespace std;
  * \version 5.0.0 "Raven"
  */
 
+struct StrainItem{
+
+	vector<unsigned long> IndexCurr;
+	vector<double> p1;
+	vector<double> walldist;
+	vector<unsigned long> IndexBndy;
+	vector<double> strain_rate;
+	vector<double> mu_t;
+
+};
+
+struct TauItem{
+
+	vector<unsigned long> IndexCurr;
+	vector<double> TauTangent;
+
+};
+
 class CConfig {
 private:
   SU2_Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
@@ -773,6 +791,7 @@ private:
   Omega_Ref,                  /*!< \brief Reference angular velocity for non-dimensionalization. */
   Force_Ref,                  /*!< \brief Reference body force for non-dimensionalization. */
   Pressure_FreeStreamND,      /*!< \brief Farfield pressure value (external flow). */
+  SA_Production_Factor,
   Temperature_FreeStreamND,   /*!< \brief Farfield temperature value (external flow). */
   Density_FreeStreamND,       /*!< \brief Farfield density value (external flow). */
   Velocity_FreeStreamND[3],   /*!< \brief Farfield velocity values (external flow). */
@@ -960,6 +979,7 @@ private:
   unsigned short eig_val_comp; /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double urlx;             /*!< \brief Under-relaxation factor */
   bool permute;               /*!< \brief Permutation of eigenvectors */
+  double *betaArr;		/*!< \brief Array for values of SA_Production_Factor >*/
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -1247,6 +1267,8 @@ private:
   
 public:
   
+  StrainItem StrainFile;
+  TauItem TauFile;
   vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
   
   /*!
@@ -1669,6 +1691,10 @@ public:
    */
   su2double GetPressure_FreeStream(void);
   
+  su2double GetSA_Production_Factor(void);
+
+  double GetbetaArr(unsigned long index);
+
   /*!
    * \brief Get the value of the non-dimensionalized freestream pressure.
    * \return Non-dimensionalized freestream pressure.
@@ -2190,6 +2216,10 @@ public:
    */
   void SetPressure_FreeStream(su2double val_pressure_freestream);
   
+  void SetSA_Production_Factor(su2double val_SA_Production_Factor);
+
+  void SetbetaArr(double *val_betaArr);
+
   /*!
    * \brief Set the Froude number for free surface problems.
    * \return Value of the Froude number.

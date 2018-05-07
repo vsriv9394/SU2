@@ -16133,8 +16133,11 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   su2double MomentX_Force[3] = {0.0,0.0,0.0}, MomentY_Force[3] = {0.0,0.0,0.0}, MomentZ_Force[3] = {0.0,0.0,0.0};
   su2double AxiFactor;
 
+  int proccrank = MASTER_NODE;
+
 #ifdef HAVE_MPI
   su2double MyAllBound_CD_Visc, MyAllBound_CL_Visc, MyAllBound_CSF_Visc, MyAllBound_CMx_Visc, MyAllBound_CMy_Visc, MyAllBound_CMz_Visc, MyAllBound_CoPx_Visc, MyAllBound_CoPy_Visc, MyAllBound_CoPz_Visc, MyAllBound_CFx_Visc, MyAllBound_CFy_Visc, MyAllBound_CFz_Visc, MyAllBound_CT_Visc, MyAllBound_CQ_Visc, MyAllBound_HF_Visc, MyAllBound_MaxHF_Visc, *MySurface_CL_Visc = NULL, *MySurface_CD_Visc = NULL, *MySurface_CSF_Visc = NULL, *MySurface_CEff_Visc = NULL, *MySurface_CFx_Visc = NULL, *MySurface_CFy_Visc = NULL, *MySurface_CFz_Visc = NULL, *MySurface_CMx_Visc = NULL, *MySurface_CMy_Visc = NULL, *MySurface_CMz_Visc = NULL, *MySurface_HF_Visc = NULL, *MySurface_MaxHF_Visc;
+  MPI_Comm_rank(MPI_COMM_WORLD, &proccrank);
 #endif
   
   string Marker_Tag, Monitoring_Tag;
@@ -16284,6 +16287,14 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         }
         WallShearStress = sqrt(WallShearStress);
         
+        if(config->GetExtIter()==(config->GetnExtIter()-1)){
+          config->TauFile.IndexCurr.push_back(geometry->node[iPoint]->GetGlobalIndex());
+          if (nDim==2)
+	        config->TauFile.TauTangent.push_back(sqrt(SU2_TYPE::GetValue(TauTangent[0]*TauTangent[0]+TauTangent[1]*TauTangent[1])));
+          else if (nDim==3)  
+	        config->TauFile.TauTangent.push_back(sqrt(SU2_TYPE::GetValue( TauTangent[0]*TauTangent[0] + TauTangent[1]*TauTangent[1] + TauTangent[2]*TauTangent[2] )));
+        }
+
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
         

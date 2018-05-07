@@ -241,7 +241,8 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
 su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
                                                unsigned long       nPoints,
                                                const su2double     *coor,
-                                               const unsigned long *pointID) {
+                                               const unsigned long *pointID,
+                                               const unsigned long *GPID) {
 
   /*--- Make a distinction between parallel and sequential mode. ---*/
 
@@ -273,20 +274,27 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
   
   unsigned long *Buffer_Send = new unsigned long[MaxLocalVertex];
   unsigned long *Buffer_Recv = new unsigned long[nProcessor*MaxLocalVertex];
+
+  unsigned long *BufferGSend = new unsigned long[MaxLocalVertex];
+  unsigned long *BufferGRecv = new unsigned long[nProcessor*MaxLocalVertex];
   
   for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
     Buffer_Send[iVertex] = pointID[iVertex];
+    BufferGSend[iVertex] = GPID[iVertex];
   }
   
   SU2_MPI::Allgather(Buffer_Send, MaxLocalVertex, MPI_UNSIGNED_LONG, Buffer_Recv, MaxLocalVertex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(BufferGSend, MaxLocalVertex, MPI_UNSIGNED_LONG, BufferGRecv, MaxLocalVertex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
   
   /*--- Unpack the buffer into the local point ID vector. ---*/
   
   localPointIDs.resize(nGlobalVertex);
+  globalPointIDs.resize(nGlobalVertex);
   
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
     for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++)
       localPointIDs.push_back( Buffer_Recv[iProcessor*MaxLocalVertex + iVertex] );
+      globalPointIDs.push_back( BufferGRecv[iProcessor*MaxLocalVertex + iVertex] );
 
   /*--- Now gather the ranks for all points ---*/
   
@@ -304,7 +312,7 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
     for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++)
       ranksOfPoints.push_back( Buffer_Recv[iProcessor*MaxLocalVertex + iVertex] );
   
-  delete [] Buffer_Send;  delete [] Buffer_Recv;
+  delete [] Buffer_Send;  delete [] Buffer_Recv; delete[] BufferGSend; delete[] BufferGRecv;
   
   /*--- Gather the coordinates of the points on all ranks. ---*/
   
@@ -354,6 +362,7 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
 void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
                                                   su2double       &dist,
                                                   unsigned long   &pointID,
+                                                  unsigned long   &GPID,
                                                   int             &rankID) {
 
   AD_BEGIN_PASSIVE
@@ -456,6 +465,7 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
             if(distTarget < dist) {
               dist     = distTarget;
               pointID  = localPointIDs[jj];
+              GPID     = globalPointIDs[jj];
               rankID   = ranksOfPoints[jj];
               minIndex = jj;
             }

@@ -174,6 +174,8 @@ private:
 
 public:
 	
+	unsigned long PointID;
+	int RankID;
 	/*! 
 	 * \brief Constructor of the class. 
 	 * \param[in] val_nDim - Number of dimensions of the problem.

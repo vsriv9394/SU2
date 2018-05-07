@@ -426,6 +426,8 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     else {
       Production = cb1*Shat*TurbVar_i[0]*Volume;
     }
+
+    Production *= config->GetSA_Production_Factor();
     
     /*--- Destruction term ---*/
     

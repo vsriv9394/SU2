@@ -1500,6 +1500,57 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
     numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
     
+    if(config->GetExtIter()==(config->GetnExtIter()-1)){
+    	
+      double dudx = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[1][0]);
+    	double dudy = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[1][1]);
+      double dudz = 0.0;
+    
+      if (nDim==3){
+          dudz = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[1][2]);
+      }
+
+      double dvdx = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[2][0]);
+    	double dvdy = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[2][1]);
+      double dvdz = 0.0;
+    	
+      if (nDim==3){
+          dvdz = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[2][2]);
+      }
+
+      double dwdx = 0.0;
+      double dwdy = 0.0;
+      double dwdz = 0.0;
+
+      if (nDim==3){
+        double dwdx = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[3][0]);
+  	    double dwdy = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[3][1]);
+    	  double dwdz = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[3][2]);
+      }
+
+      double sxy  = 0.5*(dudy+dvdx);
+      double sxz  = 0.5*(dudz+dwdx);
+      double syz  = 0.5*(dwdy+dvdz);
+
+    	double strain_rate = sqrt(2.0*( dudx*dudx + dvdy*dvdy + dwdz*dwdz + 2.0*sxy*sxy + 2.0*sxz*sxz + 2.0*syz*syz ));
+        
+      double visc = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
+      double dens = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetDensity());
+      double mu_t = SU2_TYPE::GetValue(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
+      long IndexCurr  = geometry->node[iPoint]->GetGlobalIndex();
+      long IndexBndy  = geometry->node[iPoint]->PointID;
+      double walldist = SU2_TYPE::GetValue(geometry->node[iPoint]->GetWall_Distance());
+	    double p1 = dens*strain_rate*walldist*walldist/visc;
+    	
+	    config->StrainFile.IndexCurr.push_back(IndexCurr);
+	    config->StrainFile.p1.push_back(p1);
+	    config->StrainFile.walldist.push_back(walldist);
+	    config->StrainFile.IndexBndy.push_back(IndexBndy);
+	    config->StrainFile.strain_rate.push_back(strain_rate);
+	    config->StrainFile.mu_t.push_back(mu_t);
+
+	  }
+
     /*--- Set vorticity and strain rate magnitude ---*/
     
     numerics->SetVorticity(solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(), NULL);
@@ -1526,6 +1577,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
     
     /*--- Compute the source term ---*/
+    
+    config->SetSA_Production_Factor(config->GetbetaArr(geometry->node[iPoint]->GetGlobalIndex()));
     
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
 

@@ -212,6 +212,7 @@ private:
                                                    of the points in the ADT. */
   vector<unsigned long> localPointIDs; /*!< \brief Vector, which contains the local point ID's
                                                    of the points in the ADT. */
+  vector<unsigned long> globalPointIDs;
   vector<int>           ranksOfPoints; /*!< \brief Vector, which contains the ranks
                                                    of the points in the ADT. */
 public:
@@ -225,7 +226,8 @@ public:
   su2_adtPointsOnlyClass(unsigned short      nDim,
                          unsigned long       nPoints,
                          const su2double     *coor,
-                         const unsigned long *pointID);
+                         const unsigned long *pointID,
+                         const unsigned long *GPID);
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
@@ -243,6 +245,7 @@ public:
   void DetermineNearestNode(const su2double *coor,
                             su2double       &dist,
                             unsigned long   &pointID,
+                            unsigned long   &GPID,
                             int             &rankID);
 private:
   /*!
