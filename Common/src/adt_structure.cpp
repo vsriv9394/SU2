@@ -281,7 +281,15 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
   for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
     Buffer_Send[iVertex] = pointID[iVertex];
     BufferGSend[iVertex] = GPID[iVertex];
+    //cout<<BufferGSend[iVertex]<<'\t'<<flush;
   }
+
+  for (iVertex = nLocalVertex; iVertex<MaxLocalVertex; iVertex++){
+    Buffer_Send[iVertex] = 0;
+    BufferGSend[iVertex] = 0;    
+  }
+
+  //cout<<endl;
   
   SU2_MPI::Allgather(Buffer_Send, MaxLocalVertex, MPI_UNSIGNED_LONG, Buffer_Recv, MaxLocalVertex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
   SU2_MPI::Allgather(BufferGSend, MaxLocalVertex, MPI_UNSIGNED_LONG, BufferGRecv, MaxLocalVertex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
@@ -290,11 +298,20 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
   
   localPointIDs.resize(nGlobalVertex);
   globalPointIDs.resize(nGlobalVertex);
-  
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-    for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++)
+
+  //unsigned long count = 0;
+
+  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+    for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++){
       localPointIDs.push_back( Buffer_Recv[iProcessor*MaxLocalVertex + iVertex] );
       globalPointIDs.push_back( BufferGRecv[iProcessor*MaxLocalVertex + iVertex] );
+      //localPointIDs[count] = Buffer_Recv[iProcessor*MaxLocalVertex + iVertex];
+      //globalPointIDs[count] = BufferGRecv[iProcessor*MaxLocalVertex + iVertex];
+      //count++;
+    }
+  }
+
+  cout<<endl;
 
   /*--- Now gather the ranks for all points ---*/
   

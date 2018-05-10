@@ -1269,6 +1269,7 @@ public:
   
   StrainItem StrainFile;
   TauItem TauFile;
+  long nGVertex;
   vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
   
   /*!

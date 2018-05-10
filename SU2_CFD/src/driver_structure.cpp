@@ -146,7 +146,7 @@ CDriver::CDriver(char* confFile,
   }
 
   ifstream infile("beta_for_su2.dat");
-  unsigned long counter = geometry_container[ZONE_0][MESH_0]->GetGlobal_nPointDomain();
+  config_container[ZONE_0]->nGVertex = geometry_container[ZONE_0][MESH_0]->GetGlobal_nPointDomain();
   double *val_betaArr = new double [geometry_container[ZONE_0][MESH_0]->GetGlobal_nPointDomain()];
   if (infile){
   	for(int i=0; i<geometry_container[ZONE_0][MESH_0]->GetGlobal_nPointDomain(); i++){
@@ -464,6 +464,7 @@ void CDriver::Postprocessing() {
   
   int Strainsize = config_container[ZONE_0]->StrainFile.IndexCurr.size();
   int Tausize = config_container[ZONE_0]->TauFile.IndexCurr.size();
+  long counter = config_container[ZONE_0]->nGVertex;
   int Ssize[size];
   int Tsize[size];
   int Scumlf[size];
@@ -552,12 +553,12 @@ void CDriver::Postprocessing() {
 
 	int stat = system("rm -f sample_features.dat");
 
-	double* tauwallf       =        new double [nGlobalVertex];
-	double* srf            =        new double [nGlobalVertex];
-	double* p1f            =        new double [nGlobalVertex];
-	double* p3f            =        new double [nGlobalVertex]; 
-	double* muf            =        new double [nGlobalVertex];
-	unsigned long* neighbf = new unsigned long [nGlobalVertex];
+	double* tauwallf       =        new double [counter];
+	double* srf            =        new double [counter];
+	double* p1f            =        new double [counter];
+	double* p3f            =        new double [counter]; 
+	double* muf            =        new double [counter];
+	unsigned long* neighbf = new unsigned long [counter];
 
 	for(int i=0; i<Ssizef; i++){
 
@@ -566,9 +567,10 @@ void CDriver::Postprocessing() {
 		srf[SIndexCurr[i]]     = Sstrain_rate[i];
 		muf[SIndexCurr[i]]     = Smu_t[i];
 		neighbf[SIndexCurr[i]] = SIndexBndy[i];
-		if(rank==MASTER_NODE){ cout<<SIndexCurr[i]<<" "<<p1f[SIndexCurr[i]]<<" "<<p3f[SIndexCurr[i]]<<endl; }
+        if(rank==MASTER_NODE){ cout<<SIndexBndy[i]<<'\t'<<flush;}
 
 	}
+    cout<<endl;
 
 
 	for(int i=0; i<Tsizef; i++){
@@ -577,19 +579,28 @@ void CDriver::Postprocessing() {
 	
 	}
 
+    cout<<"Done!!"<<endl;
+
  if (rank==MASTER_NODE){
+
+    cout<<"Writing features file!!"<<endl;
 	
-	ofstream outfile("sample_features.dat");
+	ofstream outfile;
+    
+    outfile.open("sample_features.dat");
 	
 	for(int i=0; i<counter; i++){
-	
+
 		unsigned long nind = neighbf[i];
 		double p2f = muf[i]*srf[i]/max(tauwallf[nind],1E-10);
 		outfile<<scientific<<setprecision(15)<<i<<'\t'<<p1f[i]<<'\t'<<p2f<<'\t'<<p3f[i]<<endl;
-	
+		//cout<<scientific<<setprecision(15)<<i<<'\t'<<p1f[i]<<'\t'<<p2f<<'\t'<<p3f[i]<<endl;
+
 	}
 
 	outfile.close();
+
+    cout<<"Writing verification file: Global Element ID | Strain factor | Wall Shear Stress"<<endl;
 
 	outfile.open("verification.dat");
 	
