@@ -567,10 +567,8 @@ void CDriver::Postprocessing() {
 		srf[SIndexCurr[i]]     = Sstrain_rate[i];
 		muf[SIndexCurr[i]]     = Smu_t[i];
 		neighbf[SIndexCurr[i]] = SIndexBndy[i];
-        if(rank==MASTER_NODE){ cout<<SIndexBndy[i]<<'\t'<<flush;}
 
 	}
-    cout<<endl;
 
 
 	for(int i=0; i<Tsizef; i++){

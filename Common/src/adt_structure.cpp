@@ -311,7 +311,6 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
     }
   }
 
-  cout<<endl;
 
   /*--- Now gather the ranks for all points ---*/
   
